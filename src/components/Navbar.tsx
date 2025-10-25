@@ -3,7 +3,14 @@ import { Button } from "./ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { User } from "@supabase/supabase-js";
-import { BookOpen, LogOut, User as UserIcon } from "lucide-react";
+import { BookOpen, LogOut, User as UserIcon, Settings } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const Navbar = () => {
   const navigate = useNavigate();
@@ -70,14 +77,31 @@ export const Navbar = () => {
                   <Button variant="outline">Administração</Button>
                 </Link>
               )}
-              <Link to="/dashboard">
-                <Button variant="ghost" size="icon">
-                  <UserIcon className="h-5 w-5" />
-                </Button>
-              </Link>
-              <Button variant="ghost" size="icon" onClick={handleLogout}>
-                <LogOut className="h-5 w-5" />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <UserIcon className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link to="/dashboard" className="cursor-pointer w-full">
+                      Painel
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/perfil" className="cursor-pointer w-full flex items-center gap-2">
+                      <Settings className="h-4 w-4" />
+                      Meu Perfil
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sair
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           ) : (
             <Link to="/auth">

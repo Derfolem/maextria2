@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      cartoes_credito: {
+        Row: {
+          bandeira: string
+          criado_em: string | null
+          id: string
+          nome_titular: string
+          padrao: boolean | null
+          token_gateway: string | null
+          ultimos_digitos: string
+          usuario_id: string
+        }
+        Insert: {
+          bandeira: string
+          criado_em?: string | null
+          id?: string
+          nome_titular: string
+          padrao?: boolean | null
+          token_gateway?: string | null
+          ultimos_digitos: string
+          usuario_id: string
+        }
+        Update: {
+          bandeira?: string
+          criado_em?: string | null
+          id?: string
+          nome_titular?: string
+          padrao?: boolean | null
+          token_gateway?: string | null
+          ultimos_digitos?: string
+          usuario_id?: string
+        }
+        Relationships: []
+      }
       certificados: {
         Row: {
           codigo_validacao: string
