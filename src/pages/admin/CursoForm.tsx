@@ -19,6 +19,7 @@ export default function CursoForm() {
   const [formData, setFormData] = useState({
     titulo: "",
     slug: "",
+    categoria: "",
     descricao: "",
     publico_alvo: "",
     carga_horaria_horas: 0,
@@ -52,6 +53,7 @@ export default function CursoForm() {
       setFormData({
         titulo: data.titulo,
         slug: data.slug,
+        categoria: data.categoria || "",
         descricao: data.descricao || "",
         publico_alvo: data.publico_alvo || "",
         carga_horaria_horas: data.carga_horaria_horas || 0,
@@ -92,6 +94,7 @@ export default function CursoForm() {
           .update({
             titulo: validatedData.titulo,
             slug: validatedData.slug,
+            categoria: validatedData.categoria,
             descricao: validatedData.descricao,
             publico_alvo: validatedData.publico_alvo,
             carga_horaria_horas: validatedData.carga_horaria_horas,
@@ -107,6 +110,7 @@ export default function CursoForm() {
         const { error } = await supabase.from("cursos").insert([{
           titulo: validatedData.titulo,
           slug: validatedData.slug,
+          categoria: validatedData.categoria,
           descricao: validatedData.descricao,
           publico_alvo: validatedData.publico_alvo,
           carga_horaria_horas: validatedData.carga_horaria_horas,
@@ -160,6 +164,18 @@ export default function CursoForm() {
                   setFormData({ ...formData, slug: e.target.value })
                 }
                 required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="categoria">Categoria</Label>
+              <Input
+                id="categoria"
+                value={formData.categoria}
+                onChange={(e) =>
+                  setFormData({ ...formData, categoria: e.target.value })
+                }
+                placeholder="Ex: Marketing Digital, Vendas, etc."
               />
             </div>
 

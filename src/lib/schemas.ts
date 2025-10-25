@@ -3,6 +3,7 @@ import { z } from "zod";
 export const cursoSchema = z.object({
   titulo: z.string().min(3, "Título deve ter no mínimo 3 caracteres"),
   slug: z.string().min(3, "Slug deve ter no mínimo 3 caracteres"),
+  categoria: z.string().optional(),
   descricao: z.string().optional(),
   publico_alvo: z.string().optional(),
   carga_horaria_horas: z.number().min(1, "Carga horária deve ser maior que 0").optional(),
