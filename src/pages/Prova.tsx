@@ -199,14 +199,22 @@ const Prova = () => {
                       Para emitir seu certificado, você precisará fazer o pagamento de uma taxa de emissão.
                     </p>
                   </div>
-                  <Button variant="hero" className="w-full" onClick={() => navigate("/dashboard")}>
-                    Ver no dashboard
+                  <Button variant="hero" className="w-full" onClick={() => navigate(`/pagamento-certificado/${cursoId}`)}>
+                    Prosseguir para Pagamento
                   </Button>
                 </div>
               ) : (
-                <Button variant="outline" className="w-full" onClick={() => navigate(`/curso/${cursoId}`)}>
-                  Revisar conteúdo do curso
-                </Button>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3 p-4 bg-muted rounded-lg">
+                    <AlertCircle className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                    <p className="text-sm">
+                      Você pode tentar novamente quantas vezes quiser. Revise o conteúdo e tente de novo!
+                    </p>
+                  </div>
+                  <Button variant="outline" className="w-full" onClick={() => window.location.reload()}>
+                    Tentar Novamente
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>

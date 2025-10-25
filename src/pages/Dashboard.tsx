@@ -22,6 +22,11 @@ interface ExamResult {
   percentual: number;
   aprovado: boolean;
   realizado_em: string;
+  certificado?: {
+    id: string;
+    pago: boolean;
+    codigo_validacao: string;
+  } | null;
 }
 
 const Dashboard = () => {
@@ -115,6 +120,16 @@ const Dashboard = () => {
         .eq("usuario_id", user.id);
 
       if (resultsData) {
+        // Buscar certificados para os cursos aprovados
+        const { data: certificadosData } = await supabase
+          .from("certificados")
+          .select("*")
+          .eq("usuario_id", user.id);
+
+        const certificadosMap = new Map(
+          certificadosData?.map(cert => [cert.curso_id, cert]) || []
+        );
+
         setExamResults(
           resultsData.map((r: any) => ({
             curso_id: r.curso_id,
@@ -122,6 +137,7 @@ const Dashboard = () => {
             percentual: r.percentual,
             aprovado: r.aprovado,
             realizado_em: r.realizado_em,
+            certificado: certificadosMap.get(r.curso_id) || null,
           }))
         );
       }
@@ -230,9 +246,26 @@ const Dashboard = () => {
                           </span>
                         </div>
                         {result.aprovado && (
-                          <Button variant="hero" className="w-full mt-4">
-                            Emitir certificado
-                          </Button>
+                          <>
+                            {result.certificado?.pago ? (
+                              <div className="mt-4 p-3 bg-secondary/10 rounded-lg text-center">
+                                <p className="text-sm font-semibold text-secondary mb-1">
+                                  ✓ Certificado Emitido
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Código: {result.certificado.codigo_validacao}
+                                </p>
+                              </div>
+                            ) : (
+                              <Button 
+                                variant="hero" 
+                                className="w-full mt-4"
+                                onClick={() => navigate(`/pagamento-certificado/${result.curso_id}`)}
+                              >
+                                Emitir Certificado
+                              </Button>
+                            )}
+                          </>
                         )}
                       </div>
                     </CardContent>

@@ -8,20 +8,40 @@ import { BookOpen, LogOut, User as UserIcon } from "lucide-react";
 export const Navbar = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        checkAdminStatus(session.user.id);
+      }
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        checkAdminStatus(session.user.id);
+      } else {
+        setIsAdmin(false);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const checkAdminStatus = async (userId: string) => {
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    
+    setIsAdmin(!!data);
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -45,6 +65,11 @@ export const Navbar = () => {
 
           {user ? (
             <>
+              {isAdmin && (
+                <Link to="/admin/dashboard">
+                  <Button variant="outline">Administração</Button>
+                </Link>
+              )}
               <Link to="/dashboard">
                 <Button variant="ghost" size="icon">
                   <UserIcon className="h-5 w-5" />

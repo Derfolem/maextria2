@@ -1,0 +1,120 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BookOpen, Users, Award, CheckCircle } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+
+export default function AdminDashboard() {
+  const [stats, setStats] = useState({
+    totalCursos: 0,
+    totalAlunos: 0,
+    totalProvas: 0,
+    totalCertificados: 0,
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      const [cursos, usuarios, provas, certificados] = await Promise.all([
+        supabase.from("cursos").select("id", { count: "exact", head: true }),
+        supabase.from("usuarios").select("id", { count: "exact", head: true }),
+        supabase.from("prova_resultado").select("id", { count: "exact", head: true }),
+        supabase.from("certificados").select("id", { count: "exact", head: true }),
+      ]);
+
+      setStats({
+        totalCursos: cursos.count || 0,
+        totalAlunos: usuarios.count || 0,
+        totalProvas: provas.count || 0,
+        totalCertificados: certificados.count || 0,
+      });
+    };
+
+    fetchStats();
+  }, []);
+
+  const statCards = [
+    {
+      title: "Total de Cursos",
+      value: stats.totalCursos,
+      icon: BookOpen,
+      link: "/admin/cursos",
+    },
+    {
+      title: "Total de Alunos",
+      value: stats.totalAlunos,
+      icon: Users,
+      link: "#",
+    },
+    {
+      title: "Provas Realizadas",
+      value: stats.totalProvas,
+      icon: CheckCircle,
+      link: "#",
+    },
+    {
+      title: "Certificados Emitidos",
+      value: stats.totalCertificados,
+      icon: Award,
+      link: "#",
+    },
+  ];
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Dashboard Administrativo</h1>
+        <p className="text-muted-foreground">Visão geral do sistema</p>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+        {statCards.map((stat) => (
+          <Card key={stat.title}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">
+                {stat.title}
+              </CardTitle>
+              <stat.icon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stat.value}</div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Ações Rápidas</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Link to="/admin/cursos/novo">
+              <Button className="w-full" variant="outline">
+                <BookOpen className="h-4 w-4 mr-2" />
+                Criar Novo Curso
+              </Button>
+            </Link>
+            <Link to="/admin/cursos">
+              <Button className="w-full" variant="outline">
+                Ver Todos os Cursos
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Informações</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Gerencie cursos, módulos e questões de prova através do menu de navegação.
+              Para adicionar vídeos e conteúdo de texto aos módulos, acesse a seção de módulos de cada curso.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
