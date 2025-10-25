@@ -1,0 +1,250 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Navbar } from "@/components/Navbar";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Award, BookOpen, CheckCircle2 } from "lucide-react";
+
+interface CourseProgress {
+  curso_id: string;
+  titulo: string;
+  slug: string;
+  total_modulos: number;
+  modulos_concluidos: number;
+  progresso: number;
+}
+
+interface ExamResult {
+  curso_id: string;
+  titulo: string;
+  percentual: number;
+  aprovado: boolean;
+  realizado_em: string;
+}
+
+const Dashboard = () => {
+  const navigate = useNavigate();
+  const [user, setUser] = useState<any>(null);
+  const [coursesProgress, setCoursesProgress] = useState<CourseProgress[]>([]);
+  const [examResults, setExamResults] = useState<ExamResult[]>([]);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user) {
+        navigate("/auth");
+      } else {
+        setUser(session.user);
+      }
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session?.user) {
+        navigate("/auth");
+      } else {
+        setUser(session.user);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  useEffect(() => {
+    const fetchProgress = async () => {
+      if (!user) return;
+
+      // Fetch course progress
+      const { data: progressData } = await supabase
+        .from("progresso_modulo")
+        .select(`
+          modulo_id,
+          concluido,
+          modulos!inner(curso_id)
+        `)
+        .eq("usuario_id", user.id)
+        .eq("concluido", true);
+
+      if (progressData) {
+        const progressByCourse = new Map<string, number>();
+        progressData.forEach((p: any) => {
+          const cursoId = p.modulos.curso_id;
+          progressByCourse.set(cursoId, (progressByCourse.get(cursoId) || 0) + 1);
+        });
+
+        const { data: coursesData } = await supabase
+          .from("cursos")
+          .select("*")
+          .in("id", Array.from(progressByCourse.keys()));
+
+        if (coursesData) {
+          const progressArray: CourseProgress[] = [];
+          
+          for (const course of coursesData) {
+            const { data: modulesData } = await supabase
+              .from("modulos")
+              .select("id")
+              .eq("curso_id", course.id);
+
+            const totalModulos = modulesData?.length || 0;
+            const modulosConcluidos = progressByCourse.get(course.id) || 0;
+            
+            progressArray.push({
+              curso_id: course.id,
+              titulo: course.titulo,
+              slug: course.slug,
+              total_modulos: totalModulos,
+              modulos_concluidos: modulosConcluidos,
+              progresso: totalModulos > 0 ? (modulosConcluidos / totalModulos) * 100 : 0,
+            });
+          }
+
+          setCoursesProgress(progressArray);
+        }
+      }
+
+      // Fetch exam results
+      const { data: resultsData } = await supabase
+        .from("prova_resultado")
+        .select(`
+          *,
+          cursos(titulo)
+        `)
+        .eq("usuario_id", user.id);
+
+      if (resultsData) {
+        setExamResults(
+          resultsData.map((r: any) => ({
+            curso_id: r.curso_id,
+            titulo: r.cursos.titulo,
+            percentual: r.percentual,
+            aprovado: r.aprovado,
+            realizado_em: r.realizado_em,
+          }))
+        );
+      }
+    };
+
+    fetchProgress();
+  }, [user]);
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      
+      <div className="container mx-auto px-4 pt-32 pb-20">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold mb-2">Meu Painel</h1>
+          <p className="text-lg text-muted-foreground">
+            Bem-vindo de volta, {user?.user_metadata?.nome_completo || "estudante"}!
+          </p>
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-8">
+          {/* Courses in Progress */}
+          <div>
+            <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+              <BookOpen className="h-6 w-6 text-primary" />
+              Meu progresso
+            </h2>
+            
+            {coursesProgress.length === 0 ? (
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  <p className="text-muted-foreground mb-4">
+                    Você ainda não começou nenhum curso.
+                  </p>
+                  <Button variant="hero" onClick={() => navigate("/cursos")}>
+                    Ver cursos disponíveis
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {coursesProgress.map((course) => (
+                  <Card key={course.curso_id} className="hover:shadow-md transition-shadow">
+                    <CardHeader>
+                      <CardTitle>{course.titulo}</CardTitle>
+                      <CardDescription>
+                        {course.modulos_concluidos} de {course.total_modulos} módulos concluídos
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Progress value={course.progresso} className="mb-4" />
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => navigate(`/curso/${course.slug}`)}
+                      >
+                        Continuar curso
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Exam Results */}
+          <div>
+            <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+              <Award className="h-6 w-6 text-secondary" />
+              Resultados das provas
+            </h2>
+            
+            {examResults.length === 0 ? (
+              <Card>
+                <CardContent className="pt-6 text-center text-muted-foreground">
+                  Nenhuma prova realizada ainda.
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {examResults.map((result) => (
+                  <Card key={result.curso_id}>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        {result.titulo}
+                        {result.aprovado && (
+                          <CheckCircle2 className="h-5 w-5 text-secondary" />
+                        )}
+                      </CardTitle>
+                      <CardDescription>
+                        Realizada em {new Date(result.realizado_em).toLocaleDateString("pt-BR")}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span>Nota</span>
+                          <span className={`font-bold text-lg ${result.aprovado ? "text-secondary" : "text-destructive"}`}>
+                            {result.percentual.toFixed(0)}%
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span>Status</span>
+                          <span className={`font-semibold ${result.aprovado ? "text-secondary" : "text-destructive"}`}>
+                            {result.aprovado ? "Aprovado" : "Reprovado"}
+                          </span>
+                        </div>
+                        {result.aprovado && (
+                          <Button variant="hero" className="w-full mt-4">
+                            Emitir certificado
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;
