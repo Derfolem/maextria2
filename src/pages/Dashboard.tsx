@@ -61,53 +61,61 @@ const Dashboard = () => {
     const fetchProgress = async () => {
       if (!user) return;
 
-      // Fetch course progress
-      const { data: progressData } = await supabase
-        .from("progresso_modulo")
+      // Fetch enrolled courses
+      const { data: matriculasData } = await supabase
+        .from("matriculas")
         .select(`
-          modulo_id,
-          concluido,
-          modulos!inner(curso_id)
+          curso_id,
+          cursos!inner(id, titulo, slug)
         `)
         .eq("usuario_id", user.id)
-        .eq("concluido", true);
+        .eq("ativa", true);
 
-      if (progressData) {
+      if (matriculasData && matriculasData.length > 0) {
+        const cursoIds = matriculasData.map((m: any) => m.curso_id);
+
+        // Fetch progress for enrolled courses
+        const { data: progressData } = await supabase
+          .from("progresso_modulo")
+          .select(`
+            modulo_id,
+            concluido,
+            modulos!inner(curso_id)
+          `)
+          .eq("usuario_id", user.id);
+
         const progressByCourse = new Map<string, number>();
-        progressData.forEach((p: any) => {
+        progressData?.forEach((p: any) => {
           const cursoId = p.modulos.curso_id;
-          progressByCourse.set(cursoId, (progressByCourse.get(cursoId) || 0) + 1);
+          if (cursoIds.includes(cursoId) && p.concluido) {
+            progressByCourse.set(cursoId, (progressByCourse.get(cursoId) || 0) + 1);
+          }
         });
 
-        const { data: coursesData } = await supabase
-          .from("cursos")
-          .select("*")
-          .in("id", Array.from(progressByCourse.keys()));
-
-        if (coursesData) {
-          const progressArray: CourseProgress[] = [];
+        const progressArray: CourseProgress[] = [];
+        
+        for (const matricula of matriculasData) {
+          const course = (matricula as any).cursos;
           
-          for (const course of coursesData) {
-            const { data: modulesData } = await supabase
-              .from("modulos")
-              .select("id")
-              .eq("curso_id", course.id);
+          const { data: modulesData } = await supabase
+            .from("modulos")
+            .select("id")
+            .eq("curso_id", course.id);
 
-            const totalModulos = modulesData?.length || 0;
-            const modulosConcluidos = progressByCourse.get(course.id) || 0;
-            
-            progressArray.push({
-              curso_id: course.id,
-              titulo: course.titulo,
-              slug: course.slug,
-              total_modulos: totalModulos,
-              modulos_concluidos: modulosConcluidos,
-              progresso: totalModulos > 0 ? (modulosConcluidos / totalModulos) * 100 : 0,
-            });
-          }
-
-          setCoursesProgress(progressArray);
+          const totalModulos = modulesData?.length || 0;
+          const modulosConcluidos = progressByCourse.get(course.id) || 0;
+          
+          progressArray.push({
+            curso_id: course.id,
+            titulo: course.titulo,
+            slug: course.slug,
+            total_modulos: totalModulos,
+            modulos_concluidos: modulosConcluidos,
+            progresso: totalModulos > 0 ? (modulosConcluidos / totalModulos) * 100 : 0,
+          });
         }
+
+        setCoursesProgress(progressArray);
       }
 
       // Fetch exam results
@@ -163,14 +171,14 @@ const Dashboard = () => {
           <div>
             <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
               <BookOpen className="h-6 w-6 text-primary" />
-              Meu progresso
+              Meus Cursos
             </h2>
             
             {coursesProgress.length === 0 ? (
               <Card>
                 <CardContent className="pt-6 text-center">
                   <p className="text-muted-foreground mb-4">
-                    Você ainda não começou nenhum curso.
+                    Você ainda não está matriculado em nenhum curso.
                   </p>
                   <Button variant="hero" onClick={() => navigate("/cursos")}>
                     Ver cursos disponíveis

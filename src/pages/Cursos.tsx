@@ -59,7 +59,6 @@ const Cursos = () => {
                 </div>
                 <CardHeader>
                   <CardTitle className="text-2xl">{course.titulo}</CardTitle>
-                  <CardDescription className="text-base">{course.descricao}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-2 text-muted-foreground">

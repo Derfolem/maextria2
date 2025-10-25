@@ -56,6 +56,7 @@ export type Database = {
         Row: {
           ativo: boolean | null
           carga_horaria_horas: number | null
+          categoria: string | null
           criado_em: string | null
           descricao: string | null
           id: string
@@ -67,6 +68,7 @@ export type Database = {
         Insert: {
           ativo?: boolean | null
           carga_horaria_horas?: number | null
+          categoria?: string | null
           criado_em?: string | null
           descricao?: string | null
           id?: string
@@ -78,6 +80,7 @@ export type Database = {
         Update: {
           ativo?: boolean | null
           carga_horaria_horas?: number | null
+          categoria?: string | null
           criado_em?: string | null
           descricao?: string | null
           id?: string
@@ -87,6 +90,38 @@ export type Database = {
           titulo?: string
         }
         Relationships: []
+      }
+      matriculas: {
+        Row: {
+          ativa: boolean
+          curso_id: string
+          data_matricula: string
+          id: string
+          usuario_id: string
+        }
+        Insert: {
+          ativa?: boolean
+          curso_id: string
+          data_matricula?: string
+          id?: string
+          usuario_id: string
+        }
+        Update: {
+          ativa?: boolean
+          curso_id?: string
+          data_matricula?: string
+          id?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matriculas_curso_id_fkey"
+            columns: ["curso_id"]
+            isOneToOne: false
+            referencedRelation: "cursos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       modulos: {
         Row: {

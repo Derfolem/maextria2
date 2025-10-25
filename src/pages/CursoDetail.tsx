@@ -31,6 +31,8 @@ const CursoDetail = () => {
   const [user, setUser] = useState<any>(null);
   const [allModulesCompleted, setAllModulesCompleted] = useState(false);
   const [examTaken, setExamTaken] = useState(false);
+  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [isEnrolling, setIsEnrolling] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -96,6 +98,17 @@ const CursoDetail = () => {
             .maybeSingle();
 
           setExamTaken(!!resultData);
+
+          // Check if user is enrolled
+          const { data: enrollmentData } = await supabase
+            .from("matriculas")
+            .select("*")
+            .eq("usuario_id", user.id)
+            .eq("curso_id", courseData.id)
+            .eq("ativa", true)
+            .maybeSingle();
+
+          setIsEnrolled(!!enrollmentData);
         }
       }
     };
@@ -105,10 +118,42 @@ const CursoDetail = () => {
     }
   }, [slug, user]);
 
+  const handleEnroll = async () => {
+    if (!user) {
+      toast.error("Faça login para se matricular");
+      navigate("/auth");
+      return;
+    }
+
+    if (!course) return;
+
+    setIsEnrolling(true);
+    const { error } = await supabase
+      .from("matriculas")
+      .insert({
+        usuario_id: user.id,
+        curso_id: course.id,
+      });
+
+    if (error) {
+      toast.error("Erro ao matricular no curso");
+      console.error(error);
+    } else {
+      toast.success("Matrícula realizada com sucesso!");
+      setIsEnrolled(true);
+    }
+    setIsEnrolling(false);
+  };
+
   const handleStartCourse = () => {
     if (!user) {
       toast.error("Faça login para começar o curso");
       navigate("/auth");
+      return;
+    }
+
+    if (!isEnrolled) {
+      toast.error("Você precisa se matricular primeiro");
       return;
     }
 
@@ -187,7 +232,22 @@ const CursoDetail = () => {
                 <CardDescription>100% gratuito</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {!examTaken ? (
+                {!isEnrolled ? (
+                  <>
+                    <Button 
+                      variant="hero"
+                      className="w-full" 
+                      size="lg"
+                      onClick={handleEnroll}
+                      disabled={isEnrolling}
+                    >
+                      {isEnrolling ? "Matriculando..." : "Matricular-se Gratuitamente"}
+                    </Button>
+                    <p className="text-sm text-center text-muted-foreground">
+                      Matricule-se para começar a estudar
+                    </p>
+                  </>
+                ) : !examTaken ? (
                   <>
                     <Button 
                       variant={allModulesCompleted ? "default" : "hero"}
