@@ -75,6 +75,14 @@ const PagamentoCertificado = () => {
 
         if (updateError) throw updateError;
 
+        // Update transaction status
+        await supabase
+          .from("transacoes_pagamento")
+          .update({ status: "completo" })
+          .eq("curso_id", cursoId)
+          .eq("usuario_id", user.id)
+          .eq("status", "pendente");
+
         toast({
           title: "Pagamento confirmado!",
           description: "Seu certificado foi emitido com sucesso.",

@@ -22,6 +22,7 @@ import ModuloForm from "./pages/admin/ModuloForm";
 import QuestoesManager from "./pages/admin/QuestoesManager";
 import QuestaoForm from "./pages/admin/QuestaoForm";
 import ConfiguracoesSite from "./pages/admin/ConfiguracoesSite";
+import Financeiro from "./pages/admin/Financeiro";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +57,7 @@ const App = () => (
             <Route path="cursos/:cursoId/questoes/nova" element={<QuestaoForm />} />
             <Route path="questoes/:questaoId/editar" element={<QuestaoForm />} />
             <Route path="configuracoes" element={<ConfiguracoesSite />} />
+            <Route path="financeiro" element={<Financeiro />} />
           </Route>
           
           <Route path="*" element={<NotFound />} />

@@ -87,7 +87,17 @@ serve(async (req) => {
       metadata: {
         curso_id: cursoId,
         usuario_id: user.id,
+        preco: precoCertificado.toString(),
       },
+    });
+
+    // Log transaction as pending
+    await supabaseAdmin.from("transacoes_pagamento").insert({
+      usuario_id: user.id,
+      curso_id: cursoId,
+      valor: precoCertificado,
+      status: "pendente",
+      stripe_session_id: session.id,
     });
 
     console.log("Checkout session created:", session.id);
