@@ -89,17 +89,24 @@ export default function AdminDashboard() {
             <CardTitle>Ações Rápidas</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <Link to="/admin/cursos/novo">
-              <Button className="w-full" variant="outline">
-                <BookOpen className="h-4 w-4 mr-2" />
+            <Button asChild className="w-full justify-start">
+              <Link to="/admin/cursos/novo">
+                <BookOpen className="mr-2 h-4 w-4" />
                 Criar Novo Curso
-              </Button>
-            </Link>
-            <Link to="/admin/cursos">
-              <Button className="w-full" variant="outline">
-                Ver Todos os Cursos
-              </Button>
-            </Link>
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full justify-start">
+              <Link to="/admin/cursos">
+                <BookOpen className="mr-2 h-4 w-4" />
+                Gerenciar Cursos
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full justify-start">
+              <Link to="/admin/configuracoes">
+                <Award className="mr-2 h-4 w-4" />
+                Configurações do Site
+              </Link>
+            </Button>
           </CardContent>
         </Card>
 
@@ -108,9 +115,9 @@ export default function AdminDashboard() {
             <CardTitle>Informações</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Gerencie cursos, módulos e questões de prova através do menu de navegação.
-              Para adicionar vídeos e conteúdo de texto aos módulos, acesse a seção de módulos de cada curso.
+            <p className="text-muted-foreground">
+              Bem-vindo ao painel administrativo da Evolui Cursos. Aqui você pode
+              gerenciar todos os aspectos da plataforma.
             </p>
           </CardContent>
         </Card>

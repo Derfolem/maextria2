@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      avaliacoes: {
+        Row: {
+          atualizado_em: string | null
+          comentario: string | null
+          criado_em: string | null
+          curso_id: string
+          id: string
+          nota: number
+          usuario_id: string
+        }
+        Insert: {
+          atualizado_em?: string | null
+          comentario?: string | null
+          criado_em?: string | null
+          curso_id: string
+          id?: string
+          nota: number
+          usuario_id: string
+        }
+        Update: {
+          atualizado_em?: string | null
+          comentario?: string | null
+          criado_em?: string | null
+          curso_id?: string
+          id?: string
+          nota?: number
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "avaliacoes_curso_id_fkey"
+            columns: ["curso_id"]
+            isOneToOne: false
+            referencedRelation: "cursos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cartoes_credito: {
         Row: {
           bandeira: string
@@ -84,6 +122,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      configuracoes_site: {
+        Row: {
+          atualizado_em: string | null
+          chave: string
+          criado_em: string | null
+          descricao: string | null
+          id: string
+          valor: string | null
+        }
+        Insert: {
+          atualizado_em?: string | null
+          chave: string
+          criado_em?: string | null
+          descricao?: string | null
+          id?: string
+          valor?: string | null
+        }
+        Update: {
+          atualizado_em?: string | null
+          chave?: string
+          criado_em?: string | null
+          descricao?: string | null
+          id?: string
+          valor?: string | null
+        }
+        Relationships: []
       }
       cursos: {
         Row: {

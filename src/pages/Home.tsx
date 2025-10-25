@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Navbar } from "@/components/Navbar";
+import { SocialLinks } from "@/components/SocialLinks";
 import { CheckCircle2, BookOpen, Award, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -146,6 +147,10 @@ const Home = () => {
                 <li><a href="#" className="hover:text-primary transition-colors">Termos de Uso</a></li>
                 <li><a href="#" className="hover:text-primary transition-colors">Privacidade</a></li>
               </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4">Redes Sociais</h4>
+              <SocialLinks />
             </div>
             <div>
               <h4 className="font-semibold mb-4">Contato</h4>
