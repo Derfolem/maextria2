@@ -50,6 +50,13 @@ export type Database = {
             referencedRelation: "cursos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "avaliacoes_curso_id_fkey"
+            columns: ["curso_id"]
+            isOneToOne: false
+            referencedRelation: "relatorio_vendas"
+            referencedColumns: ["curso_id"]
+          },
         ]
       }
       cartoes_credito: {
@@ -120,6 +127,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "cursos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificados_curso_id_fkey"
+            columns: ["curso_id"]
+            isOneToOne: false
+            referencedRelation: "relatorio_vendas"
+            referencedColumns: ["curso_id"]
           },
         ]
       }
@@ -222,6 +236,13 @@ export type Database = {
             referencedRelation: "cursos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "matriculas_curso_id_fkey"
+            columns: ["curso_id"]
+            isOneToOne: false
+            referencedRelation: "relatorio_vendas"
+            referencedColumns: ["curso_id"]
+          },
         ]
       }
       modulos: {
@@ -259,6 +280,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "cursos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "modulos_curso_id_fkey"
+            columns: ["curso_id"]
+            isOneToOne: false
+            referencedRelation: "relatorio_vendas"
+            referencedColumns: ["curso_id"]
           },
         ]
       }
@@ -333,6 +361,13 @@ export type Database = {
             referencedRelation: "cursos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "prova_questoes_curso_id_fkey"
+            columns: ["curso_id"]
+            isOneToOne: false
+            referencedRelation: "relatorio_vendas"
+            referencedColumns: ["curso_id"]
+          },
         ]
       }
       prova_resultado: {
@@ -373,6 +408,77 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "cursos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prova_resultado_curso_id_fkey"
+            columns: ["curso_id"]
+            isOneToOne: false
+            referencedRelation: "relatorio_vendas"
+            referencedColumns: ["curso_id"]
+          },
+        ]
+      }
+      transacoes_pagamento: {
+        Row: {
+          atualizado_em: string | null
+          certificado_id: string | null
+          criado_em: string | null
+          curso_id: string
+          id: string
+          metodo_pagamento: string | null
+          status: string
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
+          usuario_id: string
+          valor: number
+        }
+        Insert: {
+          atualizado_em?: string | null
+          certificado_id?: string | null
+          criado_em?: string | null
+          curso_id: string
+          id?: string
+          metodo_pagamento?: string | null
+          status: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          usuario_id: string
+          valor: number
+        }
+        Update: {
+          atualizado_em?: string | null
+          certificado_id?: string | null
+          criado_em?: string | null
+          curso_id?: string
+          id?: string
+          metodo_pagamento?: string | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          usuario_id?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transacoes_pagamento_certificado_id_fkey"
+            columns: ["certificado_id"]
+            isOneToOne: false
+            referencedRelation: "certificados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transacoes_pagamento_curso_id_fkey"
+            columns: ["curso_id"]
+            isOneToOne: false
+            referencedRelation: "cursos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transacoes_pagamento_curso_id_fkey"
+            columns: ["curso_id"]
+            isOneToOne: false
+            referencedRelation: "relatorio_vendas"
+            referencedColumns: ["curso_id"]
           },
         ]
       }
@@ -423,7 +529,16 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      relatorio_vendas: {
+        Row: {
+          curso_id: string | null
+          curso_titulo: string | null
+          data: string | null
+          receita_total: number | null
+          total_vendas: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
