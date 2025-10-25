@@ -29,6 +29,27 @@ serve(async (req) => {
 
     console.log("Creating payment for user:", user.email, "course:", cursoId);
 
+    // Fetch course to get certificate price
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    const { data: curso, error: cursoError } = await supabaseAdmin
+      .from("cursos")
+      .select("titulo, preco_certificado")
+      .eq("id", cursoId)
+      .single();
+
+    if (cursoError || !curso) {
+      throw new Error("Course not found");
+    }
+
+    const precoCertificado = curso.preco_certificado || 39.00;
+    const precoEmCentavos = Math.round(precoCertificado * 100);
+
+    console.log("Certificate price:", precoCertificado, "BRL (", precoEmCentavos, "cents)");
+
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
     });
@@ -43,13 +64,20 @@ serve(async (req) => {
       console.log("No existing customer found");
     }
 
-    // Create a one-time payment session for the certificate
+    // Create a one-time payment session for the certificate with dynamic price
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [
         {
-          price: "price_1SMFgeFGOmxf8SsOUIbKH2OF",
+          price_data: {
+            currency: "brl",
+            unit_amount: precoEmCentavos,
+            product_data: {
+              name: `Certificado - ${curso.titulo}`,
+              description: "Certificado digital de conclusão de curso",
+            },
+          },
           quantity: 1,
         },
       ],

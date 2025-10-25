@@ -7,6 +7,7 @@ export const cursoSchema = z.object({
   publico_alvo: z.string().optional(),
   carga_horaria_horas: z.number().min(1, "Carga horária deve ser maior que 0").optional(),
   imagem_capa_url: z.string().url("URL inválida").optional().or(z.literal("")),
+  preco_certificado: z.number().min(0, "Preço deve ser maior ou igual a 0").optional(),
   ativo: z.boolean().default(true),
 });
 

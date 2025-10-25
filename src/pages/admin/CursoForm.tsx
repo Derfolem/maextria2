@@ -23,6 +23,7 @@ export default function CursoForm() {
     publico_alvo: "",
     carga_horaria_horas: 0,
     imagem_capa_url: "",
+    preco_certificado: 39.00,
     ativo: true,
   });
 
@@ -55,6 +56,7 @@ export default function CursoForm() {
         publico_alvo: data.publico_alvo || "",
         carga_horaria_horas: data.carga_horaria_horas || 0,
         imagem_capa_url: data.imagem_capa_url || "",
+        preco_certificado: data.preco_certificado || 39.00,
         ativo: data.ativo,
       });
     }
@@ -94,6 +96,7 @@ export default function CursoForm() {
             publico_alvo: validatedData.publico_alvo,
             carga_horaria_horas: validatedData.carga_horaria_horas,
             imagem_capa_url: validatedData.imagem_capa_url,
+            preco_certificado: validatedData.preco_certificado,
             ativo: validatedData.ativo,
           })
           .eq("id", id);
@@ -108,6 +111,7 @@ export default function CursoForm() {
           publico_alvo: validatedData.publico_alvo,
           carga_horaria_horas: validatedData.carga_horaria_horas,
           imagem_capa_url: validatedData.imagem_capa_url,
+          preco_certificado: validatedData.preco_certificado,
           ativo: validatedData.ativo,
         }]);
 
@@ -209,6 +213,26 @@ export default function CursoForm() {
                   setFormData({ ...formData, imagem_capa_url: e.target.value })
                 }
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="preco_certificado">Preço do Certificado (R$)</Label>
+              <Input
+                id="preco_certificado"
+                type="number"
+                min="0"
+                step="0.01"
+                value={formData.preco_certificado}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    preco_certificado: parseFloat(e.target.value) || 0,
+                  })
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                Este valor será cobrado na emissão do certificado
+              </p>
             </div>
 
             <div className="flex items-center space-x-2">

@@ -294,7 +294,9 @@ const PagamentoCertificado = () => {
                 </div>
                 <div className="flex items-center justify-between py-3 border-b">
                   <span className="text-lg font-semibold">Valor:</span>
-                  <span className="text-2xl font-bold text-primary">R$ 39,00</span>
+                  <span className="text-2xl font-bold text-primary">
+                    R$ {curso?.preco_certificado?.toFixed(2) || "39,00"}
+                  </span>
                 </div>
               </div>
 

@@ -94,6 +94,7 @@ export type Database = {
           descricao: string | null
           id: string
           imagem_capa_url: string | null
+          preco_certificado: number | null
           publico_alvo: string | null
           slug: string
           titulo: string
@@ -106,6 +107,7 @@ export type Database = {
           descricao?: string | null
           id?: string
           imagem_capa_url?: string | null
+          preco_certificado?: number | null
           publico_alvo?: string | null
           slug: string
           titulo: string
@@ -118,6 +120,7 @@ export type Database = {
           descricao?: string | null
           id?: string
           imagem_capa_url?: string | null
+          preco_certificado?: number | null
           publico_alvo?: string | null
           slug?: string
           titulo?: string
