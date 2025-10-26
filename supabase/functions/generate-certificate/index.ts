@@ -18,18 +18,49 @@ serve(async (req) => {
   );
 
   try {
-    const authHeader = req.headers.get("Authorization")!;
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData } = await supabaseClient.auth.getUser(token);
-    const user = userData.user;
-    if (!user) throw new Error("User not authenticated");
+    // 1. Validar autenticação
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Autenticação necessária" }),
+        { 
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 401 
+        }
+      );
+    }
 
-    const { cursoId, certificadoId } = await req.json();
-    if (!cursoId || !certificadoId) throw new Error("Course ID and Certificate ID are required");
+    const token = authHeader.replace("Bearer ", "");
+    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+    const user = userData.user;
+    
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Usuário não autenticado" }),
+        { 
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 401 
+        }
+      );
+    }
+
+    // 2. Validar entrada
+    const body = await req.json();
+    const { cursoId, certificadoId } = body;
+    
+    if (!cursoId || !certificadoId) {
+      return new Response(
+        JSON.stringify({ error: "Dados insuficientes para gerar certificado." }),
+        { 
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400 
+        }
+      );
+    }
 
     console.log("Generating certificate for user:", user.id, "course:", cursoId);
 
-    // Fetch certificate data
+    // 3. Buscar certificado e validar
     const { data: certificado, error: certError } = await supabaseClient
       .from("certificados")
       .select(`
@@ -41,19 +72,66 @@ serve(async (req) => {
       .single();
 
     if (certError || !certificado) {
-      throw new Error("Certificate not found or not authorized");
+      return new Response(
+        JSON.stringify({ error: "Certificado não encontrado ou não autorizado" }),
+        { 
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 404 
+        }
+      );
     }
 
-    // Fetch user data
+    // 4. Validar pagamento
+    if (!certificado.pago) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Pagamento do certificado não identificado. Conclua a compra para baixar o PDF." 
+        }),
+        { 
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 403 
+        }
+      );
+    }
+
+    // 5. Validar aprovação na prova (≥60%)
+    const { data: provaResultado, error: provaError } = await supabaseClient
+      .from("prova_resultado")
+      .select("percentual, aprovado")
+      .eq("usuario_id", user.id)
+      .eq("curso_id", cursoId)
+      .single();
+
+    if (provaError || !provaResultado || !provaResultado.aprovado || provaResultado.percentual < 60) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Você precisa atingir pelo menos 60% na prova para emitir o certificado." 
+        }),
+        { 
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 403 
+        }
+      );
+    }
+
+    // 6. Buscar dados do usuário
     const { data: usuario } = await supabaseClient
       .from("usuarios")
       .select("nome_completo, cpf")
       .eq("id", user.id)
       .single();
 
-    if (!usuario) throw new Error("User data not found");
+    if (!usuario) {
+      return new Response(
+        JSON.stringify({ error: "Dados do usuário não encontrados" }),
+        { 
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 404 
+        }
+      );
+    }
 
-    // Create PDF
+    // 7. Gerar PDF do certificado
     const doc = new jsPDF({
       orientation: "landscape",
       unit: "mm",
@@ -75,17 +153,27 @@ serve(async (req) => {
     doc.setLineWidth(0.5);
     doc.rect(12, 12, pageWidth - 24, pageHeight - 24);
 
-    // Logo/Title area
-    doc.setFillColor(40, 70, 150);
+    // Logo/Title area - MAEXTRIA
+    doc.setFillColor(10, 10, 26); // #0A0A1A
     doc.rect(0, 0, pageWidth, 40, "F");
 
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(32);
     doc.setFont("helvetica", "bold");
-    doc.text("EVOLUI CURSOS", pageWidth / 2, 25, { align: "center" });
+    
+    // MAEXTRIA com destaque no X
+    const text = "MAEXTRIA";
+    const textWidth = doc.getTextWidth(text);
+    const startX = (pageWidth - textWidth) / 2;
+    
+    doc.text("MAE", startX, 25);
+    doc.setTextColor(107, 78, 255); // #6B4EFF - roxo vibrante
+    doc.text("X", startX + doc.getTextWidth("MAE"), 25);
+    doc.setTextColor(255, 255, 255);
+    doc.text("TRIA", startX + doc.getTextWidth("MAEX"), 25);
 
     // Certificate Title
-    doc.setTextColor(40, 70, 150);
+    doc.setTextColor(107, 78, 255); // #6B4EFF
     doc.setFontSize(28);
     doc.text("CERTIFICADO DE CONCLUSÃO", pageWidth / 2, 60, { align: "center" });
 
@@ -100,7 +188,7 @@ serve(async (req) => {
     // Student name
     doc.setFontSize(20);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(40, 70, 150);
+    doc.setTextColor(107, 78, 255); // #6B4EFF
     doc.text(usuario.nome_completo.toUpperCase(), pageWidth / 2, 95, { align: "center" });
 
     // Course info
@@ -113,7 +201,7 @@ serve(async (req) => {
 
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(40, 70, 150);
+    doc.setTextColor(107, 78, 255); // #6B4EFF
     doc.text(certificado.cursos.titulo.toUpperCase(), pageWidth / 2, 125, { align: "center" });
 
     doc.setFontSize(12);
@@ -150,7 +238,7 @@ serve(async (req) => {
       "Os cursos não possuem reconhecimento ou validação junto a órgãos como MEC, CONTRAN, DENATRAN, CIRETRAN, DETRAN,",
       "CETRAN, CONTRANDIFE, COFFITO, CRO, CRM, CFP, CREA, entre outros.",
       "A emissão do certificado está condicionada à aprovação na avaliação final e ao cumprimento de todos os requisitos",
-      "previstos nos Termos de Uso da plataforma Evolui Cursos, incluindo a carga horária mínima de estudos.",
+      "previstos nos Termos de Uso da plataforma MAEXTRIA, incluindo a carga horária mínima de estudos.",
     ];
 
     let yPosition = pageHeight - 35;
@@ -159,16 +247,16 @@ serve(async (req) => {
       yPosition += 3;
     });
 
-    // Generate PDF as base64
+    // 8. Gerar PDF como base64
     const pdfBase64 = doc.output("datauristring");
 
-    console.log("Certificate PDF generated successfully");
+    console.log("Certificate PDF generated successfully for user:", user.id);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         pdf: pdfBase64,
-        message: "Certificate generated successfully" 
+        message: "Certificado gerado com sucesso" 
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -177,9 +265,16 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error("Error in generate-certificate:", error);
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+    const errorMessage = error instanceof Error ? error.message : "Falha interna ao gerar o certificado";
+    const errorDetail = error instanceof Error ? error.stack : String(error);
+    
+    console.error("Error detail:", errorDetail);
+    
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ 
+        error: errorMessage,
+        detail: "Erro técnico no servidor. Tente novamente em instantes."
+      }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,

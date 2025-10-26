@@ -5,8 +5,19 @@ import { Navbar } from "@/components/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Award, BookOpen, CheckCircle2, Download } from "lucide-react";
+import { Award, BookOpen, CheckCircle2, Download, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface CourseProgress {
   curso_id: string;
@@ -37,23 +48,44 @@ const Dashboard = () => {
   const [coursesProgress, setCoursesProgress] = useState<CourseProgress[]>([]);
   const [examResults, setExamResults] = useState<ExamResult[]>([]);
   const [downloadingCertId, setDownloadingCertId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session?.user) {
         navigate("/auth");
       } else {
         setUser(session.user);
+        
+        // Check if user is admin
+        const { data: adminData } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", session.user.id)
+          .eq("role", "admin")
+          .single();
+        
+        setIsAdmin(!!adminData);
       }
     });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!session?.user) {
         navigate("/auth");
       } else {
         setUser(session.user);
+        
+        // Check if user is admin
+        const { data: adminData } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", session.user.id)
+          .eq("role", "admin")
+          .single();
+        
+        setIsAdmin(!!adminData);
       }
     });
 
@@ -162,7 +194,7 @@ const Dashboard = () => {
 
     try {
       const { data: session } = await supabase.auth.getSession();
-      if (!session.session) throw new Error("Not authenticated");
+      if (!session.session) throw new Error("Você precisa estar autenticado");
 
       const { data, error } = await supabase.functions.invoke("generate-certificate", {
         body: { 
@@ -171,7 +203,29 @@ const Dashboard = () => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Tratamento de erros específicos
+        if (error.message?.includes("não passou na prova") || error.message?.includes("60%")) {
+          toast({
+            title: "⚠️ Aprovação necessária",
+            description: "Você precisa de pelo menos 60% de acerto na prova final para emitir o certificado.",
+            variant: "destructive",
+          });
+        } else if (error.message?.includes("pagamento") || error.message?.includes("pago")) {
+          toast({
+            title: "⚠️ Pagamento pendente",
+            description: "Você precisa confirmar o pagamento do certificado antes de fazer o download.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "⚠️ Erro ao gerar certificado",
+            description: error.message || "Não foi possível gerar o certificado agora. Tente novamente.",
+            variant: "destructive",
+          });
+        }
+        return;
+      }
 
       if (data?.pdf) {
         const link = document.createElement("a");
@@ -180,18 +234,113 @@ const Dashboard = () => {
         link.click();
 
         toast({
-          title: "Download iniciado",
+          title: "✅ Certificado gerado com sucesso!",
           description: "Seu certificado está sendo baixado.",
         });
+      } else {
+        throw new Error("PDF não retornado");
       }
     } catch (error: any) {
       toast({
-        title: "Erro ao gerar certificado",
-        description: error.message,
+        title: "⚠️ Erro técnico",
+        description: "Não foi possível gerar o certificado agora. Tente novamente.",
         variant: "destructive",
       });
     } finally {
       setDownloadingCertId(null);
+    }
+  };
+
+  const handleDeleteCourse = async (cursoId: string) => {
+    try {
+      // Delete progress records
+      await supabase
+        .from("progresso_modulo")
+        .delete()
+        .eq("usuario_id", user.id)
+        .in("modulo_id", 
+          supabase
+            .from("modulos")
+            .select("id")
+            .eq("curso_id", cursoId)
+        );
+
+      // Delete enrollment
+      const { error } = await supabase
+        .from("matriculas")
+        .delete()
+        .eq("usuario_id", user.id)
+        .eq("curso_id", cursoId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Curso removido",
+        description: "O curso foi removido do seu painel.",
+      });
+
+      // Refresh data
+      const fetchProgress = async () => {
+        if (!user) return;
+
+        const { data: matriculasData } = await supabase
+          .from("matriculas")
+          .select(`curso_id, cursos!inner(id, titulo, slug)`)
+          .eq("usuario_id", user.id)
+          .eq("ativa", true);
+
+        if (matriculasData && matriculasData.length > 0) {
+          const cursoIds = matriculasData.map((m: any) => m.curso_id);
+
+          const { data: progressData } = await supabase
+            .from("progresso_modulo")
+            .select(`modulo_id, concluido, modulos!inner(curso_id)`)
+            .eq("usuario_id", user.id);
+
+          const progressByCourse = new Map<string, number>();
+          progressData?.forEach((p: any) => {
+            const cursoId = p.modulos.curso_id;
+            if (cursoIds.includes(cursoId) && p.concluido) {
+              progressByCourse.set(cursoId, (progressByCourse.get(cursoId) || 0) + 1);
+            }
+          });
+
+          const progressArray: CourseProgress[] = [];
+          
+          for (const matricula of matriculasData) {
+            const course = (matricula as any).cursos;
+            
+            const { data: modulesData } = await supabase
+              .from("modulos")
+              .select("id")
+              .eq("curso_id", course.id);
+
+            const totalModulos = modulesData?.length || 0;
+            const modulosConcluidos = progressByCourse.get(course.id) || 0;
+            
+            progressArray.push({
+              curso_id: course.id,
+              titulo: course.titulo,
+              slug: course.slug,
+              total_modulos: totalModulos,
+              modulos_concluidos: modulosConcluidos,
+              progresso: totalModulos > 0 ? (modulosConcluidos / totalModulos) * 100 : 0,
+            });
+          }
+
+          setCoursesProgress(progressArray);
+        } else {
+          setCoursesProgress([]);
+        }
+      };
+
+      fetchProgress();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao remover curso",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -238,13 +387,39 @@ const Dashboard = () => {
                     </CardHeader>
                     <CardContent>
                       <Progress value={course.progresso} className="mb-4" />
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={() => navigate(`/curso/${course.slug}`)}
-                      >
-                        Continuar curso
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => navigate(`/curso/${course.slug}`)}
+                        >
+                          Continuar curso
+                        </Button>
+                        {isAdmin && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="destructive" size="icon">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Remover curso</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Tem certeza que deseja remover este curso do seu painel? 
+                                  Seu progresso será perdido.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteCourse(course.curso_id)}>
+                                  Remover
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
