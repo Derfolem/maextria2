@@ -122,7 +122,7 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              Bem-vindo ao painel administrativo da Evolui Cursos. Aqui você pode
+              Bem-vindo ao painel administrativo da MAEXTRIA. Aqui você pode
               gerenciar todos os aspectos da plataforma.
             </p>
           </CardContent>

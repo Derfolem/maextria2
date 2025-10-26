@@ -99,7 +99,9 @@ const Home = () => {
                 size="lg"
                 className="text-lg px-8 py-6 border-primary/50 hover:bg-primary/10"
               >
-                <Link to="/cursos">Explorar Cursos</Link>
+                <Link to="/como-funciona">
+                  Saiba Mais
+                </Link>
               </Button>
             </div>
 
@@ -328,6 +330,7 @@ const Home = () => {
               <h4 className="font-bold mb-4 text-foreground">Navegação</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li><Link to="/cursos" className="hover:text-primary transition-colors">Cursos</Link></li>
+                <li><Link to="/categorias" className="hover:text-primary transition-colors">Categorias</Link></li>
                 <li><Link to="/dashboard" className="hover:text-primary transition-colors">Meu Painel</Link></li>
                 <li><Link to="/perfil" className="hover:text-primary transition-colors">Perfil</Link></li>
               </ul>
@@ -336,9 +339,9 @@ const Home = () => {
             <div>
               <h4 className="font-bold mb-4 text-foreground">Institucional</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-primary transition-colors">Sobre</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Contato</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Certificados</a></li>
+                <li><Link to="/sobre" className="hover:text-primary transition-colors">Sobre</Link></li>
+                <li><Link to="/como-funciona" className="hover:text-primary transition-colors">Como Funciona</Link></li>
+                <li><Link to="/cursos" className="hover:text-primary transition-colors">Certificados</Link></li>
               </ul>
             </div>
           </div>

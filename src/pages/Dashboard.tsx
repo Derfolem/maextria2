@@ -242,25 +242,25 @@ const Dashboard = () => {
                     <CardContent>
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
-                          <span>Nota</span>
-                          <span className={`font-bold text-lg ${result.aprovado ? "text-secondary" : "text-destructive"}`}>
+                          <span className="text-foreground">Nota</span>
+                          <span className={`font-bold text-lg ${result.aprovado ? "text-primary" : "text-destructive"}`}>
                             {result.percentual.toFixed(0)}%
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span>Status</span>
-                          <span className={`font-semibold ${result.aprovado ? "text-secondary" : "text-destructive"}`}>
+                          <span className="text-foreground">Status</span>
+                          <span className={`font-semibold ${result.aprovado ? "text-primary" : "text-destructive"}`}>
                             {result.aprovado ? "Aprovado" : "Reprovado"}
                           </span>
                         </div>
                         {result.aprovado && (
                           <>
                             {result.certificado?.pago ? (
-                              <div className="mt-4 p-3 bg-secondary/10 rounded-lg text-center">
-                                <p className="text-sm font-semibold text-secondary mb-1">
+                              <div className="mt-4 p-3 bg-primary/10 border border-primary/20 rounded-lg text-center">
+                                <p className="text-sm font-semibold text-primary mb-1">
                                   ✓ Certificado Emitido
                                 </p>
-                                <p className="text-xs text-muted-foreground">
+                                <p className="text-xs text-foreground/70">
                                   Código: {result.certificado.codigo_validacao}
                                 </p>
                               </div>

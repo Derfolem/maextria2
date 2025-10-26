@@ -39,10 +39,17 @@ const Cursos = () => {
   const [categoriaFiltro, setCategoriaFiltro] = useState<string>("todas");
   const [searchParams] = useSearchParams();
   const searchTerm = searchParams.get("search") || "";
+  const categoryParam = searchParams.get("categoria") || "";
 
   useEffect(() => {
     fetchCourses();
   }, []);
+
+  useEffect(() => {
+    if (categoryParam) {
+      setCategoriaFiltro(categoryParam);
+    }
+  }, [categoryParam]);
 
   useEffect(() => {
     filterCourses();

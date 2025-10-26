@@ -125,7 +125,7 @@ export default function ConfiguracoesSite() {
           <CardHeader>
             <CardTitle>Redes Sociais</CardTitle>
             <CardDescription>
-              Configure os links das redes sociais da Evolui Cursos
+              Configure os links das redes sociais da MAEXTRIA
             </CardDescription>
           </CardHeader>
           <CardContent>

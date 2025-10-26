@@ -13,6 +13,9 @@ import Perfil from "./pages/Perfil";
 import Prova from "./pages/Prova";
 import PagamentoCertificado from "./pages/PagamentoCertificado";
 import NotFound from "./pages/NotFound";
+import Sobre from "./pages/Sobre";
+import ComoFunciona from "./pages/ComoFunciona";
+import Categorias from "./pages/Categorias";
 import { AdminRoute } from "./pages/admin/AdminRoute";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminCursos from "./pages/admin/AdminCursos";
@@ -42,6 +45,9 @@ const App = () => (
           <Route path="/perfil" element={<Perfil />} />
           <Route path="/prova/:cursoId" element={<Prova />} />
           <Route path="/pagamento-certificado/:cursoId" element={<PagamentoCertificado />} />
+          <Route path="/sobre" element={<Sobre />} />
+          <Route path="/como-funciona" element={<ComoFunciona />} />
+          <Route path="/categorias" element={<Categorias />} />
           
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminRoute />}>
