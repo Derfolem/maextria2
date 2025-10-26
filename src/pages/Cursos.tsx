@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
+import { SearchBar } from "@/components/SearchBar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { StarRating } from "@/components/StarRating";
 import { ShareButton } from "@/components/ShareButton";
-import { Clock, Filter } from "lucide-react";
+import { Clock, Filter, BookOpen } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -36,6 +37,8 @@ const Cursos = () => {
   const [filteredCourses, setFilteredCourses] = useState<CourseWithRating[]>([]);
   const [categorias, setCategorias] = useState<string[]>([]);
   const [categoriaFiltro, setCategoriaFiltro] = useState<string>("todas");
+  const [searchParams] = useSearchParams();
+  const searchTerm = searchParams.get("search") || "";
 
   useEffect(() => {
     fetchCourses();
@@ -43,7 +46,7 @@ const Cursos = () => {
 
   useEffect(() => {
     filterCourses();
-  }, [categoriaFiltro, courses]);
+  }, [categoriaFiltro, courses, searchTerm]);
 
   const fetchCourses = async () => {
     const { data: cursosData, error } = await supabase
@@ -84,11 +87,24 @@ const Cursos = () => {
   };
 
   const filterCourses = () => {
-    if (categoriaFiltro === "todas") {
-      setFilteredCourses(courses);
-    } else {
-      setFilteredCourses(courses.filter((c) => c.categoria === categoriaFiltro));
+    let filtered = courses;
+    
+    // Filter by category
+    if (categoriaFiltro !== "todas") {
+      filtered = filtered.filter((c) => c.categoria === categoriaFiltro);
     }
+    
+    // Filter by search term
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter((c) => 
+        c.titulo.toLowerCase().includes(term) ||
+        c.descricao?.toLowerCase().includes(term) ||
+        c.categoria?.toLowerCase().includes(term)
+      );
+    }
+    
+    setFilteredCourses(filtered);
   };
 
   return (
@@ -97,12 +113,15 @@ const Cursos = () => {
       
       <div className="container mx-auto px-4 pt-32 pb-20">
         <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            Cursos Gratuitos
+          <h1 className="text-5xl font-black mb-4">
+            Cursos <span className="text-primary">Gratuitos</span>
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
             Escolha um curso e comece a aprender agora mesmo. 100% gratuito.
           </p>
+          <div className="max-w-2xl mx-auto">
+            <SearchBar />
+          </div>
         </div>
 
         {categorias.length > 0 && (

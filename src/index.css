@@ -8,43 +8,51 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 240 25% 98%;
-    --foreground: 222 47% 11%;
+    /* MAEXTRIA Brand Colors */
+    --background: 240 43% 5%; /* Azul Profundo #0A0A1A */
+    --foreground: 0 0% 100%; /* Branco #FFFFFF */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card: 240 40% 8%;
+    --card-foreground: 0 0% 100%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover: 240 40% 8%;
+    --popover-foreground: 0 0% 100%;
 
-    --primary: 249 95% 70%;
+    --primary: 250 100% 65%; /* Roxo Vibrante #6B4EFF */
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 249 95% 80%;
+    --primary-glow: 250 100% 75%;
 
-    --secondary: 174 100% 40%;
+    --secondary: 240 50% 12%;
     --secondary-foreground: 0 0% 100%;
-    --secondary-glow: 174 100% 50%;
 
-    --muted: 240 12% 96%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 240 30% 15%;
+    --muted-foreground: 240 10% 75%; /* Cinza Neutro #B8B8C3 */
 
-    --accent: 174 100% 40%;
+    --accent: 250 100% 65%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 249 95% 70%;
+    --border: 240 30% 20%;
+    --input: 240 30% 15%;
+    --ring: 250 100% 65%;
 
     --radius: 0.75rem;
     
-    --gradient-hero: linear-gradient(135deg, hsl(249, 95%, 70%), hsl(174, 100%, 40%));
-    --gradient-card: linear-gradient(180deg, hsl(0, 0%, 100%), hsl(240, 25%, 98%));
-    --shadow-soft: 0 4px 20px -4px hsl(249 95% 70% / 0.15);
-    --shadow-card: 0 2px 8px -2px hsl(220 13% 91% / 0.3);
+    /* MAEXTRIA Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(250, 100%, 65%), hsl(240, 100%, 70%));
+    --gradient-card: linear-gradient(180deg, hsl(240, 40%, 8%), hsl(240, 43%, 5%));
+    --gradient-glow: radial-gradient(circle at top, hsl(250 100% 65% / 0.2), transparent 60%);
+    
+    /* Shadows */
+    --shadow-soft: 0 8px 32px -8px hsl(250 100% 65% / 0.3);
+    --shadow-card: 0 4px 16px -4px hsl(0 0% 0% / 0.5);
+    --shadow-glow: 0 0 40px hsl(250 100% 65% / 0.4);
+    
+    /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
     --sidebar-background: 0 0% 98%;
 
@@ -64,40 +72,42 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 222 47% 11%;
-    --foreground: 240 25% 98%;
+    /* Dark mode mantém o mesmo tema MAEXTRIA */
+    --background: 240 43% 5%;
+    --foreground: 0 0% 100%;
 
-    --card: 220 16% 18%;
-    --card-foreground: 240 25% 98%;
+    --card: 240 40% 8%;
+    --card-foreground: 0 0% 100%;
 
-    --popover: 220 16% 18%;
-    --popover-foreground: 240 25% 98%;
+    --popover: 240 40% 8%;
+    --popover-foreground: 0 0% 100%;
 
-    --primary: 249 95% 70%;
+    --primary: 250 100% 65%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 249 95% 80%;
+    --primary-glow: 250 100% 75%;
 
-    --secondary: 174 100% 40%;
+    --secondary: 240 50% 12%;
     --secondary-foreground: 0 0% 100%;
-    --secondary-glow: 174 100% 50%;
 
-    --muted: 220 16% 22%;
-    --muted-foreground: 220 9% 65%;
+    --muted: 240 30% 15%;
+    --muted-foreground: 240 10% 75%;
 
-    --accent: 174 100% 40%;
+    --accent: 250 100% 65%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 16% 22%;
-    --input: 220 16% 22%;
-    --ring: 249 95% 70%;
+    --border: 240 30% 20%;
+    --input: 240 30% 15%;
+    --ring: 250 100% 65%;
     
-    --gradient-hero: linear-gradient(135deg, hsl(249, 95%, 70%), hsl(174, 100%, 40%));
-    --gradient-card: linear-gradient(180deg, hsl(220, 16%, 18%), hsl(222, 47%, 11%));
-    --shadow-soft: 0 4px 20px -4px hsl(249 95% 70% / 0.25);
-    --shadow-card: 0 2px 8px -2px hsl(0 0% 0% / 0.3);
+    --gradient-hero: linear-gradient(135deg, hsl(250, 100%, 65%), hsl(240, 100%, 70%));
+    --gradient-card: linear-gradient(180deg, hsl(240, 40%, 8%), hsl(240, 43%, 5%));
+    --gradient-glow: radial-gradient(circle at top, hsl(250 100% 65% / 0.2), transparent 60%);
+    --shadow-soft: 0 8px 32px -8px hsl(250 100% 65% / 0.3);
+    --shadow-card: 0 4px 16px -4px hsl(0 0% 0% / 0.5);
+    --shadow-glow: 0 0 40px hsl(250 100% 65% / 0.4);
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
