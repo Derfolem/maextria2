@@ -24,6 +24,7 @@ interface Curso {
   slug: string;
   ativo: boolean;
   carga_horaria_horas: number | null;
+  total_alunos?: number;
 }
 
 export default function AdminCursos() {
@@ -46,9 +47,23 @@ export default function AdminCursos() {
         description: error.message,
         variant: "destructive",
       });
-    } else {
-      setCursos(data || []);
+      return;
     }
+
+    // Fetch matriculas count for each curso
+    const cursosComContagem = await Promise.all(
+      (data || []).map(async (curso) => {
+        const { count } = await supabase
+          .from("matriculas")
+          .select("*", { count: "exact", head: true })
+          .eq("curso_id", curso.id)
+          .eq("ativa", true);
+        
+        return { ...curso, total_alunos: count || 0 };
+      })
+    );
+
+    setCursos(cursosComContagem);
   };
 
   const toggleAtivo = async (id: string, currentStatus: boolean) => {
@@ -196,7 +211,7 @@ export default function AdminCursos() {
                 <div className="flex-1">
                   <CardTitle className="mb-1">{curso.titulo}</CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    Slug: {curso.slug} • Carga: {curso.carga_horaria_horas || 0}h
+                    Slug: {curso.slug} • Carga: {curso.carga_horaria_horas || 0}h • Alunos: {curso.total_alunos || 0}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">

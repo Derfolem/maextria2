@@ -29,6 +29,7 @@ import QuestoesManager from "./pages/admin/QuestoesManager";
 import QuestaoForm from "./pages/admin/QuestaoForm";
 import ConfiguracoesSite from "./pages/admin/ConfiguracoesSite";
 import Financeiro from "./pages/admin/Financeiro";
+import GerenciarUsuarios from "./pages/admin/GerenciarUsuarios";
 
 const queryClient = new QueryClient();
 
@@ -70,6 +71,7 @@ const App = () => (
             <Route path="questoes/:questaoId/editar" element={<QuestaoForm />} />
             <Route path="configuracoes" element={<ConfiguracoesSite />} />
             <Route path="financeiro" element={<Financeiro />} />
+            <Route path="usuarios" element={<GerenciarUsuarios />} />
           </Route>
           
           <Route path="*" element={<NotFound />} />

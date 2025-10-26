@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpen, Users, Award, CheckCircle, DollarSign, Settings } from "lucide-react";
+import { BookOpen, Users, Award, CheckCircle, DollarSign, Settings, UserCog } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
@@ -111,6 +111,12 @@ export default function AdminDashboard() {
               <Link to="/admin/configuracoes">
                 <Settings className="mr-2 h-4 w-4" />
                 Configurações do Site
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full justify-start">
+              <Link to="/admin/usuarios">
+                <UserCog className="mr-2 h-4 w-4" />
+                Gerenciar Usuários
               </Link>
             </Button>
           </CardContent>

@@ -253,6 +253,24 @@ const Dashboard = () => {
 
   const handleDeleteCourse = async (cursoId: string) => {
     try {
+      // Check if user has a paid certificate for this course
+      const { data: certificado } = await supabase
+        .from("certificados")
+        .select("pago")
+        .eq("usuario_id", user.id)
+        .eq("curso_id", cursoId)
+        .eq("pago", true)
+        .maybeSingle();
+
+      if (certificado) {
+        toast({
+          title: "Não é possível excluir",
+          description: "Você já pagou pelo certificado deste curso",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // First, get all module IDs for this course
       const { data: modules } = await supabase
         .from("modulos")
@@ -273,8 +291,8 @@ const Dashboard = () => {
       const { error } = await supabase
         .from("matriculas")
         .delete()
-        .eq("usuario_id", user.id)
-        .eq("curso_id", cursoId);
+        .eq("curso_id", cursoId)
+        .eq("usuario_id", user.id);
 
       if (error) throw error;
 
@@ -283,62 +301,8 @@ const Dashboard = () => {
         description: "O curso foi removido do seu painel.",
       });
 
-      // Refresh data
-      const fetchProgress = async () => {
-        if (!user) return;
-
-        const { data: matriculasData } = await supabase
-          .from("matriculas")
-          .select(`curso_id, cursos!inner(id, titulo, slug)`)
-          .eq("usuario_id", user.id)
-          .eq("ativa", true);
-
-        if (matriculasData && matriculasData.length > 0) {
-          const cursoIds = matriculasData.map((m: any) => m.curso_id);
-
-          const { data: progressData } = await supabase
-            .from("progresso_modulo")
-            .select(`modulo_id, concluido, modulos!inner(curso_id)`)
-            .eq("usuario_id", user.id);
-
-          const progressByCourse = new Map<string, number>();
-          progressData?.forEach((p: any) => {
-            const cursoId = p.modulos.curso_id;
-            if (cursoIds.includes(cursoId) && p.concluido) {
-              progressByCourse.set(cursoId, (progressByCourse.get(cursoId) || 0) + 1);
-            }
-          });
-
-          const progressArray: CourseProgress[] = [];
-          
-          for (const matricula of matriculasData) {
-            const course = (matricula as any).cursos;
-            
-            const { data: modulesData } = await supabase
-              .from("modulos")
-              .select("id")
-              .eq("curso_id", course.id);
-
-            const totalModulos = modulesData?.length || 0;
-            const modulosConcluidos = progressByCourse.get(course.id) || 0;
-            
-            progressArray.push({
-              curso_id: course.id,
-              titulo: course.titulo,
-              slug: course.slug,
-              total_modulos: totalModulos,
-              modulos_concluidos: modulosConcluidos,
-              progresso: totalModulos > 0 ? (modulosConcluidos / totalModulos) * 100 : 0,
-            });
-          }
-
-          setCoursesProgress(progressArray);
-        } else {
-          setCoursesProgress([]);
-        }
-      };
-
-      fetchProgress();
+      // Reload page to refresh data
+      window.location.reload();
     } catch (error: any) {
       toast({
         title: "Erro ao remover curso",

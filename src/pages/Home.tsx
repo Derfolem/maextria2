@@ -63,7 +63,8 @@ const Home = () => {
             <img 
               src={logoImage} 
               alt="MAEXTRIA" 
-              className="w-96 mx-auto mb-8 animate-fade-in"
+              className="w-64 md:w-80 lg:w-96 h-auto mx-auto mb-8 animate-fade-in object-contain"
+              style={{ backgroundColor: 'transparent' }}
             />
             
             <h1 className="text-5xl md:text-7xl font-black tracking-tight animate-fade-in">

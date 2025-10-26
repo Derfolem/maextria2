@@ -59,8 +59,13 @@ export const Navbar = () => {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-lg border-b border-border">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-        <Link to="/" className="hover:opacity-80 transition-opacity">
-          <img src={logoImage} alt="MAEXTRIA" className="h-10" />
+        <Link to="/" className="hover:opacity-80 transition-opacity flex items-center">
+          <img 
+            src={logoImage} 
+            alt="MAEXTRIA" 
+            className="h-12 md:h-14 w-auto object-contain" 
+            style={{ backgroundColor: 'transparent' }}
+          />
         </Link>
 
         <div className="flex items-center gap-4">
