@@ -341,7 +341,9 @@ const Home = () => {
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li><Link to="/sobre" className="hover:text-primary transition-colors">Sobre</Link></li>
                 <li><Link to="/como-funciona" className="hover:text-primary transition-colors">Como Funciona</Link></li>
-                <li><Link to="/cursos" className="hover:text-primary transition-colors">Certificados</Link></li>
+                <li><Link to="/contato" className="hover:text-primary transition-colors">Contato</Link></li>
+                <li><Link to="/termos-de-uso" className="hover:text-primary transition-colors">Termos de Uso</Link></li>
+                <li><Link to="/politica-de-privacidade" className="hover:text-primary transition-colors">Privacidade</Link></li>
               </ul>
             </div>
           </div>

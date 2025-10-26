@@ -16,6 +16,9 @@ import NotFound from "./pages/NotFound";
 import Sobre from "./pages/Sobre";
 import ComoFunciona from "./pages/ComoFunciona";
 import Categorias from "./pages/Categorias";
+import TermosDeUso from "./pages/TermosDeUso";
+import PoliticaPrivacidade from "./pages/PoliticaPrivacidade";
+import Contato from "./pages/Contato";
 import { AdminRoute } from "./pages/admin/AdminRoute";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminCursos from "./pages/admin/AdminCursos";
@@ -48,6 +51,9 @@ const App = () => (
           <Route path="/sobre" element={<Sobre />} />
           <Route path="/como-funciona" element={<ComoFunciona />} />
           <Route path="/categorias" element={<Categorias />} />
+          <Route path="/termos-de-uso" element={<TermosDeUso />} />
+          <Route path="/politica-de-privacidade" element={<PoliticaPrivacidade />} />
+          <Route path="/contato" element={<Contato />} />
           
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminRoute />}>

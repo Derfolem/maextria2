@@ -5,7 +5,8 @@ import { Navbar } from "@/components/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Award, BookOpen, CheckCircle2 } from "lucide-react";
+import { Award, BookOpen, CheckCircle2, Download } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface CourseProgress {
   curso_id: string;
@@ -31,9 +32,11 @@ interface ExamResult {
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [user, setUser] = useState<any>(null);
   const [coursesProgress, setCoursesProgress] = useState<CourseProgress[]>([]);
   const [examResults, setExamResults] = useState<ExamResult[]>([]);
+  const [downloadingCertId, setDownloadingCertId] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -154,6 +157,44 @@ const Dashboard = () => {
     fetchProgress();
   }, [user]);
 
+  const handleDownloadCertificate = async (cursoId: string, certificadoId: string, tituloCurso: string) => {
+    setDownloadingCertId(certificadoId);
+
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session) throw new Error("Not authenticated");
+
+      const { data, error } = await supabase.functions.invoke("generate-certificate", {
+        body: { 
+          cursoId,
+          certificadoId 
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.pdf) {
+        const link = document.createElement("a");
+        link.href = data.pdf;
+        link.download = `certificado-${tituloCurso.replace(/\s+/g, "-").toLowerCase()}.pdf`;
+        link.click();
+
+        toast({
+          title: "Download iniciado",
+          description: "Seu certificado está sendo baixado.",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro ao gerar certificado",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setDownloadingCertId(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -256,13 +297,29 @@ const Dashboard = () => {
                         {result.aprovado && (
                           <>
                             {result.certificado?.pago ? (
-                              <div className="mt-4 p-3 bg-primary/10 border border-primary/20 rounded-lg text-center">
-                                <p className="text-sm font-semibold text-primary mb-1">
-                                  ✓ Certificado Emitido
-                                </p>
-                                <p className="text-xs text-foreground/70">
-                                  Código: {result.certificado.codigo_validacao}
-                                </p>
+                              <div className="mt-4 space-y-3">
+                                <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg text-center">
+                                  <p className="text-sm font-semibold text-primary mb-1">
+                                    ✓ Certificado Emitido
+                                  </p>
+                                  <p className="text-xs text-foreground/70">
+                                    Código: {result.certificado.codigo_validacao}
+                                  </p>
+                                </div>
+                                <Button 
+                                  variant="outline"
+                                  className="w-full"
+                                  size="sm"
+                                  onClick={() => handleDownloadCertificate(
+                                    result.curso_id, 
+                                    result.certificado!.id, 
+                                    result.titulo
+                                  )}
+                                  disabled={downloadingCertId === result.certificado.id}
+                                >
+                                  <Download className="h-4 w-4 mr-2" />
+                                  {downloadingCertId === result.certificado.id ? "Gerando..." : "Baixar Certificado"}
+                                </Button>
                               </div>
                             ) : (
                               <Button 
