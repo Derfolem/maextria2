@@ -155,12 +155,12 @@ export default function AdminCursos() {
     if (questoes && questoes.length > 0) {
       const questoesCopia = questoes.map(q => ({
         curso_id: novoCurso.id,
-        pergunta: q.pergunta,
+        enunciado: q.enunciado,
         alternativa_a: q.alternativa_a,
         alternativa_b: q.alternativa_b,
         alternativa_c: q.alternativa_c,
         alternativa_d: q.alternativa_d,
-        alternativa_correta: q.alternativa_correta,
+        correta: q.correta,
       }));
 
       await supabase.from("prova_questoes").insert(questoesCopia);

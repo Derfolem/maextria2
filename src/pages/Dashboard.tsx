@@ -253,17 +253,21 @@ const Dashboard = () => {
 
   const handleDeleteCourse = async (cursoId: string) => {
     try {
-      // Delete progress records
-      await supabase
-        .from("progresso_modulo")
-        .delete()
-        .eq("usuario_id", user.id)
-        .in("modulo_id", 
-          supabase
-            .from("modulos")
-            .select("id")
-            .eq("curso_id", cursoId)
-        );
+      // First, get all module IDs for this course
+      const { data: modules } = await supabase
+        .from("modulos")
+        .select("id")
+        .eq("curso_id", cursoId);
+
+      // Delete progress records for these modules
+      if (modules && modules.length > 0) {
+        const moduleIds = modules.map(m => m.id);
+        await supabase
+          .from("progresso_modulo")
+          .delete()
+          .eq("usuario_id", user.id)
+          .in("modulo_id", moduleIds);
+      }
 
       // Delete enrollment
       const { error } = await supabase
