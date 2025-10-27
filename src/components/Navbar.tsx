@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import logoImage from "@/assets/https://drive.google.com/file/d/1UEOshy91H6EJamwWlXTDHHv0fTvibVLv/view?usp=drivesdk";
+import logoImage from "@/assets/maextria-logo.png";
 
 export const Navbar = () => {
   const navigate = useNavigate();
