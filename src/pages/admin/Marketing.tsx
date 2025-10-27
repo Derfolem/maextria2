@@ -34,6 +34,7 @@ import {
   ResponsiveContainer 
 } from "recharts";
 import { useMarketingData } from "@/hooks/useMarketingData";
+import { CopyGenerator } from "@/components/marketing/CopyGenerator";
 
 const sourceData = [
   { name: "Google", value: 35, color: "#00E676" },
@@ -418,61 +419,33 @@ export default function Marketing() {
 
           {/* Ferramentas */}
           <TabsContent value="ferramentas" className="animate-fade-in">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <Card className="hover-scale cursor-pointer">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MessageSquare className="h-5 w-5" />
-                    Gerador de Copy IA
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">Crie textos persuasivos para anúncios e posts</p>
-                </CardContent>
-              </Card>
-
-              <Card className="hover-scale cursor-pointer">
-                <CardHeader>
-                  <CardTitle>Banco de Ideias</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">Gatilhos mentais e ideias de conteúdo prontas</p>
-                </CardContent>
-              </Card>
-
-              <Card className="hover-scale cursor-pointer">
+            <CopyGenerator />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+              <Card className="hover-scale cursor-pointer opacity-50">
                 <CardHeader>
                   <CardTitle>Gerador de Imagens IA</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground">Crie imagens e vídeos com inteligência artificial</p>
+                  <p className="text-sm text-muted-foreground">Em breve: Crie imagens com IA</p>
                 </CardContent>
               </Card>
 
-              <Card className="hover-scale cursor-pointer">
+              <Card className="hover-scale cursor-pointer opacity-50">
                 <CardHeader>
                   <CardTitle>Calculadora de ROI</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground">Calcule o retorno sobre investimento</p>
+                  <p className="text-sm text-muted-foreground">Em breve: Calcule retorno sobre investimento</p>
                 </CardContent>
               </Card>
 
-              <Card className="hover-scale cursor-pointer">
-                <CardHeader>
-                  <CardTitle>Assistente de Campanha</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">IA que analisa e sugere melhorias em tempo real</p>
-                </CardContent>
-              </Card>
-
-              <Card className="hover-scale cursor-pointer">
+              <Card className="hover-scale cursor-pointer opacity-50">
                 <CardHeader>
                   <CardTitle>Analisador de Concorrentes</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground">Monitore a estratégia dos concorrentes</p>
+                  <p className="text-sm text-muted-foreground">Em breve: Monitore concorrência</p>
                 </CardContent>
               </Card>
             </div>
