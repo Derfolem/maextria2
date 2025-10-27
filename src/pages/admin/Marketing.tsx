@@ -35,6 +35,8 @@ import {
 } from "recharts";
 import { useMarketingData } from "@/hooks/useMarketingData";
 import { CopyGenerator } from "@/components/marketing/CopyGenerator";
+import { CalendarioEditorial } from "@/components/marketing/CalendarioEditorial";
+import { CRMLeads } from "@/components/marketing/CRMLeads";
 
 const sourceData = [
   { name: "Google", value: 35, color: "#00E676" },
@@ -147,10 +149,18 @@ export default function Marketing() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-7 h-auto gap-2">
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-9 h-auto gap-2">
             <TabsTrigger value="visao-geral" className="gap-2">
               <BarChart3 className="h-4 w-4" />
               <span className="hidden sm:inline">Visão Geral</span>
+            </TabsTrigger>
+            <TabsTrigger value="calendario" className="gap-2">
+              <Calendar className="h-4 w-4" />
+              <span className="hidden sm:inline">Calendário</span>
+            </TabsTrigger>
+            <TabsTrigger value="crm" className="gap-2">
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">CRM</span>
             </TabsTrigger>
             <TabsTrigger value="organico" className="gap-2">
               <TrendingUp className="h-4 w-4" />
@@ -161,7 +171,7 @@ export default function Marketing() {
               <span className="hidden sm:inline">Pago</span>
             </TabsTrigger>
             <TabsTrigger value="leads" className="gap-2">
-              <Users className="h-4 w-4" />
+              <Target className="h-4 w-4" />
               <span className="hidden sm:inline">Leads</span>
             </TabsTrigger>
             <TabsTrigger value="automacao" className="gap-2">
@@ -285,6 +295,16 @@ export default function Marketing() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* Calendário Editorial */}
+          <TabsContent value="calendario" className="animate-fade-in">
+            <CalendarioEditorial />
+          </TabsContent>
+
+          {/* CRM de Leads */}
+          <TabsContent value="crm" className="animate-fade-in">
+            <CRMLeads />
           </TabsContent>
 
           {/* Marketing Orgânico */}
