@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit2, Trash2, Mail, Phone, Building, User } from "lucide-react";
 import { toast } from "sonner";
+import { leadSchema } from "@/lib/schemas";
 
 interface Lead {
   id: string;
@@ -122,6 +123,16 @@ export const CRMLeads = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form data
+    try {
+      leadSchema.parse(formData);
+    } catch (error: any) {
+      const errorMessage = error.errors?.[0]?.message || "Dados inválidos";
+      toast.error(errorMessage);
+      return;
+    }
+    
     if (editingLead) {
       updateMutation.mutate({ id: editingLead.id, data: formData });
     } else {
