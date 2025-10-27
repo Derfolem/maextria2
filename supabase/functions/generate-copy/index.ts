@@ -12,9 +12,13 @@ serve(async (req) => {
 
   try {
     const { type, context, tone, platform } = await req.json();
+    
+    console.log('Recebida requisição:', { type, context, tone, platform });
+    
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
     if (!LOVABLE_API_KEY) {
+      console.error('LOVABLE_API_KEY não encontrada');
       throw new Error('LOVABLE_API_KEY não configurada');
     }
 
@@ -80,6 +84,8 @@ serve(async (req) => {
     Marca Maextria: "Aprender • Aplicar • Expandir"
     Público: Profissionais buscando desenvolvimento e certificação`;
 
+    console.log('Enviando requisição para Lovable AI...');
+    
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -92,9 +98,10 @@ serve(async (req) => {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: prompts[type as keyof typeof prompts] || prompts.post }
         ],
-        temperature: 0.8,
       }),
     });
+    
+    console.log('Resposta recebida, status:', response.status);
 
     if (!response.ok) {
       if (response.status === 429) {
@@ -116,7 +123,11 @@ serve(async (req) => {
     }
 
     const data = await response.json();
+    console.log('Dados da resposta:', JSON.stringify(data).slice(0, 200));
+    
     const generatedText = data.choices[0].message.content;
+
+    console.log('Copy gerada com sucesso');
 
     return new Response(
       JSON.stringify({ 
