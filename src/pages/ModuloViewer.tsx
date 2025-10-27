@@ -162,9 +162,12 @@ const ModuloViewer = () => {
         {module.video_url && (
           <div className="aspect-video bg-muted rounded-lg mb-8 overflow-hidden">
             <iframe
-              src={module.video_url}
+              src={module.video_url.includes('youtube.com') || module.video_url.includes('youtu.be') 
+                ? module.video_url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')
+                : module.video_url}
               className="w-full h-full"
               allowFullScreen
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               title={module.titulo_modulo}
             />
           </div>

@@ -224,6 +224,48 @@ export type Database = {
           },
         ]
       }
+      mensagens: {
+        Row: {
+          assunto: string
+          criado_em: string
+          destinatario_id: string | null
+          id: string
+          mensagem: string
+          remetente_email: string
+          remetente_id: string | null
+          remetente_nome: string | null
+          respondida_em: string | null
+          resposta: string | null
+          status: string
+        }
+        Insert: {
+          assunto: string
+          criado_em?: string
+          destinatario_id?: string | null
+          id?: string
+          mensagem: string
+          remetente_email: string
+          remetente_id?: string | null
+          remetente_nome?: string | null
+          respondida_em?: string | null
+          resposta?: string | null
+          status?: string
+        }
+        Update: {
+          assunto?: string
+          criado_em?: string
+          destinatario_id?: string | null
+          id?: string
+          mensagem?: string
+          remetente_email?: string
+          remetente_id?: string | null
+          remetente_nome?: string | null
+          respondida_em?: string | null
+          resposta?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       modulos: {
         Row: {
           conteudo_texto_html: string | null
@@ -456,6 +498,7 @@ export type Database = {
       }
       usuarios: {
         Row: {
+          bloqueado: boolean | null
           cpf: string | null
           criado_em: string | null
           email: string
@@ -463,6 +506,7 @@ export type Database = {
           nome_completo: string
         }
         Insert: {
+          bloqueado?: boolean | null
           cpf?: string | null
           criado_em?: string | null
           email: string
@@ -470,6 +514,7 @@ export type Database = {
           nome_completo: string
         }
         Update: {
+          bloqueado?: boolean | null
           cpf?: string | null
           criado_em?: string | null
           email?: string

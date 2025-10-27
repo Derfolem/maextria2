@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,15 +23,35 @@ export default function Contato() {
     e.preventDefault();
     setSending(true);
 
-    // Simulação de envio (integrar com backend quando necessário)
-    setTimeout(() => {
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      
+      const { error } = await supabase.functions.invoke("enviar-mensagem", {
+        body: {
+          nome: formData.nome,
+          email: formData.email,
+          assunto: formData.assunto,
+          mensagem: formData.mensagem,
+          usuarioId: session.session?.user?.id || null,
+        },
+      });
+
+      if (error) throw error;
+
       toast({
         title: "Mensagem enviada!",
         description: "Entraremos em contato em breve.",
       });
       setFormData({ nome: "", email: "", assunto: "", mensagem: "" });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao enviar mensagem",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
       setSending(false);
-    }, 1500);
+    }
   };
 
   return (

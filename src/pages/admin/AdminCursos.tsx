@@ -100,92 +100,128 @@ export default function AdminCursos() {
   };
 
   const duplicateCurso = async (id: string) => {
-    // Buscar dados do curso original
-    const { data: cursoOriginal, error: fetchError } = await supabase
-      .from("cursos")
-      .select("*")
-      .eq("id", id)
-      .single();
+    try {
+      // Usar o service role key para operações admin
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Erro de autenticação",
+          description: "Você precisa estar logado como administrador",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    if (fetchError || !cursoOriginal) {
-      toast({
-        title: "Erro ao buscar curso",
-        description: fetchError?.message,
-        variant: "destructive",
+      // Buscar dados do curso original
+      const { data: cursoOriginal, error: fetchError } = await supabase
+        .from("cursos")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (fetchError || !cursoOriginal) {
+        toast({
+          title: "Erro ao buscar curso",
+          description: fetchError?.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Criar cópia do curso
+      const { data: novoCurso, error: insertError } = await supabase
+        .from("cursos")
+        .insert({
+          titulo: `${cursoOriginal.titulo} (Cópia)`,
+          slug: `${cursoOriginal.slug}-copia-${Date.now()}`,
+          descricao: cursoOriginal.descricao,
+          carga_horaria_horas: cursoOriginal.carga_horaria_horas,
+          publico_alvo: cursoOriginal.publico_alvo,
+          imagem_capa_url: cursoOriginal.imagem_capa_url,
+          categoria: cursoOriginal.categoria,
+          preco_certificado: cursoOriginal.preco_certificado,
+          ativo: false, // Deixar inativo por padrão
+        })
+        .select()
+        .single();
+
+      if (insertError || !novoCurso) {
+        toast({
+          title: "Erro ao duplicar curso",
+          description: insertError?.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Buscar e duplicar módulos
+      const { data: modulos, error: modulosError } = await supabase
+        .from("modulos")
+        .select("*")
+        .eq("curso_id", id)
+        .order("ordem");
+
+      if (modulosError) {
+        console.error("Erro ao buscar módulos:", modulosError);
+      } else if (modulos && modulos.length > 0) {
+        const modulosCopia = modulos.map(m => ({
+          curso_id: novoCurso.id,
+          ordem: m.ordem,
+          titulo_modulo: m.titulo_modulo,
+          conteudo_texto_html: m.conteudo_texto_html,
+          video_url: m.video_url,
+        }));
+
+        const { error: insertModulosError } = await supabase
+          .from("modulos")
+          .insert(modulosCopia);
+        
+        if (insertModulosError) {
+          console.error("Erro ao duplicar módulos:", insertModulosError);
+        }
+      }
+
+      // Buscar e duplicar questões da prova
+      const { data: questoes, error: questoesError } = await supabase
+        .from("prova_questoes")
+        .select("*")
+        .eq("curso_id", id);
+
+      if (questoesError) {
+        console.error("Erro ao buscar questões:", questoesError);
+      } else if (questoes && questoes.length > 0) {
+        const questoesCopia = questoes.map(q => ({
+          curso_id: novoCurso.id,
+          enunciado: q.enunciado,
+          alternativa_a: q.alternativa_a,
+          alternativa_b: q.alternativa_b,
+          alternativa_c: q.alternativa_c,
+          alternativa_d: q.alternativa_d,
+          correta: q.correta,
+        }));
+
+        const { error: insertQuestoesError } = await supabase
+          .from("prova_questoes")
+          .insert(questoesCopia);
+        
+        if (insertQuestoesError) {
+          console.error("Erro ao duplicar questões:", insertQuestoesError);
+        }
+      }
+
+      toast({ 
+        title: "Curso duplicado com sucesso!",
+        description: "O novo curso foi criado como inativo. Edite-o antes de ativar."
       });
-      return;
-    }
-
-    // Criar cópia do curso
-    const { data: novoCurso, error: insertError } = await supabase
-      .from("cursos")
-      .insert({
-        titulo: `${cursoOriginal.titulo} (Cópia)`,
-        slug: `${cursoOriginal.slug}-copia-${Date.now()}`,
-        descricao: cursoOriginal.descricao,
-        carga_horaria_horas: cursoOriginal.carga_horaria_horas,
-        publico_alvo: cursoOriginal.publico_alvo,
-        imagem_capa_url: cursoOriginal.imagem_capa_url,
-        categoria: cursoOriginal.categoria,
-        preco_certificado: cursoOriginal.preco_certificado,
-        ativo: false, // Deixar inativo por padrão
-      })
-      .select()
-      .single();
-
-    if (insertError || !novoCurso) {
+      fetchCursos();
+    } catch (error: any) {
+      console.error("Erro ao duplicar curso:", error);
       toast({
         title: "Erro ao duplicar curso",
-        description: insertError?.message,
+        description: error.message || "Ocorreu um erro inesperado",
         variant: "destructive",
       });
-      return;
     }
-
-    // Buscar e duplicar módulos
-    const { data: modulos } = await supabase
-      .from("modulos")
-      .select("*")
-      .eq("curso_id", id)
-      .order("ordem");
-
-    if (modulos && modulos.length > 0) {
-      const modulosCopia = modulos.map(m => ({
-        curso_id: novoCurso.id,
-        ordem: m.ordem,
-        titulo_modulo: m.titulo_modulo,
-        conteudo_texto_html: m.conteudo_texto_html,
-        video_url: m.video_url,
-      }));
-
-      await supabase.from("modulos").insert(modulosCopia);
-    }
-
-    // Buscar e duplicar questões da prova
-    const { data: questoes } = await supabase
-      .from("prova_questoes")
-      .select("*")
-      .eq("curso_id", id);
-
-    if (questoes && questoes.length > 0) {
-      const questoesCopia = questoes.map(q => ({
-        curso_id: novoCurso.id,
-        enunciado: q.enunciado,
-        alternativa_a: q.alternativa_a,
-        alternativa_b: q.alternativa_b,
-        alternativa_c: q.alternativa_c,
-        alternativa_d: q.alternativa_d,
-        correta: q.correta,
-      }));
-
-      await supabase.from("prova_questoes").insert(questoesCopia);
-    }
-
-    toast({ 
-      title: "Curso duplicado com sucesso!",
-      description: "O novo curso foi criado como inativo. Edite-o antes de ativar."
-    });
-    fetchCursos();
   };
 
   return (

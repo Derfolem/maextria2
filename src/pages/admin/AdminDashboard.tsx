@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpen, Users, Award, CheckCircle, DollarSign, Settings, UserCog } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { BookOpen, Users, Award, CheckCircle, DollarSign, Settings, UserCog, Mail } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
@@ -11,15 +11,17 @@ export default function AdminDashboard() {
     totalAlunos: 0,
     totalProvas: 0,
     totalCertificados: 0,
+    totalMensagens: 0,
   });
 
   useEffect(() => {
     const fetchStats = async () => {
-      const [cursos, usuarios, provas, certificados] = await Promise.all([
+      const [cursos, usuarios, provas, certificados, mensagens] = await Promise.all([
         supabase.from("cursos").select("id", { count: "exact", head: true }),
         supabase.from("usuarios").select("id", { count: "exact", head: true }),
         supabase.from("prova_resultado").select("id", { count: "exact", head: true }),
         supabase.from("certificados").select("id", { count: "exact", head: true }),
+        supabase.from("mensagens").select("id", { count: "exact", head: true }).eq("status", "nao_lida"),
       ]);
 
       setStats({
@@ -27,6 +29,7 @@ export default function AdminDashboard() {
         totalAlunos: usuarios.count || 0,
         totalProvas: provas.count || 0,
         totalCertificados: certificados.count || 0,
+        totalMensagens: mensagens.count || 0,
       });
     };
 
@@ -117,6 +120,12 @@ export default function AdminDashboard() {
               <Link to="/admin/usuarios">
                 <UserCog className="mr-2 h-4 w-4" />
                 Gerenciar Usuários
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full justify-start">
+              <Link to="/admin/mensagens">
+                <Mail className="mr-2 h-4 w-4" />
+                Mensagens {stats.totalMensagens > 0 && `(${stats.totalMensagens})`}
               </Link>
             </Button>
           </CardContent>

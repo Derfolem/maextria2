@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,6 +37,7 @@ interface Usuario {
 }
 
 export default function GerenciarUsuarios() {
+  const navigate = useNavigate();
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<Usuario | null>(null);
@@ -84,10 +86,9 @@ export default function GerenciarUsuarios() {
 
         toast({ title: "Usuário atualizado com sucesso" });
       } else {
-        // Create new user (requires admin privileges and auth.admin API)
         toast({
-          title: "Funcionalidade em desenvolvimento",
-          description: "Criação manual de usuários estará disponível em breve",
+          title: "Funcionalidade não disponível",
+          description: "Por motivos de segurança, usuários só podem ser criados através do formulário de cadastro padrão da plataforma.",
         });
         return;
       }
@@ -245,6 +246,14 @@ export default function GerenciarUsuarios() {
             </CardHeader>
             <CardContent>
               <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate(`/admin/usuarios/${usuario.id}`)}
+                >
+                  <UserIcon className="h-4 w-4 mr-2" />
+                  Ver Detalhes
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
