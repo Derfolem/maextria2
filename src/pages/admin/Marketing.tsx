@@ -3,6 +3,7 @@ import { AdminNavbar } from "@/components/admin/AdminNavbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   BarChart3, 
   TrendingUp, 
@@ -32,16 +33,7 @@ import {
   Legend, 
   ResponsiveContainer 
 } from "recharts";
-
-// Dados simulados
-const monthlyData = [
-  { mes: "Jan", organico: 4000, pago: 2400, conversoes: 240 },
-  { mes: "Fev", organico: 3000, pago: 1398, conversoes: 221 },
-  { mes: "Mar", organico: 2000, pago: 9800, conversoes: 229 },
-  { mes: "Abr", organico: 2780, pago: 3908, conversoes: 200 },
-  { mes: "Mai", organico: 1890, pago: 4800, conversoes: 218 },
-  { mes: "Jun", organico: 2390, pago: 3800, conversoes: 250 },
-];
+import { useMarketingData } from "@/hooks/useMarketingData";
 
 const sourceData = [
   { name: "Google", value: 35, color: "#00E676" },
@@ -70,6 +62,37 @@ const KPICard = ({ title, value, change, icon: Icon, color }: any) => (
 
 export default function Marketing() {
   const [activeTab, setActiveTab] = useState("visao-geral");
+  const { data: marketingData, isLoading } = useMarketingData();
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value);
+  };
+
+  const formatNumber = (value: number) => {
+    if (value >= 1000) {
+      return `${(value / 1000).toFixed(1)}K`;
+    }
+    return value.toString();
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <AdminNavbar />
+        <div className="container mx-auto px-4 py-8">
+          <Skeleton className="h-12 w-96 mb-8" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-32" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -92,30 +115,30 @@ export default function Marketing() {
         {/* KPIs */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 animate-fade-in">
           <KPICard 
-            title="Alcance Total" 
-            value="125.4K" 
-            change={12.5} 
+            title="Matrículas Totais" 
+            value={formatNumber(marketingData?.kpis.alcanceTotal || 0)} 
+            change={marketingData?.kpis.crescimento.alcance || 0} 
             icon={Eye}
             color="#7C4DFF"
           />
           <KPICard 
             title="Leads Gerados" 
-            value="3.247" 
-            change={8.2} 
+            value={formatNumber(marketingData?.kpis.leadsGerados || 0)} 
+            change={marketingData?.kpis.crescimento.leads || 0} 
             icon={Users}
             color="#00E676"
           />
           <KPICard 
             title="Taxa de Conversão" 
-            value="4.8%" 
-            change={-2.4} 
+            value={`${marketingData?.kpis.taxaConversao || 0}%`} 
+            change={marketingData?.kpis.crescimento.conversao || 0} 
             icon={Target}
             color="#1A237E"
           />
           <KPICard 
-            title="ROI Médio" 
-            value="R$ 15.2K" 
-            change={18.7} 
+            title="Receita Total" 
+            value={formatCurrency(marketingData?.kpis.roiMedio || 0)} 
+            change={marketingData?.kpis.crescimento.receita || 0} 
             icon={DollarSign}
             color="#00E676"
           />
@@ -164,7 +187,7 @@ export default function Marketing() {
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={monthlyData}>
+                    <LineChart data={marketingData?.mesesData || []}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="mes" />
                       <YAxis />
@@ -175,14 +198,14 @@ export default function Marketing() {
                         dataKey="organico" 
                         stroke="#00E676" 
                         strokeWidth={2}
-                        name="Orgânico"
+                        name="Novos Leads"
                       />
                       <Line 
                         type="monotone" 
                         dataKey="pago" 
                         stroke="#7C4DFF" 
                         strokeWidth={2}
-                        name="Pago"
+                        name="Matrículas"
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -224,12 +247,12 @@ export default function Marketing() {
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={monthlyData}>
+                    <BarChart data={marketingData?.mesesData || []}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="mes" />
                       <YAxis />
                       <Tooltip />
-                      <Bar dataKey="conversoes" fill="#7C4DFF" name="Conversões" />
+                      <Bar dataKey="conversoes" fill="#7C4DFF" name="Certificados Vendidos" />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -237,32 +260,27 @@ export default function Marketing() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Campanhas Ativas</CardTitle>
-                  <CardDescription>Status das campanhas em andamento</CardDescription>
+                  <CardTitle>Performance por Curso</CardTitle>
+                  <CardDescription>Top 5 cursos com melhor desempenho</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  {[
-                    { name: "Lançamento Curso IA", status: "Ativo", budget: "R$ 5.000", performance: "Alta" },
-                    { name: "Black Friday Maextria", status: "Ativo", budget: "R$ 8.000", performance: "Média" },
-                    { name: "Retargeting Geral", status: "Pausada", budget: "R$ 2.000", performance: "Baixa" },
-                  ].map((campaign, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                      <div>
-                        <p className="font-medium">{campaign.name}</p>
-                        <p className="text-sm text-muted-foreground">{campaign.budget}</p>
-                      </div>
-                      <div className="text-right">
-                        <span className={`text-xs px-2 py-1 rounded ${
-                          campaign.status === "Ativo" ? "bg-green-500/20 text-green-600" : "bg-yellow-500/20 text-yellow-600"
-                        }`}>
-                          {campaign.status}
-                        </span>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Performance: {campaign.performance}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={marketingData?.cursosPerformance?.slice(0, 5) || []}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="curso" 
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                        interval={0}
+                      />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="matriculas" fill="#7C4DFF" name="Matrículas" />
+                      <Bar dataKey="certificados" fill="#00E676" name="Certificados" />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </CardContent>
               </Card>
             </div>
