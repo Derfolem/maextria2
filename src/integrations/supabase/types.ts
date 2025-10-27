@@ -192,6 +192,149 @@ export type Database = {
         }
         Relationships: []
       }
+      marketing_lead_atividades: {
+        Row: {
+          criado_em: string
+          descricao: string
+          id: string
+          lead_id: string
+          tipo: string
+          usuario_id: string | null
+        }
+        Insert: {
+          criado_em?: string
+          descricao: string
+          id?: string
+          lead_id: string
+          tipo: string
+          usuario_id?: string | null
+        }
+        Update: {
+          criado_em?: string
+          descricao?: string
+          id?: string
+          lead_id?: string
+          tipo?: string
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_lead_atividades_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_leads: {
+        Row: {
+          atualizado_em: string
+          cargo: string | null
+          criado_em: string
+          data_primeiro_contato: string | null
+          data_ultimo_contato: string | null
+          email: string
+          empresa: string | null
+          id: string
+          interesse_curso_id: string | null
+          nome: string
+          notas: string | null
+          origem: string | null
+          pontuacao: number | null
+          responsavel_id: string | null
+          status: string
+          telefone: string | null
+          valor_potencial: number | null
+        }
+        Insert: {
+          atualizado_em?: string
+          cargo?: string | null
+          criado_em?: string
+          data_primeiro_contato?: string | null
+          data_ultimo_contato?: string | null
+          email: string
+          empresa?: string | null
+          id?: string
+          interesse_curso_id?: string | null
+          nome: string
+          notas?: string | null
+          origem?: string | null
+          pontuacao?: number | null
+          responsavel_id?: string | null
+          status?: string
+          telefone?: string | null
+          valor_potencial?: number | null
+        }
+        Update: {
+          atualizado_em?: string
+          cargo?: string | null
+          criado_em?: string
+          data_primeiro_contato?: string | null
+          data_ultimo_contato?: string | null
+          email?: string
+          empresa?: string | null
+          id?: string
+          interesse_curso_id?: string | null
+          nome?: string
+          notas?: string | null
+          origem?: string | null
+          pontuacao?: number | null
+          responsavel_id?: string | null
+          status?: string
+          telefone?: string | null
+          valor_potencial?: number | null
+        }
+        Relationships: []
+      }
+      marketing_posts: {
+        Row: {
+          atualizado_em: string
+          autor_id: string | null
+          conteudo: string | null
+          criado_em: string
+          data_agendamento: string | null
+          data_publicacao: string | null
+          hashtags: string[] | null
+          id: string
+          imagem_url: string | null
+          plataforma: string
+          status: string
+          tipo: string
+          titulo: string
+        }
+        Insert: {
+          atualizado_em?: string
+          autor_id?: string | null
+          conteudo?: string | null
+          criado_em?: string
+          data_agendamento?: string | null
+          data_publicacao?: string | null
+          hashtags?: string[] | null
+          id?: string
+          imagem_url?: string | null
+          plataforma: string
+          status?: string
+          tipo: string
+          titulo: string
+        }
+        Update: {
+          atualizado_em?: string
+          autor_id?: string | null
+          conteudo?: string | null
+          criado_em?: string
+          data_agendamento?: string | null
+          data_publicacao?: string | null
+          hashtags?: string[] | null
+          id?: string
+          imagem_url?: string | null
+          plataforma?: string
+          status?: string
+          tipo?: string
+          titulo?: string
+        }
+        Relationships: []
+      }
       matriculas: {
         Row: {
           ativa: boolean
