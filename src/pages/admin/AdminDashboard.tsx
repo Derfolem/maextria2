@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { BookOpen, Users, Award, CheckCircle, DollarSign, Settings, UserCog, Mail } from "lucide-react";
+import { BookOpen, Users, Award, CheckCircle, DollarSign, Settings, UserCog, Mail, BarChart3 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
@@ -123,6 +123,12 @@ export default function AdminDashboard() {
               </Link>
             </Button>
             <Button asChild variant="outline" className="w-full justify-start">
+              <Link to="/admin/marketing">
+                <BarChart3 className="mr-2 h-4 w-4" />
+                Marketing
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full justify-start">
               <Link to="/admin/mensagens">
                 <Mail className="mr-2 h-4 w-4" />
                 Mensagens {stats.totalMensagens > 0 && `(${stats.totalMensagens})`}
@@ -131,6 +137,38 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle>Marketing & Análises</CardTitle>
+            <CardDescription>Acesse as ferramentas de marketing e análise</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Button asChild className="w-full justify-start">
+              <Link to="/admin/marketing">
+                <BarChart3 className="mr-2 h-4 w-4" />
+                Dashboard de Marketing
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full justify-start">
+              <Link to="/admin/marketing/calendario">
+                Calendário Editorial
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full justify-start">
+              <Link to="/admin/marketing/crm">
+                CRM de Leads
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full justify-start">
+              <Link to="/admin/marketing/seo">
+                SEO Manager
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="mt-6">
         <Card>
           <CardHeader>
             <CardTitle>Informações</CardTitle>

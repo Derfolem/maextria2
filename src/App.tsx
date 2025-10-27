@@ -32,7 +32,12 @@ import Financeiro from "./pages/admin/Financeiro";
 import GerenciarUsuarios from "./pages/admin/GerenciarUsuarios";
 import DetalhesUsuario from "./pages/admin/DetalhesUsuario";
 import Mensagens from "./pages/admin/Mensagens";
-import Marketing from "./pages/admin/Marketing";
+import MarketingDashboard from "./pages/marketing/MarketingDashboard";
+import MarketingCalendario from "./pages/marketing/MarketingCalendario";
+import MarketingCRM from "./pages/marketing/MarketingCRM";
+import MarketingSEO from "./pages/marketing/MarketingSEO";
+import MarketingAutomacao from "./pages/marketing/MarketingAutomacao";
+import MarketingFerramentas from "./pages/marketing/MarketingFerramentas";
 
 const queryClient = new QueryClient();
 
@@ -77,7 +82,12 @@ const App = () => (
             <Route path="usuarios" element={<GerenciarUsuarios />} />
             <Route path="usuarios/:userId" element={<DetalhesUsuario />} />
             <Route path="mensagens" element={<Mensagens />} />
-            <Route path="marketing" element={<Marketing />} />
+            <Route path="marketing" element={<MarketingDashboard />} />
+            <Route path="marketing/calendario" element={<MarketingCalendario />} />
+            <Route path="marketing/crm" element={<MarketingCRM />} />
+            <Route path="marketing/seo" element={<MarketingSEO />} />
+            <Route path="marketing/automacao" element={<MarketingAutomacao />} />
+            <Route path="marketing/ferramentas" element={<MarketingFerramentas />} />
           </Route>
           
           <Route path="*" element={<NotFound />} />
