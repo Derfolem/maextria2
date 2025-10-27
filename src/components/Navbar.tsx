@@ -16,6 +16,7 @@ import logoImage from "@/assets/maextria-logo.png";
 export const Navbar = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
+  const [userName, setUserName] = useState<string>("");
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
@@ -23,6 +24,7 @@ export const Navbar = () => {
       setUser(session?.user ?? null);
       if (session?.user) {
         checkAdminStatus(session.user.id);
+        fetchUserName(session.user.id);
       }
     });
 
@@ -32,13 +34,27 @@ export const Navbar = () => {
       setUser(session?.user ?? null);
       if (session?.user) {
         checkAdminStatus(session.user.id);
+        fetchUserName(session.user.id);
       } else {
         setIsAdmin(false);
+        setUserName("");
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchUserName = async (userId: string) => {
+    const { data } = await supabase
+      .from("usuarios")
+      .select("nome_completo")
+      .eq("id", userId)
+      .maybeSingle();
+    
+    if (data) {
+      setUserName(data.nome_completo);
+    }
+  };
 
   const checkAdminStatus = async (userId: string) => {
     const { data } = await supabase
@@ -82,8 +98,9 @@ export const Navbar = () => {
               )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="hover:bg-primary/10">
+                  <Button variant="ghost" className="hover:bg-primary/10 flex items-center gap-2">
                     <UserIcon className="h-5 w-5" />
+                    {userName && <span className="text-sm">Olá, {userName.split(' ')[0]}</span>}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="bg-card">
