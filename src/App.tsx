@@ -32,6 +32,9 @@ import Financeiro from "./pages/admin/Financeiro";
 import GerenciarUsuarios from "./pages/admin/GerenciarUsuarios";
 import DetalhesUsuario from "./pages/admin/DetalhesUsuario";
 import Mensagens from "./pages/admin/Mensagens";
+import Colaboradores from "./pages/admin/Colaboradores";
+import AulasManager from "./pages/admin/AulasManager";
+import AulaForm from "./pages/admin/AulaForm";
 import MarketingDashboard from "./pages/marketing/MarketingDashboard";
 import MarketingCalendario from "./pages/marketing/MarketingCalendario";
 import MarketingCRM from "./pages/marketing/MarketingCRM";
@@ -74,6 +77,9 @@ const App = () => (
             <Route path="cursos/:cursoId/modulos" element={<ModulosManager />} />
             <Route path="cursos/:cursoId/modulos/novo" element={<ModuloForm />} />
             <Route path="modulos/:moduloId/editar" element={<ModuloForm />} />
+            <Route path="modulos/:moduloId/aulas" element={<AulasManager />} />
+            <Route path="modulos/:moduloId/aulas/nova" element={<AulaForm />} />
+            <Route path="modulos/:moduloId/aulas/:aulaId/editar" element={<AulaForm />} />
             <Route path="cursos/:cursoId/prova" element={<QuestoesManager />} />
             <Route path="cursos/:cursoId/questoes/nova" element={<QuestaoForm />} />
             <Route path="questoes/:questaoId/editar" element={<QuestaoForm />} />
@@ -82,6 +88,7 @@ const App = () => (
             <Route path="usuarios" element={<GerenciarUsuarios />} />
             <Route path="usuarios/:userId" element={<DetalhesUsuario />} />
             <Route path="mensagens" element={<Mensagens />} />
+            <Route path="colaboradores" element={<Colaboradores />} />
             <Route path="marketing" element={<MarketingDashboard />} />
             <Route path="marketing/calendario" element={<MarketingCalendario />} />
             <Route path="marketing/crm" element={<MarketingCRM />} />

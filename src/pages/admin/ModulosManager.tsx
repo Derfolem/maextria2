@@ -151,6 +151,11 @@ export default function ModulosManager() {
             </CardHeader>
             <CardContent>
               <div className="flex gap-2">
+                <Link to={`/admin/modulos/${modulo.id}/aulas`}>
+                  <Button variant="default" size="sm">
+                    Gerenciar Aulas
+                  </Button>
+                </Link>
                 <Link to={`/admin/modulos/${modulo.id}/editar`}>
                   <Button variant="outline" size="sm">
                     <Edit className="h-4 w-4 mr-2" />

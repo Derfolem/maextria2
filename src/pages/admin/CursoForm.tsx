@@ -9,13 +9,14 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { cursoSchema } from "@/lib/schemas";
-import { Loader2 } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 
 export default function CursoForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [generatingImage, setGeneratingImage] = useState(false);
   const [formData, setFormData] = useState({
     titulo: "",
     slug: "",
@@ -79,6 +80,43 @@ export default function CursoForm() {
       titulo: value,
       slug: generateSlug(value),
     });
+  };
+
+  const handleGenerateImage = async () => {
+    if (!formData.titulo) {
+      toast({
+        title: "Preencha o título do curso",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setGeneratingImage(true);
+
+    try {
+      const prompt = `${formData.titulo} - ${formData.categoria || 'curso online'} - ${formData.descricao || 'curso educacional'}`;
+
+      const { data, error } = await supabase.functions.invoke('generate-course-image', {
+        body: { prompt }
+      });
+
+      if (error) throw error;
+
+      if (data.imageUrl) {
+        setFormData({ ...formData, imagem_capa_url: data.imageUrl });
+        toast({
+          title: "Imagem gerada com sucesso!",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro ao gerar imagem",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingImage(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -220,15 +258,37 @@ export default function CursoForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="imagem_capa_url">URL da Imagem de Capa</Label>
-              <Input
-                id="imagem_capa_url"
-                type="url"
-                value={formData.imagem_capa_url}
-                onChange={(e) =>
-                  setFormData({ ...formData, imagem_capa_url: e.target.value })
-                }
-              />
+              <Label htmlFor="imagem_capa_url">Imagem de Capa</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="imagem_capa_url"
+                  type="url"
+                  value={formData.imagem_capa_url}
+                  onChange={(e) =>
+                    setFormData({ ...formData, imagem_capa_url: e.target.value })
+                  }
+                  placeholder="URL da imagem ou gere com IA"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleGenerateImage}
+                  disabled={generatingImage}
+                >
+                  {generatingImage ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              {formData.imagem_capa_url && (
+                <img
+                  src={formData.imagem_capa_url}
+                  alt="Preview"
+                  className="mt-2 rounded-lg max-h-48 object-cover"
+                />
+              )}
             </div>
 
             <div className="space-y-2">

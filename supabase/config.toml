@@ -8,3 +8,6 @@ verify_jwt = true
 
 [functions.generate-copy]
 verify_jwt = true
+
+[functions.generate-course-image]
+verify_jwt = true

@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Home, BookOpen, LogOut, LayoutDashboard } from "lucide-react";
+import { Home, BookOpen, LogOut, LayoutDashboard, Users } from "lucide-react";
 
 export const AdminNavbar = () => {
   const navigate = useNavigate();
@@ -25,6 +25,12 @@ export const AdminNavbar = () => {
                 <Button variant="ghost" size="sm">
                   <BookOpen className="h-4 w-4 mr-2" />
                   Cursos
+                </Button>
+              </Link>
+              <Link to="/admin/colaboradores">
+                <Button variant="ghost" size="sm">
+                  <Users className="h-4 w-4 mr-2" />
+                  Colaboradores
                 </Button>
               </Link>
             </div>

@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      aulas: {
+        Row: {
+          atualizado_em: string
+          conteudo_html: string | null
+          criado_em: string
+          id: string
+          modulo_id: string
+          ordem: number
+          titulo: string
+          video_url: string | null
+        }
+        Insert: {
+          atualizado_em?: string
+          conteudo_html?: string | null
+          criado_em?: string
+          id?: string
+          modulo_id: string
+          ordem: number
+          titulo: string
+          video_url?: string | null
+        }
+        Update: {
+          atualizado_em?: string
+          conteudo_html?: string | null
+          criado_em?: string
+          id?: string
+          modulo_id?: string
+          ordem?: number
+          titulo?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aulas_modulo_id_fkey"
+            columns: ["modulo_id"]
+            isOneToOne: false
+            referencedRelation: "modulos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       avaliacoes: {
         Row: {
           atualizado_em: string | null
@@ -122,6 +163,68 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      colaborador_permissoes: {
+        Row: {
+          colaborador_id: string
+          criado_em: string
+          id: string
+          permissao: Database["public"]["Enums"]["colaborador_permissao"]
+        }
+        Insert: {
+          colaborador_id: string
+          criado_em?: string
+          id?: string
+          permissao: Database["public"]["Enums"]["colaborador_permissao"]
+        }
+        Update: {
+          colaborador_id?: string
+          criado_em?: string
+          id?: string
+          permissao?: Database["public"]["Enums"]["colaborador_permissao"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "colaborador_permissoes_colaborador_id_fkey"
+            columns: ["colaborador_id"]
+            isOneToOne: false
+            referencedRelation: "colaboradores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      colaboradores: {
+        Row: {
+          admin_id: string
+          ativo: boolean
+          atualizado_em: string
+          criado_em: string
+          email: string
+          id: string
+          nome: string
+          usuario_id: string
+        }
+        Insert: {
+          admin_id: string
+          ativo?: boolean
+          atualizado_em?: string
+          criado_em?: string
+          email: string
+          id?: string
+          nome: string
+          usuario_id: string
+        }
+        Update: {
+          admin_id?: string
+          ativo?: boolean
+          atualizado_em?: string
+          criado_em?: string
+          email?: string
+          id?: string
+          nome?: string
+          usuario_id?: string
+        }
+        Relationships: []
       }
       configuracoes_site: {
         Row: {
@@ -447,6 +550,38 @@ export type Database = {
           },
         ]
       }
+      progresso_aula: {
+        Row: {
+          aula_id: string
+          concluido: boolean | null
+          concluido_em: string | null
+          id: string
+          usuario_id: string
+        }
+        Insert: {
+          aula_id: string
+          concluido?: boolean | null
+          concluido_em?: string | null
+          id?: string
+          usuario_id: string
+        }
+        Update: {
+          aula_id?: string
+          concluido?: boolean | null
+          concluido_em?: string | null
+          id?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "progresso_aula_aula_id_fkey"
+            columns: ["aula_id"]
+            isOneToOne: false
+            referencedRelation: "aulas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       progresso_modulo: {
         Row: {
           concluido: boolean | null
@@ -671,6 +806,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      has_colaborador_permissao: {
+        Args: {
+          _permissao: Database["public"]["Enums"]["colaborador_permissao"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -681,6 +823,15 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      colaborador_permissao:
+        | "gerenciar_cursos"
+        | "gerenciar_modulos"
+        | "gerenciar_aulas"
+        | "gerenciar_questoes"
+        | "visualizar_usuarios"
+        | "gerenciar_conteudo"
+        | "visualizar_financeiro"
+        | "gerenciar_marketing"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -809,6 +960,16 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      colaborador_permissao: [
+        "gerenciar_cursos",
+        "gerenciar_modulos",
+        "gerenciar_aulas",
+        "gerenciar_questoes",
+        "visualizar_usuarios",
+        "gerenciar_conteudo",
+        "visualizar_financeiro",
+        "gerenciar_marketing",
+      ],
     },
   },
 } as const
