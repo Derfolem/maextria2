@@ -86,11 +86,42 @@ export default function GerenciarUsuarios() {
 
         toast({ title: "Usuário atualizado com sucesso" });
       } else {
-        toast({
-          title: "Funcionalidade não disponível",
-          description: "Por motivos de segurança, usuários só podem ser criados através do formulário de cadastro padrão da plataforma.",
-        });
-        return;
+        // Criar novo usuário via Edge Function
+        if (!formData.email || !formData.senha || !formData.nome_completo) {
+          toast({
+            title: "Campos obrigatórios",
+            description: "Email, senha e nome completo são obrigatórios",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-user-admin`,
+          {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${session?.access_token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email: formData.email,
+              senha: formData.senha,
+              nome_completo: formData.nome_completo,
+              cpf: formData.cpf,
+            }),
+          }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || "Erro ao criar usuário");
+        }
+
+        toast({ title: "Usuário criado com sucesso" });
       }
 
       setIsDialogOpen(false);
