@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { BookOpen, Award, Zap, ChevronRight, Star, Clock } from "lucide-react";
 import heroImage from "@/assets/maextria-hero.jpg";
 import conceptImage from "@/assets/maextria-concept.jpg";
-import logoImage from "@/assets/maextria-logo.png";
+import logoImage from "@/assets/maextria-logo-new.png";
 
 interface Course {
   id: string;
