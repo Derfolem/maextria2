@@ -32,6 +32,7 @@ import Financeiro from "./pages/admin/Financeiro";
 import GerenciarUsuarios from "./pages/admin/GerenciarUsuarios";
 import DetalhesUsuario from "./pages/admin/DetalhesUsuario";
 import Mensagens from "./pages/admin/Mensagens";
+import Marketing from "./pages/admin/Marketing";
 
 const queryClient = new QueryClient();
 
@@ -76,6 +77,7 @@ const App = () => (
             <Route path="usuarios" element={<GerenciarUsuarios />} />
             <Route path="usuarios/:userId" element={<DetalhesUsuario />} />
             <Route path="mensagens" element={<Mensagens />} />
+            <Route path="marketing" element={<Marketing />} />
           </Route>
           
           <Route path="*" element={<NotFound />} />
