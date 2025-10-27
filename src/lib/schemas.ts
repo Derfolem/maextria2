@@ -29,3 +29,10 @@ export const questaoSchema = z.object({
   correta: z.enum(["a", "b", "c", "d"], { required_error: "Selecione a resposta correta" }),
   curso_id: z.string().uuid("ID do curso inválido"),
 });
+
+export const contatoSchema = z.object({
+  nome: z.string().trim().min(2, "Nome deve ter no mínimo 2 caracteres").max(100, "Nome deve ter no máximo 100 caracteres"),
+  email: z.string().trim().email("Email inválido").max(255, "Email deve ter no máximo 255 caracteres"),
+  assunto: z.string().trim().min(5, "Assunto deve ter no mínimo 5 caracteres").max(200, "Assunto deve ter no máximo 200 caracteres"),
+  mensagem: z.string().trim().min(10, "Mensagem deve ter no mínimo 10 caracteres").max(2000, "Mensagem deve ter no máximo 2000 caracteres"),
+});

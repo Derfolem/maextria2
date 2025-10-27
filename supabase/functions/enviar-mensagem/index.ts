@@ -16,6 +16,7 @@ serve(async (req) => {
 
     console.log("Recebendo mensagem de:", email);
 
+    // Validate required fields
     if (!nome || !email || !assunto || !mensagem) {
       return new Response(
         JSON.stringify({ error: "Todos os campos são obrigatórios" }),
@@ -26,20 +27,54 @@ serve(async (req) => {
       );
     }
 
+    // Validate field lengths and formats
+    const trimmedNome = String(nome).trim();
+    const trimmedEmail = String(email).trim();
+    const trimmedAssunto = String(assunto).trim();
+    const trimmedMensagem = String(mensagem).trim();
+
+    if (trimmedNome.length < 2 || trimmedNome.length > 100) {
+      return new Response(
+        JSON.stringify({ error: "Nome deve ter entre 2 e 100 caracteres" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
+    }
+
+    if (trimmedEmail.length > 255 || !trimmedEmail.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      return new Response(
+        JSON.stringify({ error: "Email inválido" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
+    }
+
+    if (trimmedAssunto.length < 5 || trimmedAssunto.length > 200) {
+      return new Response(
+        JSON.stringify({ error: "Assunto deve ter entre 5 e 200 caracteres" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
+    }
+
+    if (trimmedMensagem.length < 10 || trimmedMensagem.length > 2000) {
+      return new Response(
+        JSON.stringify({ error: "Mensagem deve ter entre 10 e 2000 caracteres" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
+    }
+
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Inserir mensagem na tabela
+    // Inserir mensagem na tabela with sanitized data
     const { error: insertError } = await supabaseAdmin
       .from("mensagens")
       .insert({
         remetente_id: usuarioId || null,
-        remetente_nome: nome,
-        remetente_email: email,
-        assunto: assunto,
-        mensagem: mensagem,
+        remetente_nome: trimmedNome,
+        remetente_email: trimmedEmail,
+        assunto: trimmedAssunto,
+        mensagem: trimmedMensagem,
         status: "nao_lida",
       });
 

@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, MessageSquare, Send } from "lucide-react";
+import { contatoSchema } from "@/lib/schemas";
+import { z } from "zod";
 
 export default function Contato() {
   const { toast } = useToast();
@@ -24,14 +26,17 @@ export default function Contato() {
     setSending(true);
 
     try {
+      // Validate input data before sending
+      const validatedData = contatoSchema.parse(formData);
+      
       const { data: session } = await supabase.auth.getSession();
       
       const { error } = await supabase.functions.invoke("enviar-mensagem", {
         body: {
-          nome: formData.nome,
-          email: formData.email,
-          assunto: formData.assunto,
-          mensagem: formData.mensagem,
+          nome: validatedData.nome,
+          email: validatedData.email,
+          assunto: validatedData.assunto,
+          mensagem: validatedData.mensagem,
           usuarioId: session.session?.user?.id || null,
         },
       });
@@ -44,11 +49,19 @@ export default function Contato() {
       });
       setFormData({ nome: "", email: "", assunto: "", mensagem: "" });
     } catch (error: any) {
-      toast({
-        title: "Erro ao enviar mensagem",
-        description: error.message,
-        variant: "destructive",
-      });
+      if (error instanceof z.ZodError) {
+        toast({
+          title: "Dados inválidos",
+          description: error.errors[0].message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Erro ao enviar mensagem",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     } finally {
       setSending(false);
     }
