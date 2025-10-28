@@ -18,6 +18,7 @@ export const Navbar = () => {
   const [user, setUser] = useState<User | null>(null);
   const [userName, setUserName] = useState<string>("");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isColaborador, setIsColaborador] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -34,9 +35,11 @@ export const Navbar = () => {
       setUser(session?.user ?? null);
       if (session?.user) {
         checkAdminStatus(session.user.id);
+        checkColaboradorStatus(session.user.id);
         fetchUserName(session.user.id);
       } else {
         setIsAdmin(false);
+        setIsColaborador(false);
         setUserName("");
       }
     });
@@ -67,6 +70,17 @@ export const Navbar = () => {
     setIsAdmin(!!data);
   };
 
+  const checkColaboradorStatus = async (userId: string) => {
+    const { data } = await supabase
+      .from("colaboradores")
+      .select("id")
+      .eq("usuario_id", userId)
+      .eq("ativo", true)
+      .maybeSingle();
+    
+    setIsColaborador(!!data);
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/");
@@ -79,7 +93,7 @@ export const Navbar = () => {
           <img 
             src={logoImage} 
             alt="MAEXTRIA" 
-            className="h-16 md:h-20 w-auto object-contain" 
+            className="h-20 md:h-24 w-auto object-contain" 
             style={{ backgroundColor: 'transparent' }}
           />
         </Link>
@@ -94,6 +108,14 @@ export const Navbar = () => {
               {isAdmin && (
                 <Link to="/admin/dashboard">
                   <Button variant="outline" className="border-primary/50">Administração</Button>
+                </Link>
+              )}
+              {!isAdmin && isColaborador && (
+                <Link to="/admin/cursos">
+                  <Button variant="outline" className="border-secondary/50 bg-secondary/10">
+                    <span className="mr-2">🎖️</span>
+                    Colaborador
+                  </Button>
                 </Link>
               )}
               <DropdownMenu>

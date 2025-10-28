@@ -59,7 +59,7 @@ serve(async (req) => {
         const { error: updateError } = await supabaseAdmin
           .from("transacoes_pagamento")
           .update({
-            status: "pago",
+            status: "completo",
             stripe_payment_intent_id: session.payment_intent as string,
             atualizado_em: new Date().toISOString(),
           })

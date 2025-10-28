@@ -58,30 +58,39 @@ const Cursos = () => {
   const fetchCourses = async () => {
     const { data: cursosData, error } = await supabase
       .from("cursos")
-      .select("*")
-      .eq("ativo", true);
+      .select("id, titulo, slug, descricao, categoria, carga_horaria_horas, imagem_capa_url")
+      .eq("ativo", true)
+      .order("criado_em", { ascending: false });
 
     if (!error && cursosData) {
-      // Fetch ratings for each course
-      const coursesWithRatings = await Promise.all(
-        cursosData.map(async (curso) => {
-          const { data: avaliacoes } = await supabase
-            .from("avaliacoes")
-            .select("nota")
-            .eq("curso_id", curso.id);
+      // Fetch ratings for all courses in a single query
+      const cursoIds = cursosData.map(c => c.id);
+      const { data: avaliacoesData } = await supabase
+        .from("avaliacoes")
+        .select("curso_id, nota")
+        .in("curso_id", cursoIds);
 
-          const totalAvaliacoes = avaliacoes?.length || 0;
-          const mediaAvaliacoes = totalAvaliacoes > 0
-            ? avaliacoes!.reduce((sum, a) => sum + a.nota, 0) / totalAvaliacoes
-            : 0;
+      // Group ratings by course
+      const ratingsByCourse = (avaliacoesData || []).reduce((acc, av) => {
+        if (!acc[av.curso_id]) acc[av.curso_id] = [];
+        acc[av.curso_id].push(av.nota);
+        return acc;
+      }, {} as Record<string, number[]>);
 
-          return {
-            ...curso,
-            media_avaliacoes: mediaAvaliacoes,
-            total_avaliacoes: totalAvaliacoes,
-          };
-        })
-      );
+      // Calculate ratings for each course
+      const coursesWithRatings = cursosData.map((curso) => {
+        const ratings = ratingsByCourse[curso.id] || [];
+        const totalAvaliacoes = ratings.length;
+        const mediaAvaliacoes = totalAvaliacoes > 0
+          ? ratings.reduce((sum, nota) => sum + nota, 0) / totalAvaliacoes
+          : 0;
+
+        return {
+          ...curso,
+          media_avaliacoes: mediaAvaliacoes,
+          total_avaliacoes: totalAvaliacoes,
+        };
+      });
 
       setCourses(coursesWithRatings);
 

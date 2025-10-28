@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { Plus, Edit, Trash2, BookOpen, FileQuestion, Copy } from "lucide-react";
+import { Plus, Edit, Trash2, BookOpen, FileQuestion } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -281,14 +281,6 @@ export default function AdminCursos() {
                     Prova
                   </Button>
                 </Link>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => duplicateCurso(curso.id)}
-                >
-                  <Copy className="h-4 w-4 mr-2" />
-                  Duplicar
-                </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" size="sm">

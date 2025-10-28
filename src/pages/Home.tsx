@@ -28,8 +28,9 @@ const Home = () => {
     const fetchCourses = async () => {
       const { data, error } = await supabase
         .from("cursos")
-        .select("*")
+        .select("id, titulo, slug, descricao, carga_horaria_horas, imagem_capa_url, categoria")
         .eq("ativo", true)
+        .order("criado_em", { ascending: false })
         .limit(10);
 
       if (!error && data) {
