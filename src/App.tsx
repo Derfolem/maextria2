@@ -41,6 +41,7 @@ import MarketingCRM from "./pages/marketing/MarketingCRM";
 import MarketingSEO from "./pages/marketing/MarketingSEO";
 import MarketingAutomacao from "./pages/marketing/MarketingAutomacao";
 import MarketingFerramentas from "./pages/marketing/MarketingFerramentas";
+import CertificadoModelo from "./pages/admin/CertificadoModelo";
 
 const queryClient = new QueryClient();
 
@@ -95,6 +96,7 @@ const App = () => (
             <Route path="marketing/seo" element={<MarketingSEO />} />
             <Route path="marketing/automacao" element={<MarketingAutomacao />} />
             <Route path="marketing/ferramentas" element={<MarketingFerramentas />} />
+            <Route path="certificado-modelo" element={<CertificadoModelo />} />
           </Route>
           
           <Route path="*" element={<NotFound />} />

@@ -80,6 +80,13 @@ export const AdminNavbar = () => {
                   Cursos
                 </Button>
               </Link>
+              {isAdmin && (
+                <Link to="/admin/certificado-modelo">
+                  <Button variant="ghost" size="sm">
+                    Certificados
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
 

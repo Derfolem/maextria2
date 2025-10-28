@@ -29,7 +29,21 @@ export const AdminRoute = () => {
         .eq("role", "admin")
         .maybeSingle();
 
-      setIsAdmin(!!roles);
+      // Se não for admin, verificar se é colaborador ativo
+      let hasAccess = !!roles;
+      
+      if (!hasAccess) {
+        const { data: colaborador } = await supabase
+          .from("colaboradores")
+          .select("id, ativo")
+          .eq("usuario_id", user.id)
+          .eq("ativo", true)
+          .maybeSingle();
+        
+        hasAccess = !!colaborador;
+      }
+
+      setIsAdmin(hasAccess);
       setLoading(false);
     };
 

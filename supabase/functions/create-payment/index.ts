@@ -82,7 +82,7 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
-      success_url: `${req.headers.get("origin")}/dashboard?payment=success&curso=${cursoId}`,
+      success_url: `${req.headers.get("origin")}/pagamento-certificado/${cursoId}?payment=success`,
       cancel_url: `${req.headers.get("origin")}/pagamento-certificado/${cursoId}?payment=canceled`,
       metadata: {
         curso_id: cursoId,
