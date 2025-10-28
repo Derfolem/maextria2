@@ -174,8 +174,11 @@ const ModuloViewer = () => {
         )}
 
         <Card>
-          <CardContent className="pt-6 prose prose-lg max-w-none">
-            <div dangerouslySetInnerHTML={{ __html: module.conteudo_texto_html || "" }} />
+          <CardContent className="pt-6 prose prose-lg max-w-none dark:prose-invert">
+            <div 
+              dangerouslySetInnerHTML={{ __html: module.conteudo_texto_html || "" }} 
+              className="[&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_img]:my-4"
+            />
           </CardContent>
         </Card>
 

@@ -128,3 +128,51 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* Rich Text Editor Styles */
+.rich-text-editor .ql-container {
+  min-height: 200px;
+  font-size: 16px;
+  border-color: hsl(var(--border));
+}
+
+.rich-text-editor .ql-editor {
+  min-height: 200px;
+  color: hsl(var(--foreground));
+}
+
+.rich-text-editor .ql-editor.ql-blank::before {
+  color: hsl(var(--muted-foreground));
+}
+
+.rich-text-editor .ql-toolbar {
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+  background: hsl(var(--muted) / 0.5);
+  border-color: hsl(var(--border));
+}
+
+.rich-text-editor .ql-container {
+  border-bottom-left-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
+}
+
+.rich-text-editor .ql-stroke {
+  stroke: hsl(var(--foreground));
+}
+
+.rich-text-editor .ql-fill {
+  fill: hsl(var(--foreground));
+}
+
+.rich-text-editor .ql-picker-label {
+  color: hsl(var(--foreground));
+}
+
+/* Prose styles for rich text content */
+.prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+}

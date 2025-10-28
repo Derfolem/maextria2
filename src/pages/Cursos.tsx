@@ -159,7 +159,7 @@ const Cursos = () => {
             </p>
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {filteredCourses.map((course) => (
               <Card
                 key={course.id}
@@ -180,29 +180,29 @@ const Cursos = () => {
                   </div>
                 )}
 
-                <CardHeader className="flex-grow">
-                  <CardTitle className="line-clamp-2">{course.titulo}</CardTitle>
+                <CardHeader className="flex-grow p-3">
+                  <CardTitle className="line-clamp-2 text-sm">{course.titulo}</CardTitle>
                   
-                  <div className="flex items-center gap-2 pt-2">
-                    <StarRating rating={course.media_avaliacoes} size={16} />
+                  <div className="flex items-center gap-1 pt-1">
+                    <StarRating rating={course.media_avaliacoes} size={12} />
                     {course.total_avaliacoes > 0 && (
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         ({course.total_avaliacoes})
                       </span>
                     )}
                   </div>
 
                   {course.carga_horaria_horas > 0 && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2">
-                      <Clock className="h-4 w-4" />
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground pt-1">
+                      <Clock className="h-3 w-3" />
                       <span>{course.carga_horaria_horas}h</span>
                     </div>
                   )}
                 </CardHeader>
 
-                <CardContent className="pt-0 space-y-3">
-                  <div className="flex gap-2">
-                    <Button asChild className="flex-1">
+                <CardContent className="pt-0 p-3 space-y-2">
+                  <div className="flex gap-1">
+                    <Button asChild size="sm" className="flex-1 text-xs h-8">
                       <Link to={`/curso/${course.slug}`}>Ver Curso</Link>
                     </Button>
                     <ShareButton title={course.titulo} />

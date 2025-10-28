@@ -30,7 +30,7 @@ const Home = () => {
         .from("cursos")
         .select("*")
         .eq("ativo", true)
-        .limit(6);
+        .limit(10);
 
       if (!error && data) {
         setCourses(data);
@@ -228,11 +228,11 @@ const Home = () => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 max-w-7xl mx-auto">
             {courses.map((course) => (
               <Link key={course.id} to={`/curso/${course.slug}`}>
                 <Card className="overflow-hidden hover:shadow-[var(--shadow-soft)] transition-all hover:scale-105 bg-card border-border group">
-                  <div className="relative h-48 bg-gradient-to-br from-primary/20 to-background overflow-hidden">
+                  <div className="relative h-32 bg-gradient-to-br from-primary/20 to-background overflow-hidden">
                     {course.imagem_capa_url ? (
                       <img
                         src={course.imagem_capa_url}
@@ -249,28 +249,20 @@ const Home = () => {
                     </Badge>
                   </div>
                   
-                  <div className="p-6 space-y-3">
+                  <div className="p-3 space-y-2">
                     {course.categoria && (
                       <Badge variant="outline" className="text-xs">
                         {course.categoria}
                       </Badge>
                     )}
                     
-                    <h3 className="text-xl font-bold group-hover:text-primary transition-colors">
+                    <h3 className="text-sm font-bold group-hover:text-primary transition-colors line-clamp-2">
                       {course.titulo}
                     </h3>
-                    
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {course.descricao || "Expanda seu conhecimento com este curso completo."}
-                    </p>
 
-                    <div className="flex items-center gap-4 pt-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 fill-primary text-primary" />
-                        <span className="font-semibold">5.0</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
+                        <Clock className="h-3 w-3" />
                         <span>{course.carga_horaria_horas}h</span>
                       </div>
                     </div>

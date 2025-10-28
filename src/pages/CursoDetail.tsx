@@ -264,6 +264,16 @@ const CursoDetail = () => {
                         </>
                       )}
                     </Button>
+                    {modules.some(m => m.concluido) && (
+                      <Button 
+                        variant="outline"
+                        className="w-full" 
+                        size="lg"
+                        onClick={handleStartCourse}
+                      >
+                        Revisar Aulas
+                      </Button>
+                    )}
                     {allModulesCompleted && (
                       <p className="text-sm text-center text-muted-foreground">
                         Você completou todos os módulos! Faça a prova para liberar seu certificado.

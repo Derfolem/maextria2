@@ -75,9 +75,9 @@ export default function Colaboradores() {
   };
 
   const handleConvidarColaborador = async () => {
-    if (!novoEmail || !novoNome) {
+    if (!novoEmail) {
       toast({
-        title: "Preencha todos os campos",
+        title: "Preencha o email",
         variant: "destructive",
       });
       return;
@@ -89,22 +89,39 @@ export default function Colaboradores() {
       // Buscar usuário pelo email
       const { data: userData, error: userError } = await supabase
         .from("usuarios")
-        .select("id")
+        .select("id, nome_completo")
         .eq("email", novoEmail)
-        .single();
+        .maybeSingle();
 
       if (userError || !userData) {
         toast({
           title: "Usuário não encontrado",
-          description: "Este email não está cadastrado no sistema",
+          description: "Este email não está cadastrado no sistema. O usuário precisa criar uma conta primeiro.",
           variant: "destructive",
         });
+        setLoading(false);
         return;
       }
 
       // Obter usuário admin atual
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
+
+      // Verificar se já é colaborador
+      const { data: existingColab } = await supabase
+        .from("colaboradores")
+        .select("id")
+        .eq("usuario_id", userData.id)
+        .maybeSingle();
+
+      if (existingColab) {
+        toast({
+          title: "Este usuário já é colaborador",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
 
       // Criar colaborador
       const { data: colaborador, error: colabError } = await supabase
@@ -113,7 +130,7 @@ export default function Colaboradores() {
           admin_id: user.id,
           usuario_id: userData.id,
           email: novoEmail,
-          nome: novoNome,
+          nome: novoNome || userData.nome_completo,
         })
         .select()
         .single();
@@ -135,7 +152,7 @@ export default function Colaboradores() {
       }
 
       toast({
-        title: "Colaborador convidado com sucesso",
+        title: "Colaborador adicionado com sucesso",
       });
 
       setNovoEmail("");
@@ -144,7 +161,7 @@ export default function Colaboradores() {
       fetchColaboradores();
     } catch (error: any) {
       toast({
-        title: "Erro ao convidar colaborador",
+        title: "Erro ao adicionar colaborador",
         description: error.message,
         variant: "destructive",
       });
@@ -176,6 +193,27 @@ export default function Colaboradores() {
     fetchColaboradores();
   };
 
+  const handleToggleAtivo = async (id: string, ativo: boolean) => {
+    const { error } = await supabase
+      .from("colaboradores")
+      .update({ ativo: !ativo })
+      .eq("id", id);
+
+    if (error) {
+      toast({
+        title: "Erro ao atualizar status",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: ativo ? "Colaborador desativado" : "Colaborador ativado",
+    });
+    fetchColaboradores();
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <AdminNavbar />
@@ -187,28 +225,34 @@ export default function Colaboradores() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <UserPlus className="h-5 w-5" />
-                Convidar Novo Colaborador
+                Adicionar Colaborador
               </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                O usuário deve ter uma conta criada antes de ser adicionado como colaborador
+              </p>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="nome">Nome</Label>
-                <Input
-                  id="nome"
-                  value={novoNome}
-                  onChange={(e) => setNovoNome(e.target.value)}
-                  placeholder="Nome do colaborador"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Email do Usuário</Label>
                 <Input
                   id="email"
                   type="email"
                   value={novoEmail}
                   onChange={(e) => setNovoEmail(e.target.value)}
                   placeholder="email@exemplo.com"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Digite o email de um usuário já cadastrado
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="nome">Nome (opcional)</Label>
+                <Input
+                  id="nome"
+                  value={novoNome}
+                  onChange={(e) => setNovoNome(e.target.value)}
+                  placeholder="Deixe em branco para usar o nome do usuário"
                 />
               </div>
 
@@ -243,7 +287,7 @@ export default function Colaboradores() {
                 disabled={loading}
                 className="w-full"
               >
-                Convidar Colaborador
+                {loading ? "Adicionando..." : "Adicionar Colaborador"}
               </Button>
             </CardContent>
           </Card>
@@ -262,10 +306,23 @@ export default function Colaboradores() {
                   {colaboradores.map((colaborador) => (
                     <div
                       key={colaborador.id}
-                      className="flex items-start justify-between p-4 border rounded-lg"
+                      className={`flex items-start justify-between p-4 border rounded-lg ${
+                        !colaborador.ativo ? "opacity-50" : ""
+                      }`}
                     >
-                      <div className="space-y-1">
-                        <p className="font-medium">{colaborador.nome}</p>
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{colaborador.nome}</p>
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded ${
+                              colaborador.ativo
+                                ? "bg-green-500/10 text-green-500"
+                                : "bg-red-500/10 text-red-500"
+                            }`}
+                          >
+                            {colaborador.ativo ? "Ativo" : "Inativo"}
+                          </span>
+                        </div>
                         <p className="text-sm text-muted-foreground">{colaborador.email}</p>
                         <div className="flex flex-wrap gap-1 mt-2">
                           {colaborador.permissoes.map((perm) => (
@@ -278,13 +335,24 @@ export default function Colaboradores() {
                           ))}
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoverColaborador(colaborador.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleToggleAtivo(colaborador.id, colaborador.ativo)}
+                          title={colaborador.ativo ? "Desativar" : "Ativar"}
+                        >
+                          {colaborador.ativo ? "Desativar" : "Ativar"}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoverColaborador(colaborador.id)}
+                          title="Remover"
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>

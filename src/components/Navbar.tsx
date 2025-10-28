@@ -79,7 +79,7 @@ export const Navbar = () => {
           <img 
             src={logoImage} 
             alt="MAEXTRIA" 
-            className="h-12 md:h-14 w-auto object-contain" 
+            className="h-16 md:h-20 w-auto object-contain" 
             style={{ backgroundColor: 'transparent' }}
           />
         </Link>

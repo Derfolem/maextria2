@@ -4,11 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { moduloSchema } from "@/lib/schemas";
 import { Loader2 } from "lucide-react";
+import { RichTextEditor } from "@/components/RichTextEditor";
 
 export default function ModuloForm() {
   const { moduloId, cursoId } = useParams();
@@ -166,18 +166,13 @@ export default function ModuloForm() {
 
             <div className="space-y-2">
               <Label htmlFor="conteudo_texto_html">Conteúdo de Texto da Aula</Label>
-              <Textarea
-                id="conteudo_texto_html"
+              <RichTextEditor
                 value={formData.conteudo_texto_html}
-                onChange={(e) =>
-                  setFormData({ ...formData, conteudo_texto_html: e.target.value })
+                onChange={(value) =>
+                  setFormData({ ...formData, conteudo_texto_html: value })
                 }
-                rows={12}
-                placeholder="Escreva o conteúdo da aula aqui. Você pode usar HTML básico para formatação."
+                placeholder="Escreva o conteúdo da aula aqui. Use a barra de ferramentas para formatação e inserir imagens..."
               />
-              <p className="text-xs text-muted-foreground">
-                Suporta HTML básico: &lt;p&gt;, &lt;strong&gt;, &lt;em&gt;, &lt;ul&gt;, &lt;ol&gt;, &lt;li&gt;, etc.
-              </p>
             </div>
 
             <div className="flex gap-4">

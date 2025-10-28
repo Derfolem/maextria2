@@ -4,12 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { cursoSchema } from "@/lib/schemas";
 import { Loader2, Sparkles } from "lucide-react";
+import { RichTextEditor } from "@/components/RichTextEditor";
 
 export default function CursoForm() {
   const { id } = useParams();
@@ -219,25 +219,23 @@ export default function CursoForm() {
 
             <div className="space-y-2">
               <Label htmlFor="descricao">Descrição</Label>
-              <Textarea
-                id="descricao"
+              <RichTextEditor
                 value={formData.descricao}
-                onChange={(e) =>
-                  setFormData({ ...formData, descricao: e.target.value })
+                onChange={(value) =>
+                  setFormData({ ...formData, descricao: value })
                 }
-                rows={4}
+                placeholder="Descreva o curso de forma detalhada..."
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="publico_alvo">Público-alvo</Label>
-              <Textarea
-                id="publico_alvo"
+              <RichTextEditor
                 value={formData.publico_alvo}
-                onChange={(e) =>
-                  setFormData({ ...formData, publico_alvo: e.target.value })
+                onChange={(value) =>
+                  setFormData({ ...formData, publico_alvo: value })
                 }
-                rows={3}
+                placeholder="Quem é o público-alvo deste curso?"
               />
             </div>
 

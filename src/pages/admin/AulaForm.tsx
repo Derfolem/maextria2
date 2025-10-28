@@ -4,11 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { AdminNavbar } from "@/components/admin/AdminNavbar";
+import { RichTextEditor } from "@/components/RichTextEditor";
 
 export default function AulaForm() {
   const { moduloId, aulaId } = useParams();
@@ -206,44 +206,14 @@ export default function AulaForm() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="conteudo">Conteúdo HTML</Label>
-                <Textarea
-                  id="conteudo"
+                <Label htmlFor="conteudo">Conteúdo da Aula</Label>
+                <RichTextEditor
                   value={formData.conteudo_html}
-                  onChange={(e) =>
-                    setFormData({ ...formData, conteudo_html: e.target.value })
+                  onChange={(value) =>
+                    setFormData({ ...formData, conteudo_html: value })
                   }
-                  rows={10}
-                  placeholder="Digite o conteúdo HTML da aula aqui..."
+                  placeholder="Digite o conteúdo da aula aqui. Use a barra de ferramentas para formatação e inserir imagens..."
                 />
-                <div className="flex items-center gap-2 mt-2">
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    disabled={uploading}
-                    className="hidden"
-                    id="image-upload"
-                  />
-                  <Label htmlFor="image-upload" className="cursor-pointer">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={uploading}
-                      asChild
-                    >
-                      <span>
-                        {uploading ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                          <Upload className="mr-2 h-4 w-4" />
-                        )}
-                        Adicionar Imagem
-                      </span>
-                    </Button>
-                  </Label>
-                </div>
               </div>
 
               <div className="flex gap-4">
