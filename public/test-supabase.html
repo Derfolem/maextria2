@@ -46,40 +46,37 @@
   <body>
     <div class="card">
       <h2>Teste de Conexão Supabase</h2>
-      <p>
-        Clique abaixo para testar se o site MAEXTRIA está conectado corretamente
-        ao banco Supabase.
-      </p>
+      <p>Informe os dados do seu projeto e clique em testar.</p>
+      <input
+        id="url"
+        placeholder="https://seuprojeto.supabase.co"
+        style="width:90%;margin:4px;padding:8px;border-radius:4px;border:none"
+      /><br />
+      <input
+        id="key"
+        placeholder="chave anon pública (eyJhb...)"
+        style="width:90%;margin:4px;padding:8px;border-radius:4px;border:none"
+      /><br />
       <button id="testar">🔍 Testar Conexão</button>
-      <div id="resultado"></div>
+      <div id="resultado" style="margin-top:16px"></div>
     </div>
 
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script>
-      const url = import.meta?.env?.VITE_SUPABASE_URL || "https://SEU-PROJ.supabase.co";
-      const key =
-        import.meta?.env?.VITE_SUPABASE_PUBLISHABLE_KEY || "eyJhbGciOi..."; // Cole aqui a anon key pública
+      const testBtn = document.getElementById("testar");
+      testBtn.addEventListener("click", async () => {
+        const url = document.getElementById("url").value.trim();
+        const key = document.getElementById("key").value.trim();
+        const out = document.getElementById("resultado");
 
-      const s = window.supabase.createClient(url, key);
+        if (!url || !key) {
+          out.innerHTML = "<pre>⚠️ Informe a URL e a chave pública do Supabase.</pre>";
+          return;
+        }
 
-      document.getElementById("testar").addEventListener("click", async () => {
-        const r = document.getElementById("resultado");
-        r.innerHTML = "⏳ Testando conexão...";
+        out.innerHTML = "⏳ Testando conexão...";
         try {
+          const s = window.supabase.createClient(url, key);
           const { data, error } = await s.from("usuarios").select("*").limit(1);
           if (error) {
-            r.innerHTML = `<pre>❌ Erro Supabase:\n${error.message}</pre>`;
-          } else {
-            r.innerHTML = `<pre>✅ Conexão OK!\nPrimeiro registro:\n${JSON.stringify(
-              data?.[0] || {},
-              null,
-              2
-            )}</pre>`;
-          }
-        } catch (e) {
-          r.innerHTML = `<pre>❌ Falha geral:\n${e}</pre>`;
-        }
-      });
-    </script>
-  </body>
-</html>
+            out.innerHTML = `<pre>❌ Erro Supabase:\n
