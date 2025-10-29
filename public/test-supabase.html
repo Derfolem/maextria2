@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Teste de Conexão Supabase – MAEXTRIA</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        background: #0a0a1a;
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        text-align: center;
+      }
+      .card {
+        background: #11132a;
+        border: 1px solid #2a2c50;
+        border-radius: 12px;
+        padding: 32px;
+        max-width: 480px;
+      }
+      button {
+        background: #6b4eff;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+        margin-top: 16px;
+      }
+      pre {
+        background: #090a16;
+        padding: 16px;
+        border-radius: 8px;
+        color: #9ff;
+        overflow-x: auto;
+        text-align: left;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h2>Teste de Conexão Supabase</h2>
+      <p>
+        Clique abaixo para testar se o site MAEXTRIA está conectado corretamente
+        ao banco Supabase.
+      </p>
+      <button id="testar">🔍 Testar Conexão</button>
+      <div id="resultado"></div>
+    </div>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script>
+      const url = import.meta?.env?.VITE_SUPABASE_URL || "https://SEU-PROJ.supabase.co";
+      const key =
+        import.meta?.env?.VITE_SUPABASE_PUBLISHABLE_KEY || "eyJhbGciOi..."; // Cole aqui a anon key pública
+
+      const s = window.supabase.createClient(url, key);
+
+      document.getElementById("testar").addEventListener("click", async () => {
+        const r = document.getElementById("resultado");
+        r.innerHTML = "⏳ Testando conexão...";
+        try {
+          const { data, error } = await s.from("usuarios").select("*").limit(1);
+          if (error) {
+            r.innerHTML = `<pre>❌ Erro Supabase:\n${error.message}</pre>`;
+          } else {
+            r.innerHTML = `<pre>✅ Conexão OK!\nPrimeiro registro:\n${JSON.stringify(
+              data?.[0] || {},
+              null,
+              2
+            )}</pre>`;
+          }
+        } catch (e) {
+          r.innerHTML = `<pre>❌ Falha geral:\n${e}</pre>`;
+        }
+      });
+    </script>
+  </body>
+</html>
