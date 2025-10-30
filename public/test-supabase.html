@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Teste Supabase – MAEXTRIA</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        background: #0a0a1a;
+        color: #fff;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
+        padding: 20px;
+      }
+      .card {
+        background: #11132a;
+        border: 1px solid #2a2c50;
+        border-radius: 12px;
+        padding: 32px;
+        text-align: center;
+        width: 90%;
+        max-width: 480px;
+      }
+      input, button {
+        width: 100%;
+        margin-top: 10px;
+        padding: 12px;
+        border-radius: 6px;
+        border: none;
+        font-size: 16px;
+        box-sizing: border-box;
+      }
+      input { 
+        background: #0a0a1a; 
+        color: #fff; 
+        border: 1px solid #2a2c50; 
+      }
+      input:focus {
+        outline: none;
+        border-color: #6b4eff;
+      }
+      button { 
+        background: #6b4eff; 
+        color: #fff; 
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s;
+      }
+      button:hover { 
+        background: #5a3ecc; 
+        transform: translateY(-1px);
+      }
+      button:active {
+        transform: translateY(0);
+      }
+      button:disabled {
+        background: #444;
+        cursor: not-allowed;
+        transform: none;
+      }
+      pre { 
+        background: #090a16; 
+        padding: 16px; 
+        border-radius: 8px; 
+        text-align: left; 
+        overflow-x: auto; 
+        color: #9ff;
+        font-size: 13px;
+        max-height: 400px;
+        overflow-y: auto;
+      }
+      .success { color: #4ade80; }
+      .error { color: #f87171; }
+      .warning { color: #fbbf24; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h2>🔌 Teste de Conexão Supabase</h2>
+      <p>Informe sua URL e chave pública (anon key):</p>
+      <input id="url" placeholder="https://seuprojeto.supabase.co" />
+      <input id="key" type="password" placeholder="eyJhbGciOi..." />
+      <button id="testar">🔍 Testar Conexão</button>
+      <div id="resultado" style="margin-top: 16px"></div>
+    </div>
+
+    <!-- Supabase via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script>
+      console.log('🚀 Script carregado');
+      console.log('📦 Supabase disponível?', typeof window.supabase);
+
+      window.addEventListener('DOMContentLoaded', () => {
+        console.log('✅ DOM carregado');
+        
+        const btn = document.getElementById('testar');
+        const out = document.getElementById('resultado');
+        const urlInput = document.getElementById('url');
+        const keyInput = document.getElementById('key');
+
+        // Verifica se Supabase carregou
+        if (typeof window.supabase === 'undefined') {
+          out.innerHTML = '<pre class="error">❌ Biblioteca Supabase não carregou.\nVerifique sua conexão com a internet.</pre>';
+          return;
+        }
+
+        btn.addEventListener('click', async () => {
+          console.log('🖱️ Botão clicado!');
+          
+          const url = urlInput.value.trim();
+          const key = keyInput.value.trim();
+
+          // Validação de campos
+          if (!url || !key) {
+            out.innerHTML = '<pre class="warning">⚠️ Informe a URL e a chave pública (anon key).</pre>';
+            return;
+          }
+
+          // Validação de formato de URL
+          if (!url.startsWith('https://') || !url.includes('.supabase.co')) {
+            out.innerHTML = '<pre class="warning">⚠️ URL inválida.\nFormato esperado: https://seuprojeto.supabase.co</pre>';
+            return;
+          }
+
+          // Desabilita botão durante teste
+          btn.disabled = true;
+          btn.textContent = '⏳ Testando...';
+          out.innerHTML = '<pre>🔄 Conectando ao Supabase...</pre>';
+
+          try {
+            console.log('🔗 Tentando conectar:', url);
+            
+            // Cria cliente Supabase
+            const { createClient } = window.supabase;
+            const supabaseClient = createClient(url, key);
+
+            console.log('✅ Cliente criado');
+
+            // Teste 1: Tenta uma query simples que não depende de tabela específica
+            out.innerHTML = '<pre>🔍 Testando autenticação...</pre>';
+            
+            const { data: authData, error: authError } = await supabaseClient.auth.getSession();
+            
+            if (authError && authError.status === 403) {
+              throw new Error('Chave inválida ou projeto pausado');
+            }
+
+            console.log('✅ Auth OK');
+
+            // Teste 2: Lista tabelas disponíveis (tenta query genérica)
+            out.innerHTML = '<pre>🔍 Verificando banco de dados...</pre>';
+            
+            const { data, error } = await supabaseClient
+              .from('usuarios')
+              .select('*')
+              .limit(1);
+
+            if (error) {
+              // Se erro for "tabela não existe", ainda é conexão OK
+              if (error.code === 'PGRST116' || error.message.includes('does not exist')) {
+                out.innerHTML = `<pre class="success">✅ Conexão estabelecida com sucesso!
+
+<span class="warning">⚠️ Tabela "usuarios" não encontrada.</span>
+
+<strong>Detalhes:</strong>
+- URL: ${url}
+- Status: Conectado
+- Hora: ${new Date().toLocaleString('pt-BR')}
+
+<strong>Próximos passos:</strong>
+1. Crie a tabela "usuarios" no Supabase
+2. Ou teste com uma tabela existente
+3. Verifique as tabelas em: Dashboard → Table Editor</pre>`;
+              } else {
+                throw error;
+              }
+            } else {
+              // Sucesso total!
+              out.innerHTML = `<pre class="success">✅ Conexão e query bem-sucedidas!
+
+<strong>Registros encontrados:</strong> ${data.length}
+
+<strong>Dados:</strong>
+${JSON.stringify(data, null, 2)}
+
+<strong>Detalhes da conexão:</strong>
+- URL: ${url}
+- Hora: ${new Date().toLocaleString('pt-BR')}
+- Status: 🟢 Online</pre>`;
+            }
+
+            console.log('✅ Teste concluído com sucesso');
+
+          } catch (err) {
+            console.error('❌ Erro:', err);
+            
+            let errorMsg = err.message || String(err);
+            let suggestion = '';
+
+            // Mensagens de erro mais amigáveis
+            if (errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError')) {
+              suggestion = '\n\n<strong>Possíveis causas:</strong>\n• Projeto pausado no Supabase\n• URL incorreta\n• Sem conexão com internet';
+            } else if (errorMsg.includes('Invalid API key')) {
+              suggestion = '\n\n<strong>Causa:</strong>\n• Chave (anon key) incorreta ou expirada';
+            } else if (errorMsg.includes('CORS')) {
+              suggestion = '\n\n<strong>Causa:</strong>\n• CORS não configurado no Supabase\n• Acesse: Settings → API → CORS';
+            }
+
+            out.innerHTML = `<pre class="error">❌ Erro na conexão:
+
+${errorMsg}${suggestion}
+
+<strong>Debug info:</strong>
+- Tipo: ${err.name || 'Unknown'}
+- Código: ${err.code || 'N/A'}
+- Stack: Verifique o Console (F12)</pre>`;
+          } finally {
+            // Reabilita botão
+            btn.disabled = false;
+            btn.textContent = '🔍 Testar Conexão';
+          }
+        });
+
+        console.log('✅ Event listener configurado');
+      });
+    </script>
+  </body>
+</html>

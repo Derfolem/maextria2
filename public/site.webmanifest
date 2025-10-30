@@ -1,0 +1,26 @@
+{
+  "name": "MAEXTRIA",
+  "short_name": "MAEXTRIA",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A0A1A",
+  "theme_color": "#0A0A1A",
+  "description": "Mentes Audazes Exponencializam na Tríade: Aprender, Aplicar e Expandir",
+  "icons": [
+    {
+      "src": "/android-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
