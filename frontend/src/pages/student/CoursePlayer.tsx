@@ -1,0 +1,301 @@
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Course, Module, Lesson, Progress } from '../../types';
+import api from '../../lib/api';
+import toast from 'react-hot-toast';
+import { FaCheckCircle, FaCircle, FaDownload, FaArrowLeft, FaCertificate, FaPlay } from 'react-icons/fa';
+
+export default function CoursePlayer() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [course, setCourse] = useState<Course | null>(null);
+  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [progress, setProgress] = useState<Progress[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [enrollmentId, setEnrollmentId] = useState<string | number | null>(null);
+  const [note, setNote] = useState('');
+
+  useEffect(() => {
+    loadCourse();
+  }, [id]);
+
+  useEffect(() => {
+    if (enrollmentId) {
+      loadProgress();
+    }
+  }, [enrollmentId]);
+
+  useEffect(() => {
+    if (!selectedLesson) {
+      setNote('');
+      return;
+    }
+    const stored = localStorage.getItem(`maextria_note_${selectedLesson.id}`);
+    setNote(stored || '');
+  }, [selectedLesson]);
+
+  const loadCourse = async () => {
+    try {
+      const enrollmentsRes = await api.get('/enrollments/my');
+      const enrollment = enrollmentsRes.data.find(
+        (item: any) => String(item.course_id) === String(id)
+      );
+      if (!enrollment) {
+        toast.error('Você não está matriculado neste curso');
+        navigate('/student/my-courses');
+        return;
+      }
+      setEnrollmentId(enrollment.id);
+
+      const response = await api.get(`/courses/${id}`);
+      setCourse(response.data);
+      if (response.data.modules?.[0]?.lessons?.[0]) {
+        setSelectedLesson(response.data.modules[0].lessons[0]);
+      }
+    } catch (error) {
+      toast.error('Erro ao carregar curso');
+      navigate('/student/my-courses');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadProgress = async () => {
+    if (!enrollmentId) return;
+    try {
+      const response = await api.get(`/enrollments/${enrollmentId}/progress`);
+      setProgress(response.data.progress || []);
+    } catch (error) {
+      console.error('Error loading progress:', error);
+    }
+  };
+
+  const isLessonCompleted = (lessonId: string | number) => {
+    return progress.some((p) => String(p.lesson_id) === String(lessonId) && p.completed);
+  };
+
+  const markLessonComplete = async (lessonId: string | number) => {
+    if (!enrollmentId) return;
+    try {
+      await api.post(`/enrollments/${enrollmentId}/lessons/${lessonId}/complete`);
+      await loadProgress();
+      toast.success('Aula marcada como concluída!');
+    } catch (error) {
+      toast.error('Erro ao marcar aula como concluída');
+    }
+  };
+
+  const getCertificate = async () => {
+    if (!enrollmentId) return;
+    try {
+      const response = await api.post('/certificates/request', { enrollment_id: enrollmentId });
+      if (response.data.payment_required) {
+        const confirmed = confirm(
+          `Este certificado custa R$ ${Number(response.data.price || 0).toFixed(2)}. Deseja pagar agora?`
+        );
+        if (!confirmed) {
+          toast('Pagamento pendente para liberar o certificado.');
+          return;
+        }
+        await api.post(`/certificates/${response.data.id}/pay`);
+      }
+      toast.success('Certificado liberado com sucesso!');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Erro ao gerar certificado');
+    }
+  };
+
+  const saveNote = () => {
+    if (!selectedLesson) return;
+    localStorage.setItem(`maextria_note_${selectedLesson.id}`, note);
+    toast.success('Anotacao salva.');
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        <div className="animate-pulse">
+          <div className="h-96 bg-gray-200 rounded-lg"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!course) {
+    return null;
+  }
+
+  const totalLessons = course.modules?.reduce((acc, mod) => acc + (mod.lessons?.length || 0), 0) || 0;
+  const completedLessons = progress.filter((p) => p.completed).length;
+  const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+  const isCompleted = progressPercentage === 100;
+
+  return (
+    <div className="min-h-screen bg-[hsl(var(--background))]">
+      <div className="max-w-[1400px] mx-auto px-[clamp(24px,5vw,80px)] py-[clamp(40px,6vh,80px)]">
+        <div className="flex flex-col gap-6 mb-8">
+          <button
+            onClick={() => navigate('/student/my-courses')}
+            className="text-sm uppercase tracking-[0.3em] text-[hsl(var(--muted-foreground))] flex items-center gap-2 hover:text-[hsl(var(--primary))] transition"
+          >
+            <FaArrowLeft />
+            Voltar aos cursos
+          </button>
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+            <div>
+              <p className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--primary))]">Player do curso</p>
+              <h1 className="headline-font text-4xl md:text-5xl">{course.title}</h1>
+            </div>
+            <div className="min-w-[240px]">
+              <div className="w-full bg-[hsl(var(--muted))] rounded-full h-2">
+                <div
+                  className="bg-[hsl(var(--primary))] h-2 rounded-full transition-all"
+                  style={{ width: `${progressPercentage}%` }}
+                ></div>
+              </div>
+              <p className="text-sm text-[hsl(var(--muted-foreground))] mt-2">
+                {completedLessons} de {totalLessons} aulas concluídas
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid lg:grid-cols-[1fr_360px] gap-8">
+          <div className="space-y-6">
+            <div className="card">
+              {selectedLesson ? (
+                <>
+                  <div className="flex items-center gap-3 text-sm text-[hsl(var(--muted-foreground))] mb-4">
+                    <FaPlay />
+                    <span>Aula em andamento</span>
+                  </div>
+                  <h2 className="headline-font text-3xl mb-4">{selectedLesson.title}</h2>
+
+                  {selectedLesson.video_url && (
+                    <div className="aspect-video bg-[hsl(var(--foreground))] rounded-[12px] mb-6 overflow-hidden">
+                      <iframe
+                        src={selectedLesson.video_url}
+                        className="w-full h-full"
+                        allowFullScreen
+                      />
+                    </div>
+                  )}
+
+                  {selectedLesson.content && (
+                    <div className="prose max-w-none mb-6">
+                      <div dangerouslySetInnerHTML={{ __html: selectedLesson.content }} />
+                    </div>
+                  )}
+
+                  {selectedLesson.materials && selectedLesson.materials.length > 0 && (
+                    <div className="mt-6">
+                      <h3 className="text-xl font-semibold mb-3">Materiais da Aula</h3>
+                      <div className="space-y-2">
+                        {selectedLesson.materials.map((material) => (
+                          <a
+                            key={material.id}
+                            href={material.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-3 p-3 rounded-[12px] border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))] transition"
+                          >
+                            <FaDownload />
+                            <span>{material.title}</span>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-8 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xl font-semibold">Anotacoes pessoais</h3>
+                      <button type="button" onClick={saveNote} className="btn-outline">
+                        Salvar
+                      </button>
+                    </div>
+                    <textarea
+                      value={note}
+                      onChange={(event) => setNote(event.target.value)}
+                      placeholder="Registre insights, referencias e proximos passos..."
+                      className="input-field min-h-[140px]"
+                    />
+                  </div>
+
+                  <div className="mt-8">
+                    {isLessonCompleted(selectedLesson.id) ? (
+                      <button className="btn-secondary">
+                        <FaCheckCircle className="inline mr-2" />
+                        Aula concluída
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => markLessonComplete(selectedLesson.id)}
+                        className="btn-accent"
+                      >
+                        Marcar como concluída
+                      </button>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-[hsl(var(--muted-foreground))]">Selecione uma aula para começar</p>
+                </div>
+              )}
+            </div>
+
+            {isCompleted && (
+              <div className="card flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--primary))]">Certificado</p>
+                  <p className="text-lg font-semibold">Seu curso esta completo</p>
+                  <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                    Gere seu certificado e finalize esta etapa.
+                  </p>
+                </div>
+                <button onClick={getCertificate} className="btn-accent flex items-center gap-2">
+                  <FaCertificate />
+                  Obter certificado
+                </button>
+              </div>
+            )}
+          </div>
+
+          <aside className="card h-fit sticky top-24">
+            <h3 className="text-lg font-semibold mb-4">Conteúdo do curso</h3>
+            <div className="space-y-6">
+              {course.modules?.map((module) => (
+                <div key={module.id}>
+                  <p className="text-sm uppercase tracking-[0.3em] text-[hsl(var(--muted-foreground))] mb-3">
+                    {module.title}
+                  </p>
+                  <div className="space-y-2">
+                    {module.lessons?.map((lesson) => (
+                      <button
+                        key={lesson.id}
+                        onClick={() => setSelectedLesson(lesson)}
+                        className={`w-full text-left p-3 rounded-[12px] transition flex items-center gap-3 border ${
+                          selectedLesson?.id === lesson.id
+                            ? 'border-[hsl(var(--primary))] bg-[hsl(var(--muted))]'
+                            : 'border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]'
+                        }`}
+                      >
+                        {isLessonCompleted(lesson.id) ? (
+                          <FaCheckCircle className="text-[hsl(var(--primary))] flex-shrink-0" />
+                        ) : (
+                          <FaCircle className="text-[hsl(var(--border))] flex-shrink-0" />
+                        )}
+                        <span className="flex-grow text-sm">{lesson.title}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,254 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 30% 5%;
+    --foreground: 220 20% 92%;
+    --primary: 205 95% 60%;
+    --primary-foreground: 220 30% 5%;
+    --secondary: 150 85% 45%;
+    --secondary-foreground: 220 30% 5%;
+    --accent: 165 60% 70%;
+    --accent-foreground: 220 30% 5%;
+    --muted: 220 20% 12%;
+    --muted-foreground: 220 10% 65%;
+    --card: 220 24% 10%;
+    --card-foreground: 220 20% 90%;
+    --border: 220 18% 18%;
+    --graphite: 220 20% 16%;
+  }
+
+  .dark {
+    --background: 220 30% 5%;
+    --foreground: 220 20% 92%;
+    --primary: 205 95% 60%;
+    --primary-foreground: 220 30% 5%;
+    --secondary: 150 85% 45%;
+    --secondary-foreground: 220 30% 5%;
+    --accent: 165 60% 70%;
+    --accent-foreground: 220 30% 5%;
+    --muted: 220 20% 12%;
+    --muted-foreground: 220 10% 65%;
+    --card: 220 24% 10%;
+    --card-foreground: 220 20% 90%;
+    --border: 220 18% 18%;
+    --graphite: 220 20% 16%;
+  }
+
+  body {
+    font-family: "Space Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: hsl(var(--foreground));
+    background: hsl(var(--background));
+    font-size: 16px;
+    line-height: 1.7;
+  }
+
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply transition duration-200 shadow-md hover:shadow-lg;
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    border-radius: 6px;
+    padding: 14px 28px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 13px;
+  }
+
+  .btn-primary:hover {
+    background: hsl(var(--primary));
+    box-shadow: 0 0 18px rgba(40, 210, 255, 0.35);
+  }
+
+  .btn-secondary {
+    @apply transition duration-200 shadow-sm hover:shadow-md;
+    background: hsl(var(--secondary));
+    color: hsl(var(--secondary-foreground));
+    border-radius: 6px;
+    padding: 14px 28px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 13px;
+  }
+
+  .btn-secondary:hover {
+    box-shadow: 0 0 18px rgba(48, 255, 170, 0.35);
+  }
+
+  .btn-accent {
+    @apply transition duration-200 shadow-sm hover:shadow-md;
+    background: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+    border-radius: 6px;
+    padding: 14px 28px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 13px;
+  }
+
+  .btn-accent:hover {
+    box-shadow: 0 0 18px rgba(90, 255, 200, 0.35);
+  }
+
+  .btn-outline {
+    @apply transition duration-200;
+    border: 1.5px solid hsl(var(--primary));
+    color: hsl(var(--primary));
+    background: transparent;
+    border-radius: 6px;
+    padding: 14px 28px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 13px;
+  }
+
+  .btn-outline:hover {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+  }
+
+  .card {
+    @apply transition duration-200;
+    background: hsl(var(--card));
+    color: hsl(var(--card-foreground));
+    border-radius: 8px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+    padding: 24px;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-2 outline-none transition;
+    border: 1px solid hsl(var(--border));
+    border-radius: 6px;
+    background: hsl(var(--card));
+    font-size: 16px;
+    line-height: 1.7;
+  }
+
+  .gradient-bg {
+    background: linear-gradient(120deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
+  }
+
+  .gradient-text {
+    background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--secondary)));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .nav-link {
+    position: relative;
+    font-weight: 500;
+  }
+
+  .nav-link::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -6px;
+    width: 0%;
+    height: 2px;
+    background: hsl(var(--secondary));
+    transition: width 0.2s ease;
+  }
+
+  .nav-link:hover::after {
+    width: 100%;
+  }
+}
+
+.hero-gradient {
+  background:
+    linear-gradient(180deg, rgba(6, 14, 20, 0.6) 0%, rgba(6, 14, 20, 0.9) 100%),
+    radial-gradient(circle at 20% 20%, rgba(40, 210, 255, 0.15), transparent 45%),
+    radial-gradient(circle at 80% 30%, rgba(48, 255, 170, 0.12), transparent 40%),
+    hsl(var(--background));
+}
+
+.hero-frame {
+  background: hsl(var(--card));
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+}
+
+.hero-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+
+.headline-font {
+  font-family: "Space Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-weight: 700;
+}
+
+.section-title {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 12px;
+}
+
+.section-title::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 48px;
+  height: 2px;
+  background: hsl(var(--secondary));
+  transform: translateX(-50%);
+}
+
+.x-glow {
+  box-shadow: 0 0 24px rgba(45, 200, 255, 0.4);
+}
+
+.x-outline {
+  border: 1px solid rgba(45, 200, 255, 0.4);
+}
+
+.shimmer {
+  background: linear-gradient(90deg, #0f1720 25%, #161f2b 50%, #0f1720 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.page-fade {
+  animation: page-fade 0.4s ease-out;
+}
+
+@keyframes page-fade {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -1,0 +1,103 @@
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuthStore } from '../lib/store';
+import toast from 'react-hot-toast';
+import { FaEnvelope, FaLock } from 'react-icons/fa';
+
+export default function Login() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const login = useAuthStore((state) => state.login);
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      await login(email, password);
+      toast.success('Login realizado com sucesso!');
+      const user = useAuthStore.getState().user;
+
+      if (user?.role === 'student') {
+        navigate('/student/dashboard');
+      } else if (user?.role === 'teacher') {
+        navigate('/teacher/dashboard');
+      } else if (user?.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/');
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Erro ao fazer login');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center bg-[hsl(var(--background))] py-12 px-[clamp(24px,5vw,80px)]">
+      <div className="max-w-md w-full card p-8">
+        <div className="text-center mb-8 space-y-2">
+          <p className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--primary))]">Login</p>
+          <h2 className="headline-font text-3xl">Bem-vindo de volta</h2>
+          <p className="text-[hsl(var(--muted-foreground))]">Acesse sua conta MAEXTRIA</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Email
+            </label>
+            <div className="relative">
+              <FaEnvelope className="absolute left-3 top-3 text-gray-400" />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="input-field pl-10"
+                placeholder="seu@email.com"
+                required
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Senha
+            </label>
+            <div className="relative">
+              <FaLock className="absolute left-3 top-3 text-gray-400" />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="input-field pl-10"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full btn-primary py-3"
+          >
+            {loading ? 'Entrando...' : 'Entrar'}
+          </button>
+        </form>
+
+        <div className="mt-6 text-center">
+          <p className="text-[hsl(var(--muted-foreground))]">
+            Não tem uma conta?{' '}
+            <Link to="/register" className="text-[hsl(var(--primary))] hover:text-[hsl(var(--foreground))] font-semibold">
+              Cadastre-se
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

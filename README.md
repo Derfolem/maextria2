@@ -1,73 +1,108 @@
-# Welcome to your Lovable project
+# 🎓 MAEXTRIA - Plataforma Completa de Cursos Online
 
-## Project info
+Uma plataforma moderna e completa de cursos online com **área de alunos, professores e administradores**, desenvolvida com **React, Node.js, TypeScript e SQLite**.
 
-**URL**: https://lovable.dev/projects/cb026a09-46a7-496a-a586-6db5b53e5f83
+---
 
-## How can I edit this code?
+## 🚀 Características Principais
 
-There are several ways of editing your application.
+### ✨ Para Alunos
+- 📚 **Navegação de cursos** - Explore cursos por categoria e dificuldade
+- 🎯 **Matrícula gratuita** - Inscreva-se em cursos sem custo
+- 📊 **Acompanhamento de progresso** - Veja seu avanço em cada curso
+- 🎓 **Certificados pagos** - Obtenha certificados ao concluir cursos
+- 💬 **Chat IA integrado** - Tire dúvidas com assistente inteligente
 
-**Use Lovable**
+### 👨‍🏫 Para Professores
+- ✏️ **Criar e gerenciar cursos** - Sistema completo de criação de conteúdo
+- 📑 **Módulos e aulas** - Organize o conteúdo em módulos estruturados
+- 🎥 **Vídeos e materiais** - Adicione links de vídeos e materiais para download
+- 🖼️ **Geração de imagens com IA** - Crie capas profissionais usando IA
+- 📈 **Dashboard de métricas** - Acompanhe receita, alunos e engajamento
+- 💰 **Receita de certificados** - Ganhe com a venda de certificados
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/cb026a09-46a7-496a-a586-6db5b53e5f83) and start prompting.
+### 🔧 Para Administradores
+- 👥 **Gestão de usuários** - Controle total sobre contas e permissões
+- 🎓 **Gestão de cursos** - Publicar, despublicar e excluir cursos
+- 💼 **Dashboard executivo** - Visão geral completa da plataforma
+- 💵 **Configuração de lucros** - Defina a partilha de lucros com professores
+- 📊 **Analytics completo** - Métricas de marketing e financeiras
 
-Changes made via Lovable will be committed automatically to this repo.
+---
 
-**Use your preferred IDE**
+## 📦 Instalação Rápida
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### 1. Instalar Dependências
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+```bash
+# Backend
+cd maextria/backend
+npm install
 
-Follow these steps:
+# Frontend
+cd ../frontend
+npm install
+```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### 2. Configurar Backend
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+```bash
+cd maextria/backend
+cp .env.example .env
+# Edite o .env conforme necessário
+```
 
-# Step 3: Install the necessary dependencies.
-npm i
+### 3. Inicializar Banco de Dados
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+cd maextria/backend
+npm run build
+node dist/database/seed.js
+```
+
+### 4. Iniciar Aplicação
+
+Terminal 1 (Backend):
+```bash
+cd maextria/backend
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Terminal 2 (Frontend):
+```bash
+cd maextria/frontend
+npm run dev
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Acesse: **http://localhost:5173**
 
-**Use GitHub Codespaces**
+---
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 👤 Contas de Teste
 
-## What technologies are used for this project?
+| Tipo | Email | Senha |
+|------|-------|-------|
+| **Admin** | admin@maextria.com | senha123 |
+| **Professor** | prof.maria@maextria.com | senha123 |
+| **Aluno** | aluno1@example.com | senha123 |
 
-This project is built with:
+---
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 🛠️ Tecnologias
 
-## How can I deploy this project?
+**Backend:** Node.js, Express, TypeScript, SQLite, JWT, OpenAI  
+**Frontend:** React 18, TypeScript, Vite, TailwindCSS, Zustand, Recharts
 
-Simply open [Lovable](https://lovable.dev/projects/cb026a09-46a7-496a-a586-6db5b53e5f83) and click on Share -> Publish.
+---
 
-## Can I connect a custom domain to my Lovable project?
+## 📚 Documentação Completa
 
-Yes, you can!
+Veja o arquivo README completo em cada pasta (backend/frontend) para mais detalhes sobre:
+- Estrutura do projeto
+- Endpoints da API
+- Componentes React
+- Configurações avançadas
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+---
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+**Desenvolvido com ❤️ para educação de qualidade**
