@@ -16,6 +16,9 @@ const resolveRole = (roles: Array<{ role: string }> | null) => {
   if (roles?.some((item) => item.role === 'admin')) {
     return 'admin' as const;
   }
+  if (roles?.some((item) => item.role === 'teacher')) {
+    return 'teacher' as const;
+  }
   return 'student' as const;
 };
 
