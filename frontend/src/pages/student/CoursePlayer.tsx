@@ -23,6 +23,7 @@ export default function CoursePlayer() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submittingQuiz, setSubmittingQuiz] = useState(false);
   const [quizResult, setQuizResult] = useState<{ percentual: number; aprovado: boolean } | null>(null);
+  const [minScore, setMinScore] = useState(60);
 
   useEffect(() => {
     loadCourse();
@@ -129,6 +130,18 @@ export default function CoursePlayer() {
       setModuleQuizzes(moduleMap);
       setFinalQuiz(final);
 
+      const { data: settingsData } = await supabase
+        .from('configuracoes_site')
+        .select('valor')
+        .eq('chave', 'nota_minima_prova')
+        .maybeSingle();
+      if (settingsData?.valor) {
+        const parsed = Number(settingsData.valor);
+        if (!Number.isNaN(parsed)) {
+          setMinScore(parsed);
+        }
+      }
+
       if (normalizedCourse.modules?.[0]?.lessons?.[0]) {
         setSelectedLesson(normalizedCourse.modules[0].lessons[0]);
       }
@@ -182,7 +195,26 @@ export default function CoursePlayer() {
       if (error) {
         throw error;
       }
-      await loadProgress();
+      setProgress((prev) => {
+        const existing = prev.find((item) => String(item.lesson_id) === String(lessonId));
+        if (existing) {
+          return prev.map((item) =>
+            String(item.lesson_id) === String(lessonId)
+              ? { ...item, completed: true, completed_at: new Date().toISOString() }
+              : item
+          );
+        }
+        return [
+          ...prev,
+          {
+            id: lessonId,
+            lesson_id: lessonId,
+            user_id: user.id,
+            completed: true,
+            completed_at: new Date().toISOString(),
+          } as Progress,
+        ];
+      });
       toast.success('Aula marcada como concluída!');
     } catch (error) {
       toast.error('Erro ao marcar aula como concluída');
@@ -280,7 +312,7 @@ export default function CoursePlayer() {
       return sum + (answer && answer === q.correta ? 1 : 0);
     }, 0);
     const percentual = Math.round((correct / total) * 100);
-    const aprovado = percentual >= 60;
+    const aprovado = percentual >= minScore;
 
     setSubmittingQuiz(true);
     try {
@@ -295,8 +327,8 @@ export default function CoursePlayer() {
           aprovado,
         });
       if (error) throw error;
-      setQuizResult({ percentual, aprovado });
-      toast.success(aprovado ? 'Prova aprovada!' : 'Nota abaixo do mínimo.');
+    setQuizResult({ percentual, aprovado });
+      toast.success(aprovado ? 'Prova aprovada!' : `Nota abaixo do mínimo (${minScore}%).`);
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao enviar prova.');
     } finally {

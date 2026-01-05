@@ -191,7 +191,7 @@ export default function CourseEditor() {
   };
 
   const updateModuleState = (moduleId: string | number, data: Partial<Module>) => {
-    setModules(modules.map((m) => (m.id === moduleId ? { ...m, ...data } : m)));
+    setModules((prev) => prev.map((m) => (m.id === moduleId ? { ...m, ...data } : m)));
   };
 
   const updateModule = async (moduleId: string | number, data: Partial<Module>) => {
@@ -268,8 +268,8 @@ export default function CourseEditor() {
   };
 
   const updateLessonState = (lessonId: string | number, data: Partial<Lesson>) => {
-    setModules(
-      modules.map((m) => ({
+    setModules((prev) =>
+      prev.map((m) => ({
         ...m,
         lessons: m.lessons?.map((l) => (l.id === lessonId ? { ...l, ...data } : l)),
       }))
@@ -558,14 +558,14 @@ export default function CourseEditor() {
                             type="text"
                             value={module.title}
                             onChange={(e) => updateModuleState(module.id, { title: e.target.value })}
-                            onBlur={() => updateModule(module.id, { title: module.title })}
+                            onBlur={(e) => updateModule(module.id, { title: e.target.value })}
                             className="input-field font-semibold mb-2"
                             placeholder="Título do módulo"
                           />
                           <textarea
                             value={module.description || ''}
                             onChange={(e) => updateModuleState(module.id, { description: e.target.value })}
-                            onBlur={() => updateModule(module.id, { description: module.description })}
+                            onBlur={(e) => updateModule(module.id, { description: e.target.value })}
                             className="input-field"
                             rows={2}
                             placeholder="Descrição do módulo"
@@ -676,7 +676,7 @@ export default function CourseEditor() {
                                 type="text"
                                 value={lesson.title}
                                 onChange={(e) => updateLessonState(lesson.id, { title: e.target.value })}
-                                onBlur={() => updateLesson(lesson.id, { title: lesson.title })}
+                                onBlur={(e) => updateLesson(lesson.id, { title: e.target.value })}
                                 className="input-field flex-grow mr-2"
                                 placeholder="Título da aula"
                               />
@@ -692,7 +692,7 @@ export default function CourseEditor() {
                               type="text"
                               value={lesson.video_url || ''}
                               onChange={(e) => updateLessonState(lesson.id, { video_url: e.target.value })}
-                              onBlur={() => updateLesson(lesson.id, { video_url: lesson.video_url })}
+                              onBlur={(e) => updateLesson(lesson.id, { video_url: e.target.value })}
                               className="input-field mb-2"
                               placeholder="URL do vídeo (YouTube, Vimeo, etc.)"
                             />
@@ -700,7 +700,7 @@ export default function CourseEditor() {
                             <textarea
                               value={lesson.content || ''}
                               onChange={(e) => updateLessonState(lesson.id, { content: e.target.value })}
-                              onBlur={() => updateLesson(lesson.id, { content: lesson.content })}
+                              onBlur={(e) => updateLesson(lesson.id, { content: e.target.value })}
                               className="input-field mb-2"
                               rows={3}
                               placeholder="Conteúdo da aula (texto, HTML)"
