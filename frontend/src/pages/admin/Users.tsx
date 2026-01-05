@@ -89,8 +89,10 @@ export default function AdminUsers() {
       if (newRole === 'admin' || newRole === 'teacher') {
         const { error } = await supabase
           .from('user_roles')
-          .insert({ user_id: String(userId), role: newRole });
-        if (error) throw error;
+          .upsert({ user_id: String(userId), role: newRole }, { onConflict: 'user_id,role' });
+        if (error && error.code !== '23505' && error.status !== 409) {
+          throw error;
+        }
       }
 
       toast.success('Tipo de usuário alterado com sucesso!');
