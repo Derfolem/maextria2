@@ -35,13 +35,22 @@ export default function AdminUsers() {
             return acc;
           }, {});
 
-      const mapped: User[] = (usersData || []).map((user) => ({
+      const mapped: User[] = (usersData || []).map((user) => {
+        const roleList = rolesMap[String(user.id)] || [];
+        const resolvedRole = roleList.includes('admin')
+          ? 'admin'
+          : roleList.includes('teacher')
+            ? 'teacher'
+            : 'student';
+
+        return {
         id: user.id,
         name: user.nome_completo,
         email: user.email,
-        role: (rolesMap[String(user.id)]?.includes('admin') ? 'admin' : 'student') as User['role'],
+          role: resolvedRole as User['role'],
         created_at: user.criado_em,
-      }));
+        };
+      });
 
       setUsers(mapped);
     } catch (error) {
@@ -69,22 +78,18 @@ export default function AdminUsers() {
 
   const changeUserRole = async (userId: string | number, newRole: string) => {
     try {
-      if (newRole === 'teacher') {
-        toast.error('Perfil de professor ainda nao esta configurado no Supabase.');
-        return;
-      }
+      const rolesToClear = ['admin', 'teacher'];
+      const { error: clearError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', String(userId))
+        .in('role', rolesToClear);
+      if (clearError) throw clearError;
 
-      if (newRole === 'admin') {
+      if (newRole === 'admin' || newRole === 'teacher') {
         const { error } = await supabase
           .from('user_roles')
-          .insert({ user_id: String(userId), role: 'admin' });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('user_roles')
-          .delete()
-          .eq('user_id', String(userId))
-          .eq('role', 'admin');
+          .insert({ user_id: String(userId), role: newRole });
         if (error) throw error;
       }
 
