@@ -61,7 +61,7 @@ export default function StudentDashboard() {
             id: cert.curso_id ?? cert.course_id ?? cert.cursos?.id,
             title: cert.cursos?.titulo ?? cert.course_title ?? '',
             description: cert.cursos?.descricao ?? '',
-            price: cert.cursos?.preco_certificado ?? cert.price || 0,
+            price: cert.cursos?.preco_certificado ?? cert.price ?? 0,
             teacher_id: '',
             teacher_name: cert.teacher_name,
             is_published: true,

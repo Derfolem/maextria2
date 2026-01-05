@@ -35,11 +35,11 @@ export default function AdminUsers() {
             return acc;
           }, {});
 
-      const mapped = (usersData || []).map((user) => ({
+      const mapped: User[] = (usersData || []).map((user) => ({
         id: user.id,
         name: user.nome_completo,
         email: user.email,
-        role: rolesMap[String(user.id)]?.includes('admin') ? 'admin' : 'student',
+        role: (rolesMap[String(user.id)]?.includes('admin') ? 'admin' : 'student') as User['role'],
         created_at: user.criado_em,
       }));
 
