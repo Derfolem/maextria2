@@ -8,7 +8,7 @@ if (!fs.existsSync(dbDir)) {
 }
 
 const dbPath = process.env.DATABASE_PATH || path.join(dbDir, 'maextria.db');
-const db: Database.Database = new Database(dbPath);
+const db = new Database(dbPath);
 export { db };
 
 // Ativar foreign keys
