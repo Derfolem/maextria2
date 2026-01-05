@@ -49,7 +49,7 @@ export default function CourseEditor() {
       setDescription(courseData.descricao || '');
       setPrice(courseData.preco_certificado ? String(courseData.preco_certificado) : '');
       setCategory(courseData.categoria || '');
-      setLevel('');
+      setLevel(courseData.nivel || '');
       setThumbnail(courseData.imagem_capa_url || '');
       setSlug(courseData.slug || '');
       const mappedModules = (courseData.modulos || [])
@@ -96,6 +96,7 @@ export default function CourseEditor() {
         descricao: description,
         preco_certificado: parseFloat(price),
         categoria: category.trim() || null,
+        nivel: level || null,
         imagem_capa_url: thumbnail.trim() || null,
         slug: slug || slugify(title),
       };
