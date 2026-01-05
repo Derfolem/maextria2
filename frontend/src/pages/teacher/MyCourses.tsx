@@ -1,23 +1,63 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Course } from '../../types';
-import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import { FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
 import { normalizeCourse } from '../../lib/normalizeCourse';
+import { supabase } from '../../lib/supabase';
+import { useAuthStore } from '../../lib/store';
 
 export default function TeacherMyCourses() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const user = useAuthStore((state) => state.user);
 
   useEffect(() => {
     loadCourses();
-  }, []);
+  }, [user?.id, user?.role]);
+
+  const resolveCourseOwnerId = (course: Record<string, any>) =>
+    course.teacher_id ?? course.professor_id ?? course.autor_id ?? course.criado_por ?? course.user_id;
 
   const loadCourses = async () => {
     try {
-      const response = await api.get('/courses/my-courses');
-      setCourses(response.data.map(normalizeCourse));
+      const { data: coursesData, error } = await supabase
+        .from('cursos')
+        .select('*')
+        .order('criado_em', { ascending: false });
+      if (error) throw error;
+
+      const allCourses = coursesData || [];
+      const shouldFilter = user?.role === 'teacher' && user?.id;
+      const filteredCourses = shouldFilter
+        ? allCourses.filter((course) => String(resolveCourseOwnerId(course)) === String(user?.id))
+        : allCourses;
+
+      const courseIds = filteredCourses.map((course) => course.id);
+      let enrollmentsData: Array<{ curso_id: string }> = [];
+      if (courseIds.length > 0) {
+        const { data, error: enrollmentsError } = await supabase
+          .from('matriculas')
+          .select('curso_id')
+          .in('curso_id', courseIds);
+        if (enrollmentsError) throw enrollmentsError;
+        enrollmentsData = data || [];
+      }
+
+      const enrollmentCounts = enrollmentsData.reduce((acc: Record<string, number>, row) => {
+        const key = String(row.curso_id);
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {});
+
+      setCourses(
+        filteredCourses.map((course) =>
+          normalizeCourse({
+            ...course,
+            student_count: enrollmentCounts[String(course.id)] || 0,
+          })
+        )
+      );
     } catch (error) {
       console.error('Error loading courses:', error);
     } finally {
@@ -29,11 +69,15 @@ export default function TeacherMyCourses() {
     if (!confirm('Tem certeza que deseja excluir este curso?')) return;
 
     try {
-      await api.delete(`/courses/${String(courseId)}`);
+      const { error } = await supabase
+        .from('cursos')
+        .delete()
+        .eq('id', String(courseId));
+      if (error) throw error;
       toast.success('Curso excluído com sucesso!');
       loadCourses();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Erro ao excluir curso');
+      toast.error(error?.message || 'Erro ao excluir curso');
     }
   };
 

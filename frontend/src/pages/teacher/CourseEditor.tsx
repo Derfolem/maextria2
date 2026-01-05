@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Module, Lesson } from '../../types';
-import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import { FaPlus, FaTrash, FaSave } from 'react-icons/fa';
-import { normalizeCourse } from '../../lib/normalizeCourse';
+import { supabase } from '../../lib/supabase';
 
 export default function CourseEditor() {
   const { id } = useParams();
@@ -17,6 +16,7 @@ export default function CourseEditor() {
   const [category, setCategory] = useState('');
   const [level, setLevel] = useState('');
   const [thumbnail, setThumbnail] = useState('');
+  const [slug, setSlug] = useState('');
   const [modules, setModules] = useState<Module[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -26,49 +26,50 @@ export default function CourseEditor() {
     }
   }, [id]);
 
-  const resolveCategoryId = async (name: string) => {
-    const trimmed = name.trim();
-    if (!trimmed) return undefined;
-
-    const response = await api.get('/categories');
-    const existing = response.data.find(
-      (category: any) => category.name.toLowerCase() === trimmed.toLowerCase()
-    );
-
-    if (existing) {
-      return existing.id;
-    }
-
-    const created = await api.post('/categories', { name: trimmed });
-    return created.data.id;
-  };
+  const slugify = (value: string) =>
+    value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '');
 
   const loadCourse = async () => {
     try {
-      const response = await api.get(`/courses/${id}`);
-      const course = normalizeCourse(response.data);
-      setTitle(course.title);
-      setDescription(course.description);
-      setPrice(course.price.toString());
-      setCategory(course.category || '');
-      const levelMap: Record<string, string> = {
-        beginner: 'Iniciante',
-        intermediate: 'Intermediário',
-        advanced: 'Avançado',
-      };
-      setLevel(levelMap[course.level || ''] || course.level || '');
-      setThumbnail(course.thumbnail || '');
-      const mappedModules = (response.data.modules || []).map((module: any) => ({
-        ...module,
-        lessons: (module.lessons || []).map((lesson: any) => ({
-          ...lesson,
-          materials: (lesson.materials || []).map((material: any) => ({
-            ...material,
-            url: material.file_url ?? material.url,
-            type: material.file_type ?? material.type ?? 'link',
-          })),
-        })),
-      }));
+      const { data: courseData, error } = await supabase
+        .from('cursos')
+        .select('*, modulos(*, aulas(*))')
+        .eq('id', id)
+        .maybeSingle();
+      if (error || !courseData) throw error;
+
+      setTitle(courseData.titulo || '');
+      setDescription(courseData.descricao || '');
+      setPrice(courseData.preco_certificado ? String(courseData.preco_certificado) : '');
+      setCategory(courseData.categoria || '');
+      setLevel('');
+      setThumbnail(courseData.imagem_capa_url || '');
+      setSlug(courseData.slug || '');
+      const mappedModules = (courseData.modulos || [])
+        .sort((a: any, b: any) => (a.ordem ?? 0) - (b.ordem ?? 0))
+        .map((module: any) => ({
+          id: module.id,
+          course_id: module.curso_id,
+          title: module.titulo_modulo,
+          description: module.conteudo_texto_html,
+          order_index: module.ordem ?? 0,
+          lessons: (module.aulas || [])
+            .sort((a: any, b: any) => (a.ordem ?? 0) - (b.ordem ?? 0))
+            .map((lesson: any) => ({
+              id: lesson.id,
+              module_id: lesson.modulo_id,
+              title: lesson.titulo,
+              content: lesson.conteudo_html,
+              video_url: lesson.video_url,
+              order_index: lesson.ordem ?? 0,
+            })),
+        }));
+
       setModules(mappedModules);
     } catch (error) {
       toast.error('Erro ao carregar curso');
@@ -84,38 +85,35 @@ export default function CourseEditor() {
 
     setLoading(true);
     try {
-      let categoryId: string | undefined;
-      if (category.trim()) {
-        categoryId = await resolveCategoryId(category);
-      }
-
-      const difficultyMap: Record<string, string> = {
-        Iniciante: 'beginner',
-        Intermediário: 'intermediate',
-        Avançado: 'advanced',
-      };
-      const difficulty = level ? difficultyMap[level] || level : undefined;
-
-      const courseData = {
-        title,
-        description,
-        certificate_price: parseFloat(price),
-        category_id: categoryId,
-        difficulty,
-        cover_image: thumbnail,
+      const payload = {
+        titulo: title,
+        descricao: description,
+        preco_certificado: parseFloat(price),
+        categoria: category.trim() || null,
+        imagem_capa_url: thumbnail.trim() || null,
+        slug: slug || slugify(title),
       };
 
       if (isEditing) {
-        await api.put(`/courses/${id}`, courseData);
+        const { error } = await supabase
+          .from('cursos')
+          .update(payload)
+          .eq('id', id);
+        if (error) throw error;
         toast.success('Curso atualizado com sucesso!');
       } else {
-        const response = await api.post('/courses', courseData);
+        const { data, error } = await supabase
+          .from('cursos')
+          .insert({ ...payload, ativo: false })
+          .select('id')
+          .single();
+        if (error) throw error;
         toast.success('Curso criado com sucesso!');
-        navigate(`/teacher/course/${response.data.id}/edit`);
+        navigate(`/teacher/course/${data.id}/edit`);
         return;
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Erro ao salvar curso');
+      toast.error(error?.message || 'Erro ao salvar curso');
     } finally {
       setLoading(false);
     }
@@ -132,20 +130,25 @@ export default function CourseEditor() {
     }
 
     try {
-      const response = await api.post('/modules', {
-        course_id: id,
-        title: 'Novo Módulo',
-        description: '',
-        order_index: modules.length,
-      });
+      const { data: newModule, error } = await supabase
+        .from('modulos')
+        .insert({
+          curso_id: id,
+          titulo_modulo: 'Novo Módulo',
+          conteudo_texto_html: '',
+          ordem: modules.length + 1,
+        })
+        .select('id')
+        .single();
+      if (error) throw error;
       setModules([
         ...modules,
         {
-          id: response.data.id,
+          id: newModule.id,
           course_id: id,
           title: 'Novo Módulo',
           description: '',
-          order_index: modules.length,
+          order_index: modules.length + 1,
           lessons: [],
         },
       ]);
@@ -157,7 +160,15 @@ export default function CourseEditor() {
 
   const updateModule = async (moduleId: string | number, data: Partial<Module>) => {
     try {
-      await api.put(`/modules/${moduleId}`, data);
+      const payload: Record<string, any> = {};
+      if (data.title !== undefined) payload.titulo_modulo = data.title;
+      if (data.description !== undefined) payload.conteudo_texto_html = data.description;
+      if (data.order_index !== undefined) payload.ordem = data.order_index;
+      const { error } = await supabase
+        .from('modulos')
+        .update(payload)
+        .eq('id', moduleId);
+      if (error) throw error;
       setModules(modules.map((m) => (m.id === moduleId ? { ...m, ...data } : m)));
     } catch (error) {
       toast.error('Erro ao atualizar módulo');
@@ -168,7 +179,11 @@ export default function CourseEditor() {
     if (!confirm('Excluir este módulo e todas as suas aulas?')) return;
 
     try {
-      await api.delete(`/modules/${moduleId}`);
+      const { error } = await supabase
+        .from('modulos')
+        .delete()
+        .eq('id', moduleId);
+      if (error) throw error;
       setModules(modules.filter((m) => m.id !== moduleId));
       toast.success('Módulo excluído!');
     } catch (error) {
@@ -179,12 +194,18 @@ export default function CourseEditor() {
   const addLesson = async (moduleId: string | number) => {
     try {
       const module = modules.find((m) => m.id === moduleId);
-      const response = await api.post(`/modules/${moduleId}/lessons`, {
-        title: 'Nova Aula',
-        content: '',
-        video_url: '',
-        order_index: module?.lessons?.length || 0,
-      });
+      const { data: newLesson, error } = await supabase
+        .from('aulas')
+        .insert({
+          modulo_id: moduleId,
+          titulo: 'Nova Aula',
+          conteudo_html: '',
+          video_url: '',
+          ordem: (module?.lessons?.length || 0) + 1,
+        })
+        .select('id')
+        .single();
+      if (error) throw error;
       setModules(
         modules.map((m) =>
           m.id === moduleId
@@ -193,13 +214,12 @@ export default function CourseEditor() {
                 lessons: [
                   ...(m.lessons || []),
                   {
-                    id: response.data.id,
+                    id: newLesson.id,
                     module_id: moduleId,
                     title: 'Nova Aula',
                     content: '',
                     video_url: '',
-                    order_index: module?.lessons?.length || 0,
-                    materials: [],
+                    order_index: (module?.lessons?.length || 0) + 1,
                   },
                 ],
               }
@@ -214,7 +234,16 @@ export default function CourseEditor() {
 
   const updateLesson = async (lessonId: string | number, data: Partial<Lesson>) => {
     try {
-      await api.put(`/modules/lessons/${lessonId}`, data);
+      const payload: Record<string, any> = {};
+      if (data.title !== undefined) payload.titulo = data.title;
+      if (data.content !== undefined) payload.conteudo_html = data.content;
+      if (data.video_url !== undefined) payload.video_url = data.video_url;
+      if (data.order_index !== undefined) payload.ordem = data.order_index;
+      const { error } = await supabase
+        .from('aulas')
+        .update(payload)
+        .eq('id', lessonId);
+      if (error) throw error;
       setModules(
         modules.map((m) => ({
           ...m,
@@ -230,7 +259,11 @@ export default function CourseEditor() {
     if (!confirm('Excluir esta aula?')) return;
 
     try {
-      await api.delete(`/modules/lessons/${lessonId}`);
+      const { error } = await supabase
+        .from('aulas')
+        .delete()
+        .eq('id', lessonId);
+      if (error) throw error;
       setModules(
         modules.map((m) =>
           m.id === moduleId
@@ -245,61 +278,14 @@ export default function CourseEditor() {
   };
 
   const addMaterial = async (lessonId: string | number) => {
-    const title = prompt('Título do material:');
-    const url = prompt('URL do material:');
-    if (!title || !url) return;
-
-    try {
-      const response = await api.post(`/modules/lessons/${lessonId}/materials`, {
-        title,
-        file_url: url,
-        file_type: 'link',
-      });
-      setModules(
-        modules.map((m) => ({
-          ...m,
-          lessons: m.lessons?.map((l) =>
-            l.id === lessonId
-              ? {
-                  ...l,
-                  materials: [
-                    ...(l.materials || []),
-                    {
-                      id: response.data.id,
-                      lesson_id: lessonId,
-                      title,
-                      type: 'link',
-                      url,
-                    },
-                  ],
-                }
-              : l
-          ),
-        }))
-      );
-      toast.success('Material adicionado!');
-    } catch (error) {
-      toast.error('Erro ao adicionar material');
-    }
+    void lessonId;
+    toast.error('Materiais ainda nao estao disponiveis no Supabase.');
   };
 
   const deleteMaterial = async (lessonId: string | number, materialId: string | number) => {
-    try {
-      await api.delete(`/modules/materials/${materialId}`);
-      setModules(
-        modules.map((m) => ({
-          ...m,
-          lessons: m.lessons?.map((l) =>
-            l.id === lessonId
-              ? { ...l, materials: l.materials?.filter((mat) => mat.id !== materialId) }
-              : l
-          ),
-        }))
-      );
-      toast.success('Material excluído!');
-    } catch (error) {
-      toast.error('Erro ao excluir material');
-    }
+    void lessonId;
+    void materialId;
+    toast.error('Materiais ainda nao estao disponiveis no Supabase.');
   };
 
   return (

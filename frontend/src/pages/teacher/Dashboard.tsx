@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { DashboardStats, Course } from '../../types';
-import api from '../../lib/api';
 import { FaBook, FaUsers, FaDollarSign, FaChartLine, FaPlus, FaArrowRight, FaUniversity } from 'react-icons/fa';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { normalizeCourse } from '../../lib/normalizeCourse';
 import toast from 'react-hot-toast';
+import { supabase } from '../../lib/supabase';
+import { useAuthStore } from '../../lib/store';
 
 export default function TeacherDashboard() {
   const [stats, setStats] = useState<DashboardStats>({});
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [revenueData, setRevenueData] = useState<Array<{ month: string; revenue: number }>>([]);
+  const user = useAuthStore((state) => state.user);
   const [bankForm, setBankForm] = useState({
     holder: '',
     document: '',
@@ -23,35 +25,90 @@ export default function TeacherDashboard() {
 
   useEffect(() => {
     loadDashboard();
-  }, []);
+  }, [user?.id, user?.role]);
+
+  const resolveCourseOwnerId = (course: Record<string, any>) =>
+    course.teacher_id ?? course.professor_id ?? course.autor_id ?? course.criado_por ?? course.user_id;
 
   const loadDashboard = async () => {
     try {
-      const [statsRes, coursesRes] = await Promise.all([
-        api.get('/dashboard/teacher'),
-        api.get('/courses/my-courses'),
-      ]);
-      const data = statsRes.data;
-      const totalEnrollments = (data.enrollmentsByMonth || []).reduce(
-        (sum: number, item: any) => sum + Number(item.enrollments || 0),
-        0
-      );
+      const { data: coursesData, error: coursesError } = await supabase
+        .from('cursos')
+        .select('*')
+        .order('criado_em', { ascending: false });
+      if (coursesError) throw coursesError;
+
+      const allCourses = coursesData || [];
+      const shouldFilter = user?.role === 'teacher' && user?.id;
+      const filteredCourses = shouldFilter
+        ? allCourses.filter((course) => String(resolveCourseOwnerId(course)) === String(user?.id))
+        : allCourses;
+
+      const courseIds = filteredCourses.map((course) => course.id);
+      let enrollmentsData: Array<{ curso_id: string; usuario_id: string }> = [];
+      let paymentsData: Array<{ valor: number; criado_em: string; curso_id: string }> = [];
+
+      if (courseIds.length > 0) {
+        const [enrollmentsRes, paymentsRes] = await Promise.all([
+          supabase
+            .from('matriculas')
+            .select('curso_id, usuario_id')
+            .in('curso_id', courseIds),
+          supabase
+            .from('transacoes_pagamento')
+            .select('valor, criado_em, curso_id')
+            .eq('status', 'completo')
+            .in('curso_id', courseIds),
+        ]);
+        if (enrollmentsRes.error) throw enrollmentsRes.error;
+        if (paymentsRes.error) throw paymentsRes.error;
+        enrollmentsData = enrollmentsRes.data || [];
+        paymentsData = paymentsRes.data || [];
+      }
+
+      const enrollmentCounts = enrollmentsData.reduce((acc: Record<string, number>, row) => {
+        const key = String(row.curso_id);
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {});
+
+      const uniqueStudents = new Set(enrollmentsData.map((row) => row.usuario_id)).size;
+      const totalRevenue = paymentsData.reduce((sum, row) => sum + Number(row.valor || 0), 0);
+
+      const revenueByMonth = paymentsData.reduce((acc: Record<string, { label: string; value: number }>, row) => {
+        const date = row.criado_em ? new Date(row.criado_em) : null;
+        if (!date) return acc;
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const label = date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+        acc[key] = acc[key] || { label, value: 0 };
+        acc[key].value += Number(row.valor || 0);
+        return acc;
+      }, {});
+
+      const sortedMonths = Object.keys(revenueByMonth).sort();
 
       setStats({
-        total_courses: data.totalCourses || 0,
-        active_students: data.totalStudents || 0,
-        total_revenue: data.totalRevenue || 0,
-        total_enrollments: totalEnrollments,
+        total_courses: filteredCourses.length,
+        active_students: uniqueStudents,
+        total_revenue: totalRevenue,
+        total_enrollments: enrollmentsData.length,
       });
 
       setRevenueData(
-        (data.revenueByMonth || []).map((item: any) => ({
-          month: item.month,
-          revenue: item.revenue || 0,
+        sortedMonths.map((month) => ({
+          month: revenueByMonth[month].label,
+          revenue: revenueByMonth[month].value,
         }))
       );
 
-      setCourses(coursesRes.data.map(normalizeCourse));
+      setCourses(
+        filteredCourses.map((course) =>
+          normalizeCourse({
+            ...course,
+            student_count: enrollmentCounts[String(course.id)] || 0,
+          })
+        )
+      );
     } catch (error) {
       console.error('Error loading dashboard:', error);
     } finally {

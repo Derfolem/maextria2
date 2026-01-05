@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Course } from '../../types';
-import api from '../../lib/api';
+import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { FaTrash, FaEye, FaEyeSlash, FaSearch, FaArrowRight } from 'react-icons/fa';
 import { normalizeCourse } from '../../lib/normalizeCourse';
@@ -17,8 +17,31 @@ export default function AdminCourses() {
 
   const loadCourses = async () => {
     try {
-      const response = await api.get('/courses');
-      setCourses(response.data.map(normalizeCourse));
+      const { data: coursesData, error } = await supabase
+        .from('cursos')
+        .select('*')
+        .order('criado_em', { ascending: false });
+      if (error) throw error;
+
+      const { data: enrollmentsData, error: enrollmentsError } = await supabase
+        .from('matriculas')
+        .select('curso_id');
+      if (enrollmentsError) throw enrollmentsError;
+
+      const enrollmentCounts = (enrollmentsData || []).reduce((acc: Record<string, number>, row) => {
+        const key = String(row.curso_id);
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {});
+
+      const normalized = (coursesData || []).map((course) =>
+        normalizeCourse({
+          ...course,
+          student_count: enrollmentCounts[String(course.id)] || 0,
+        })
+      );
+
+      setCourses(normalized);
     } catch (error) {
       toast.error('Erro ao carregar cursos');
     } finally {
@@ -28,11 +51,15 @@ export default function AdminCourses() {
 
   const togglePublish = async (courseId: string | number, currentStatus: boolean) => {
     try {
-      await api.patch(`/courses/${String(courseId)}/publish`, { is_published: !currentStatus });
+      const { error } = await supabase
+        .from('cursos')
+        .update({ ativo: !currentStatus })
+        .eq('id', String(courseId));
+      if (error) throw error;
       toast.success(`Curso ${!currentStatus ? 'publicado' : 'despublicado'} com sucesso!`);
       loadCourses();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Erro ao atualizar curso');
+      toast.error(error?.message || 'Erro ao atualizar curso');
     }
   };
 
@@ -40,11 +67,15 @@ export default function AdminCourses() {
     if (!confirm('Tem certeza que deseja excluir este curso?')) return;
 
     try {
-      await api.delete(`/courses/${String(courseId)}`);
+      const { error } = await supabase
+        .from('cursos')
+        .delete()
+        .eq('id', String(courseId));
+      if (error) throw error;
       toast.success('Curso excluído com sucesso!');
       loadCourses();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Erro ao excluir curso');
+      toast.error(error?.message || 'Erro ao excluir curso');
     }
   };
 

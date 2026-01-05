@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { DashboardStats } from '../../types';
-import api from '../../lib/api';
+import { supabase } from '../../lib/supabase';
 import { FaUsers, FaBook, FaDollarSign, FaChartLine } from 'react-icons/fa';
 import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -16,29 +16,70 @@ export default function AdminDashboard() {
 
   const loadStats = async () => {
     try {
-      const response = await api.get('/dashboard/admin');
-      const data = response.data;
-      const users = data.users || {};
-      const totalUsers = Object.values(users).reduce((sum: number, value: any) => sum + Number(value || 0), 0);
+      const since = new Date();
+      since.setMonth(since.getMonth() - 11);
+      since.setDate(1);
+      since.setHours(0, 0, 0, 0);
+
+      const [
+        coursesRes,
+        enrollmentsRes,
+        usersRes,
+        rolesRes,
+        revenueRes,
+      ] = await Promise.all([
+        supabase.from('cursos').select('id', { count: 'exact', head: true }),
+        supabase.from('matriculas').select('id', { count: 'exact', head: true }),
+        supabase.from('usuarios').select('id', { count: 'exact', head: true }),
+        supabase.from('user_roles').select('user_id, role'),
+        supabase
+          .from('transacoes_pagamento')
+          .select('valor, criado_em')
+          .eq('status', 'completo')
+          .gte('criado_em', since.toISOString()),
+      ]);
+
+      if (coursesRes.error) throw coursesRes.error;
+      if (enrollmentsRes.error) throw enrollmentsRes.error;
+      if (usersRes.error) throw usersRes.error;
+
+      const totalUsers = usersRes.count ?? 0;
+      const roleRows = rolesRes.error ? [] : (rolesRes.data || []);
+      const adminCount = roleRows.filter((row) => row.role === 'admin').length;
+      const studentCount = Math.max(totalUsers - adminCount, 0);
+
+      const revenueRows = revenueRes.error ? [] : (revenueRes.data || []);
+      const revenueTotals = revenueRows.reduce((acc, row) => {
+        const date = row.criado_em ? new Date(row.criado_em) : null;
+        if (!date) return acc;
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const label = date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+        acc.total += Number(row.valor || 0);
+        acc.byMonth[key] = acc.byMonth[key] || { label, value: 0 };
+        acc.byMonth[key].value += Number(row.valor || 0);
+        return acc;
+      }, { total: 0, byMonth: {} as Record<string, { label: string; value: number }> });
+
+      const sortedMonths = Object.keys(revenueTotals.byMonth).sort();
 
       setStats({
         total_users: totalUsers,
-        total_courses: data.totalCourses || 0,
-        total_revenue: data.certificates?.totalRevenue || 0,
-        total_enrollments: data.certificates?.total || 0,
+        total_courses: coursesRes.count ?? 0,
+        total_revenue: revenueTotals.total,
+        total_enrollments: enrollmentsRes.count ?? 0,
       });
 
       setRevenueData(
-        (data.revenueByMonth || []).map((item: any) => ({
-          month: item.month,
-          revenue: item.total_revenue || 0,
+        sortedMonths.map((month) => ({
+          month: revenueTotals.byMonth[month].label,
+          revenue: revenueTotals.byMonth[month].value,
         }))
       );
 
       setUserDistribution([
-        { name: 'Alunos', value: users.student || 0 },
-        { name: 'Professores', value: users.teacher || 0 },
-        { name: 'Admins', value: users.admin || 0 },
+        { name: 'Alunos', value: studentCount },
+        { name: 'Professores', value: 0 },
+        { name: 'Admins', value: adminCount },
       ]);
     } catch (error) {
       console.error('Error loading stats:', error);

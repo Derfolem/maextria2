@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import api from '../../lib/api';
+import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { FaSave, FaPercent } from 'react-icons/fa';
 
@@ -14,8 +14,13 @@ export default function AdminSettings() {
 
   const loadSettings = async () => {
     try {
-      const response = await api.get('/settings');
-      const adminShare = Number(response.data.admin_profit_share ?? 30);
+      const { data, error } = await supabase
+        .from('configuracoes_site')
+        .select('valor')
+        .eq('chave', 'admin_profit_share')
+        .maybeSingle();
+      if (error) throw error;
+      const adminShare = Number(data?.valor ?? 30);
       setProfitShare((100 - adminShare).toString());
     } catch (error) {
       toast.error('Erro ao carregar configurações');
@@ -35,10 +40,21 @@ export default function AdminSettings() {
 
     setSaving(true);
     try {
-      await api.put('/settings/profit-share', { admin_profit_share: 100 - value });
+      const adminShare = (100 - value).toString();
+      const { error } = await supabase
+        .from('configuracoes_site')
+        .upsert(
+          {
+            chave: 'admin_profit_share',
+            valor: adminShare,
+            descricao: 'Percentual da plataforma sobre vendas de certificados',
+          },
+          { onConflict: 'chave' }
+        );
+      if (error) throw error;
       toast.success('Configurações atualizadas com sucesso!');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Erro ao atualizar configurações');
+      toast.error(error?.message || 'Erro ao atualizar configurações');
     } finally {
       setSaving(false);
     }

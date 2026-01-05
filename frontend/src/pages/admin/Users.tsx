@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { User } from '../../types';
-import api from '../../lib/api';
+import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { FaTrash, FaSearch, FaUserShield, FaUserGraduate, FaChalkboardTeacher } from 'react-icons/fa';
 
@@ -16,8 +16,34 @@ export default function AdminUsers() {
 
   const loadUsers = async () => {
     try {
-      const response = await api.get('/users');
-      setUsers(response.data);
+      const { data: usersData, error } = await supabase
+        .from('usuarios')
+        .select('id, nome_completo, email, criado_em')
+        .order('criado_em', { ascending: false });
+      if (error) throw error;
+
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
+
+      const rolesMap = (rolesError || !rolesData)
+        ? {}
+        : rolesData.reduce((acc: Record<string, string[]>, row) => {
+            const key = String(row.user_id);
+            acc[key] = acc[key] || [];
+            acc[key].push(row.role);
+            return acc;
+          }, {});
+
+      const mapped = (usersData || []).map((user) => ({
+        id: user.id,
+        name: user.nome_completo,
+        email: user.email,
+        role: rolesMap[String(user.id)]?.includes('admin') ? 'admin' : 'student',
+        created_at: user.criado_em,
+      }));
+
+      setUsers(mapped);
     } catch (error) {
       toast.error('Erro ao carregar usuários');
     } finally {
@@ -29,21 +55,43 @@ export default function AdminUsers() {
     if (!confirm('Tem certeza que deseja excluir este usuário?')) return;
 
     try {
-      await api.delete(`/users/${userId}`);
+      const { error } = await supabase
+        .from('usuarios')
+        .delete()
+        .eq('id', String(userId));
+      if (error) throw error;
       toast.success('Usuário excluído com sucesso!');
       loadUsers();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Erro ao excluir usuário');
+      toast.error(error?.message || 'Erro ao excluir usuário');
     }
   };
 
   const changeUserRole = async (userId: string | number, newRole: string) => {
     try {
-      await api.put(`/users/${userId}/role`, { role: newRole });
+      if (newRole === 'teacher') {
+        toast.error('Perfil de professor ainda nao esta configurado no Supabase.');
+        return;
+      }
+
+      if (newRole === 'admin') {
+        const { error } = await supabase
+          .from('user_roles')
+          .insert({ user_id: String(userId), role: 'admin' });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('user_roles')
+          .delete()
+          .eq('user_id', String(userId))
+          .eq('role', 'admin');
+        if (error) throw error;
+      }
+
       toast.success('Tipo de usuário alterado com sucesso!');
       loadUsers();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Erro ao alterar tipo');
+      toast.error(error?.message || 'Erro ao alterar tipo');
     }
   };
 
