@@ -58,38 +58,38 @@ function App() {
         } />
 
         <Route path="/student/dashboard" element={
-          <ProtectedRoute roles={['student']}>
+          <ProtectedRoute roles={['student', 'teacher', 'admin']}>
             <StudentDashboard />
           </ProtectedRoute>
         } />
         <Route path="/student/my-courses" element={
-          <ProtectedRoute roles={['student']}>
+          <ProtectedRoute roles={['student', 'teacher', 'admin']}>
             <StudentMyCourses />
           </ProtectedRoute>
         } />
         <Route path="/student/course/:id" element={
-          <ProtectedRoute roles={['student']}>
+          <ProtectedRoute roles={['student', 'teacher', 'admin']}>
             <CoursePlayer />
           </ProtectedRoute>
         } />
 
         <Route path="/teacher/dashboard" element={
-          <ProtectedRoute roles={['teacher']}>
+          <ProtectedRoute roles={['teacher', 'admin']}>
             <TeacherDashboard />
           </ProtectedRoute>
         } />
         <Route path="/teacher/my-courses" element={
-          <ProtectedRoute roles={['teacher']}>
+          <ProtectedRoute roles={['teacher', 'admin']}>
             <TeacherMyCourses />
           </ProtectedRoute>
         } />
         <Route path="/teacher/course/new" element={
-          <ProtectedRoute roles={['teacher']}>
+          <ProtectedRoute roles={['teacher', 'admin']}>
             <CourseEditor />
           </ProtectedRoute>
         } />
         <Route path="/teacher/course/:id/edit" element={
-          <ProtectedRoute roles={['teacher']}>
+          <ProtectedRoute roles={['teacher', 'admin']}>
             <CourseEditor />
           </ProtectedRoute>
         } />

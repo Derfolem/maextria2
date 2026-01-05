@@ -28,7 +28,7 @@ export default function TeacherDashboard() {
   }, [user?.id, user?.role]);
 
   const resolveCourseOwnerId = (course: Record<string, any>) =>
-    course.teacher_id ?? course.professor_id ?? course.autor_id ?? course.criado_por ?? course.user_id;
+    course.professor_id ?? course.teacher_id ?? course.autor_id ?? course.criado_por ?? course.user_id;
 
   const loadDashboard = async () => {
     try {

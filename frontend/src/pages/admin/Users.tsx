@@ -64,10 +64,9 @@ export default function AdminUsers() {
     if (!confirm('Tem certeza que deseja excluir este usuário?')) return;
 
     try {
-      const { error } = await supabase
-        .from('usuarios')
-        .delete()
-        .eq('id', String(userId));
+      const { error } = await supabase.rpc('admin_delete_user', {
+        target_user_id: String(userId),
+      });
       if (error) throw error;
       toast.success('Usuário excluído com sucesso!');
       loadUsers();
@@ -78,22 +77,11 @@ export default function AdminUsers() {
 
   const changeUserRole = async (userId: string | number, newRole: string) => {
     try {
-      const rolesToClear = ['admin', 'teacher'];
-      const { error: clearError } = await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', String(userId))
-        .in('role', rolesToClear);
-      if (clearError) throw clearError;
-
-      if (newRole === 'admin' || newRole === 'teacher') {
-        const { error } = await supabase
-          .from('user_roles')
-          .upsert({ user_id: String(userId), role: newRole }, { onConflict: 'user_id,role' });
-        if (error && error.code !== '23505' && error.status !== 409) {
-          throw error;
-        }
-      }
+      const { error } = await supabase.rpc('admin_set_user_role', {
+        target_user_id: String(userId),
+        target_role: newRole,
+      });
+      if (error) throw error;
 
       toast.success('Tipo de usuário alterado com sucesso!');
       loadUsers();

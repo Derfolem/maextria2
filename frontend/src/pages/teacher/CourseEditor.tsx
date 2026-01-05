@@ -4,6 +4,7 @@ import { Module, Lesson } from '../../types';
 import toast from 'react-hot-toast';
 import { FaPlus, FaTrash, FaSave } from 'react-icons/fa';
 import { supabase } from '../../lib/supabase';
+import { useAuthStore } from '../../lib/store';
 
 export default function CourseEditor() {
   const { id } = useParams();
@@ -19,6 +20,7 @@ export default function CourseEditor() {
   const [slug, setSlug] = useState('');
   const [modules, setModules] = useState<Module[]>([]);
   const [loading, setLoading] = useState(false);
+  const user = useAuthStore((state) => state.user);
 
   useEffect(() => {
     if (isEditing) {
@@ -104,7 +106,7 @@ export default function CourseEditor() {
       } else {
         const { data, error } = await supabase
           .from('cursos')
-          .insert({ ...payload, ativo: false })
+          .insert({ ...payload, ativo: false, professor_id: user?.id ?? null })
           .select('id')
           .single();
         if (error) throw error;

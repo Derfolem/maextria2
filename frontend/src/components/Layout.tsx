@@ -39,7 +39,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
               {isAuthenticated ? (
                 <>
-                  {user?.role === 'student' && (
+                  {(user?.role === 'student' || user?.role === 'teacher' || user?.role === 'admin') && (
                     <>
                       <Link to="/student/dashboard" className="nav-link flex items-center space-x-1">
                         <FaChartBar />
@@ -144,7 +144,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             )}
             {isAuthenticated ? (
               <>
-                {user?.role === 'student' && (
+                {(user?.role === 'student' || user?.role === 'teacher' || user?.role === 'admin') && (
                   <>
                     <Link to="/student/dashboard" className="nav-link" onClick={() => setMobileOpen(false)}>
                       Dashboard
