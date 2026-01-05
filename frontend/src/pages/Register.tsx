@@ -17,12 +17,16 @@ export default function Register() {
     setLoading(true);
 
     try {
-      await register(name, email, password);
-      toast.success('Conta criada com sucesso!');
-
-      navigate('/student/dashboard');
+      const result = await register(name, email, password);
+      if (result.needsEmailConfirmation) {
+        toast.success('Conta criada! Verifique seu email para confirmar.');
+        navigate('/login');
+      } else {
+        toast.success('Conta criada com sucesso!');
+        navigate('/student/dashboard');
+      }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Erro ao criar conta');
+      toast.error(error?.message || 'Erro ao criar conta');
     } finally {
       setLoading(false);
     }

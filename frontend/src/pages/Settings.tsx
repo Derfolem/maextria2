@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuthStore } from '../lib/store';
-import api from '../lib/api';
+import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { FaUser, FaEnvelope, FaLock } from 'react-icons/fa';
 
@@ -17,10 +17,29 @@ export default function Settings() {
     setLoading(true);
 
     try {
-      await api.put('/user/profile', { name, email });
+      if (!user) {
+        throw new Error('Usuário não autenticado.');
+      }
+
+      const { error: profileError } = await supabase
+        .from('usuarios')
+        .update({ nome_completo: name })
+        .eq('id', user.id);
+      if (profileError) {
+        throw profileError;
+      }
+
+      if (email && email !== user.email) {
+        const { error: emailError } = await supabase.auth.updateUser({ email });
+        if (emailError) {
+          throw emailError;
+        }
+      }
+
       toast.success('Perfil atualizado com sucesso!');
+      useAuthStore.getState().loadUser();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Erro ao atualizar perfil');
+      toast.error(error?.message || 'Erro ao atualizar perfil');
     } finally {
       setLoading(false);
     }
@@ -31,12 +50,28 @@ export default function Settings() {
     setLoading(true);
 
     try {
-      await api.put('/user/password', { current_password: currentPassword, new_password: newPassword });
+      if (!user?.email) {
+        throw new Error('Usuário não autenticado.');
+      }
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword,
+      });
+      if (signInError) {
+        throw new Error('Senha atual incorreta.');
+      }
+
+      const { error: passwordError } = await supabase.auth.updateUser({ password: newPassword });
+      if (passwordError) {
+        throw passwordError;
+      }
+
       toast.success('Senha alterada com sucesso!');
       setCurrentPassword('');
       setNewPassword('');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Erro ao alterar senha');
+      toast.error(error?.message || 'Erro ao alterar senha');
     } finally {
       setLoading(false);
     }

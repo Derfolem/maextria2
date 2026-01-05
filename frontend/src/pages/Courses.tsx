@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Course } from '../types';
-import api from '../lib/api';
+import { supabase } from '../lib/supabase';
 import { FaSearch } from 'react-icons/fa';
 import { normalizeCourse } from '../lib/normalizeCourse';
 
@@ -16,8 +16,14 @@ export default function Courses() {
 
   const loadCourses = async () => {
     try {
-      const response = await api.get('/courses/public');
-      setCourses(response.data.map(normalizeCourse));
+      const { data, error } = await supabase
+        .from('cursos')
+        .select('*')
+        .eq('ativo', true);
+      if (error) {
+        throw error;
+      }
+      setCourses((data || []).map(normalizeCourse));
     } catch (error) {
       console.error('Error loading courses:', error);
     } finally {

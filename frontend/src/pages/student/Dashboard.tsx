@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { DashboardStats, Enrollment, Certificate } from '../../types';
-import api from '../../lib/api';
 import { FaBook, FaCertificate, FaTrophy, FaChartLine, FaPaperPlane, FaArrowRight } from 'react-icons/fa';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { normalizeEnrollment } from '../../lib/normalizeEnrollment';
+import { supabase } from '../../lib/supabase';
 
 export default function StudentDashboard() {
   const [stats, setStats] = useState<DashboardStats>({});
@@ -24,39 +24,50 @@ export default function StudentDashboard() {
 
   const loadDashboard = async () => {
     try {
-      const [statsRes, enrollmentsRes, certsRes] = await Promise.all([
-        api.get('/dashboard/student'),
-        api.get('/enrollments/my'),
-        api.get('/certificates/my'),
+      const [enrollmentsRes, certsRes] = await Promise.all([
+        supabase
+          .from('matriculas')
+          .select('*, cursos(*)')
+          .order('data_matricula', { ascending: false }),
+        supabase
+          .from('certificados')
+          .select('*, cursos(*)')
+          .order('emitido_em', { ascending: false }),
       ]);
-      const data = statsRes.data;
-      const enrolled = data.enrolledCourses || 0;
-      const completed = data.completedCourses || 0;
+
+      if (enrollmentsRes.error) {
+        throw enrollmentsRes.error;
+      }
+      if (certsRes.error) {
+        throw certsRes.error;
+      }
+
+      const enrolled = enrollmentsRes.data?.length || 0;
+      const completed = certsRes.data?.length || 0;
       const active = Math.max(enrolled - completed, 0);
       setStats({
         in_progress_courses: active,
         completed_courses: completed,
-        certificates: data.certificates || 0,
+        certificates: completed,
       });
-      setAvgProgress(data.avgProgress || 0);
-      setRecentCourses(enrollmentsRes.data.map(normalizeEnrollment).slice(0, 3));
-      const baseUrl = api.defaults.baseURL || '';
+      setAvgProgress(0);
+      setRecentCourses((enrollmentsRes.data || []).map(normalizeEnrollment).slice(0, 3));
       setCertificates(
-        certsRes.data.map((cert: any) => ({
+        (certsRes.data || []).map((cert: any) => ({
           ...cert,
           certificate_url:
-            cert.certificate_url ?? cert.certificateUrl ?? `${baseUrl}/certificates/${cert.id}`,
+            cert.link_pdf ?? cert.certificate_url ?? cert.certificateUrl ?? '',
           course: {
-            id: cert.course_id,
-            title: cert.course_title,
-            description: '',
-            price: cert.price || 0,
+            id: cert.curso_id ?? cert.course_id ?? cert.cursos?.id,
+            title: cert.cursos?.titulo ?? cert.course_title ?? '',
+            description: cert.cursos?.descricao ?? '',
+            price: cert.cursos?.preco_certificado ?? cert.price || 0,
             teacher_id: '',
             teacher_name: cert.teacher_name,
             is_published: true,
-            created_at: cert.issued_at,
-            updated_at: cert.issued_at,
-            thumbnail: cert.cover_image,
+            created_at: cert.emitido_em ?? cert.issued_at,
+            updated_at: cert.emitido_em ?? cert.issued_at,
+            thumbnail: cert.cursos?.imagem_capa_url ?? cert.cover_image,
           },
         }))
       );

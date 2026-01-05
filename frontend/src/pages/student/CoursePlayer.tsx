@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Course, Lesson, Progress } from '../../types';
-import api from '../../lib/api';
+import { supabase } from '../../lib/supabase';
+import { useAuthStore } from '../../lib/store';
 import toast from 'react-hot-toast';
 import { FaCheckCircle, FaCircle, FaDownload, FaArrowLeft, FaCertificate, FaPlay } from 'react-icons/fa';
+import { normalizeCourse } from '../../lib/normalizeCourse';
 
 export default function CoursePlayer() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [course, setCourse] = useState<Course | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [progress, setProgress] = useState<Progress[]>([]);
@@ -36,10 +39,23 @@ export default function CoursePlayer() {
 
   const loadCourse = async () => {
     try {
-      const enrollmentsRes = await api.get('/enrollments/my');
-      const enrollment = enrollmentsRes.data.find(
-        (item: any) => String(item.course_id) === String(id)
-      );
+      if (!user) {
+        toast.error('Faça login para acessar o curso');
+        navigate('/login');
+        return;
+      }
+
+      const { data: enrollment, error: enrollmentError } = await supabase
+        .from('matriculas')
+        .select('*')
+        .eq('curso_id', id)
+        .eq('usuario_id', user.id)
+        .maybeSingle();
+
+      if (enrollmentError) {
+        throw enrollmentError;
+      }
+
       if (!enrollment) {
         toast.error('Você não está matriculado neste curso');
         navigate('/student/my-courses');
@@ -47,10 +63,50 @@ export default function CoursePlayer() {
       }
       setEnrollmentId(enrollment.id);
 
-      const response = await api.get(`/courses/${id}`);
-      setCourse(response.data);
-      if (response.data.modules?.[0]?.lessons?.[0]) {
-        setSelectedLesson(response.data.modules[0].lessons[0]);
+      const { data: courseData, error: courseError } = await supabase
+        .from('cursos')
+        .select('*')
+        .eq('id', id)
+        .single();
+      if (courseError) {
+        throw courseError;
+      }
+
+      const { data: modulesData, error: modulesError } = await supabase
+        .from('modulos')
+        .select('*, aulas(*)')
+        .eq('curso_id', id)
+        .order('ordem', { ascending: true });
+      if (modulesError) {
+        throw modulesError;
+      }
+
+      const mappedModules = (modulesData || []).map((module: any) => ({
+        id: module.id,
+        course_id: module.curso_id,
+        title: module.titulo_modulo,
+        description: module.conteudo_texto_html,
+        order_index: module.ordem,
+        lessons: (module.aulas || [])
+          .sort((a: any, b: any) => (a.ordem ?? 0) - (b.ordem ?? 0))
+          .map((lesson: any) => ({
+            id: lesson.id,
+            module_id: module.id,
+            title: lesson.titulo,
+            content: lesson.conteudo_html,
+            video_url: lesson.video_url,
+            order_index: lesson.ordem,
+          })),
+      }));
+
+      const normalizedCourse = normalizeCourse({
+        ...courseData,
+        modules: mappedModules,
+      });
+      setCourse(normalizedCourse);
+
+      if (normalizedCourse.modules?.[0]?.lessons?.[0]) {
+        setSelectedLesson(normalizedCourse.modules[0].lessons[0]);
       }
     } catch (error) {
       toast.error('Erro ao carregar curso');
@@ -63,8 +119,19 @@ export default function CoursePlayer() {
   const loadProgress = async () => {
     if (!enrollmentId) return;
     try {
-      const response = await api.get(`/enrollments/${enrollmentId}/progress`);
-      setProgress(response.data.progress || []);
+      if (!user) return;
+      const { data, error } = await supabase
+        .from('progresso_aula')
+        .select('*')
+        .eq('usuario_id', user.id);
+      if (error) {
+        throw error;
+      }
+      const mapped = (data || []).map((item: any) => ({
+        ...item,
+        lesson_id: item.aula_id,
+      }));
+      setProgress(mapped);
     } catch (error) {
       console.error('Error loading progress:', error);
     }
@@ -77,7 +144,18 @@ export default function CoursePlayer() {
   const markLessonComplete = async (lessonId: string | number) => {
     if (!enrollmentId) return;
     try {
-      await api.post(`/enrollments/${enrollmentId}/lessons/${lessonId}/complete`);
+      if (!user) return;
+      const { error } = await supabase
+        .from('progresso_aula')
+        .upsert({
+          usuario_id: user.id,
+          aula_id: lessonId,
+          concluido: true,
+          concluido_em: new Date().toISOString(),
+        }, { onConflict: 'usuario_id,aula_id' });
+      if (error) {
+        throw error;
+      }
       await loadProgress();
       toast.success('Aula marcada como concluída!');
     } catch (error) {
@@ -87,22 +165,7 @@ export default function CoursePlayer() {
 
   const getCertificate = async () => {
     if (!enrollmentId) return;
-    try {
-      const response = await api.post('/certificates/request', { enrollment_id: enrollmentId });
-      if (response.data.payment_required) {
-        const confirmed = confirm(
-          `Este certificado custa R$ ${Number(response.data.price || 0).toFixed(2)}. Deseja pagar agora?`
-        );
-        if (!confirmed) {
-          toast('Pagamento pendente para liberar o certificado.');
-          return;
-        }
-        await api.post(`/certificates/${response.data.id}/pay`);
-      }
-      toast.success('Certificado liberado com sucesso!');
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Erro ao gerar certificado');
-    }
+    toast('Em breve: emissão automática de certificados.');
   };
 
   const saveNote = () => {

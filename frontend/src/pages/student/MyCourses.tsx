@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Enrollment } from '../../types';
-import api from '../../lib/api';
+import { supabase } from '../../lib/supabase';
 import { FaPlay, FaCertificate } from 'react-icons/fa';
 import { normalizeEnrollment } from '../../lib/normalizeEnrollment';
 
@@ -16,8 +16,14 @@ export default function MyCourses() {
 
   const loadEnrollments = async () => {
     try {
-      const response = await api.get('/enrollments/my');
-      setEnrollments(response.data.map(normalizeEnrollment));
+      const { data, error } = await supabase
+        .from('matriculas')
+        .select('*, cursos(*)')
+        .order('data_matricula', { ascending: false });
+      if (error) {
+        throw error;
+      }
+      setEnrollments((data || []).map(normalizeEnrollment));
     } catch (error) {
       console.error('Error loading enrollments:', error);
     } finally {

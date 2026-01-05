@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Course } from '../types';
 import { useAuthStore } from '../lib/store';
-import api from '../lib/api';
+import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { FaBook, FaCheckCircle, FaUser } from 'react-icons/fa';
 import { normalizeCourse } from '../lib/normalizeCourse';
@@ -25,8 +25,47 @@ export default function CourseDetail() {
 
   const loadCourse = async () => {
     try {
-      const response = await api.get(`/courses/public/${id}`);
-      setCourse(normalizeCourse(response.data));
+      const { data: courseData, error: courseError } = await supabase
+        .from('cursos')
+        .select('*')
+        .eq('id', id)
+        .single();
+      if (courseError) {
+        throw courseError;
+      }
+
+      const { data: modulesData, error: modulesError } = await supabase
+        .from('modulos')
+        .select('*, aulas(*)')
+        .eq('curso_id', id)
+        .order('ordem', { ascending: true });
+      if (modulesError) {
+        throw modulesError;
+      }
+
+      const mappedModules = (modulesData || []).map((module: any) => ({
+        id: module.id,
+        title: module.titulo_modulo,
+        description: module.conteudo_texto_html,
+        order_index: module.ordem,
+        lessons: (module.aulas || [])
+          .sort((a: any, b: any) => (a.ordem ?? 0) - (b.ordem ?? 0))
+          .map((lesson: any) => ({
+            id: lesson.id,
+            module_id: module.id,
+            title: lesson.titulo,
+            content: lesson.conteudo_html,
+            video_url: lesson.video_url,
+            order_index: lesson.ordem,
+          })),
+      }));
+
+      const normalized = normalizeCourse({
+        ...courseData,
+        modules: mappedModules,
+      });
+
+      setCourse(normalized);
     } catch (error) {
       toast.error('Erro ao carregar curso');
     } finally {
@@ -36,9 +75,16 @@ export default function CourseDetail() {
 
   const checkEnrollment = async () => {
     try {
-      const response = await api.get('/enrollments/my');
-      const enrolled = response.data.some((e: any) => String(e.course_id) === String(id));
-      setIsEnrolled(enrolled);
+      if (!user) return;
+      const { data, error } = await supabase
+        .from('matriculas')
+        .select('id')
+        .eq('curso_id', id)
+        .eq('usuario_id', user.id);
+      if (error) {
+        throw error;
+      }
+      setIsEnrolled(Boolean(data && data.length > 0));
     } catch (error) {
       console.error('Error checking enrollment:', error);
     }
@@ -53,12 +99,21 @@ export default function CourseDetail() {
 
     setEnrolling(true);
     try {
-      await api.post('/enrollments', { course_id: id });
+      if (!user) {
+        throw new Error('Usuário não autenticado.');
+      }
+      const { error } = await supabase.from('matriculas').insert({
+        usuario_id: user.id,
+        curso_id: id,
+      });
+      if (error) {
+        throw error;
+      }
       toast.success('Inscrição realizada com sucesso!');
       setIsEnrolled(true);
       navigate('/student/my-courses');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Erro ao se inscrever');
+      toast.error(error?.message || 'Erro ao se inscrever');
     } finally {
       setEnrolling(false);
     }

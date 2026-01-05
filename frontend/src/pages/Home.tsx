@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaArrowRight, FaBolt, FaChalkboardTeacher, FaCompass, FaLayerGroup, FaShieldAlt, FaBalanceScale, FaBookmark, FaPlayCircle } from 'react-icons/fa';
 import { motion } from 'framer-motion';
-import api from '../lib/api';
+import { supabase } from '../lib/supabase';
 import { Course } from '../types';
 import { normalizeCourse } from '../lib/normalizeCourse';
 
@@ -13,8 +13,14 @@ export default function Home() {
   useEffect(() => {
     const loadTopCourses = async () => {
       try {
-        const response = await api.get('/courses/public');
-        const courses: Course[] = response.data.map(normalizeCourse);
+        const { data, error } = await supabase
+          .from('cursos')
+          .select('*')
+          .eq('ativo', true);
+        if (error) {
+          throw error;
+        }
+        const courses: Course[] = (data || []).map(normalizeCourse);
         const maxEnrollments = Math.max(...courses.map((course) => course.enrollment_count ?? 0), 0);
 
         if (maxEnrollments > 0) {

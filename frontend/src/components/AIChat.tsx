@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { FaRobot, FaTimes, FaPaperPlane } from 'react-icons/fa';
 import { ChatMessage } from '../types';
-import api from '../lib/api';
 import toast from 'react-hot-toast';
 
 export default function AIChat() {
@@ -18,15 +17,14 @@ export default function AIChat() {
     setInput('');
     setLoading(true);
 
-    try {
-      const response = await api.post('/ai/chat', { message: input });
-      const aiMessage: ChatMessage = { role: 'assistant', content: response.data.response };
-      setMessages((prev) => [...prev, aiMessage]);
-    } catch (error) {
-      toast.error('Erro ao se comunicar com a IA');
-    } finally {
+    setTimeout(() => {
+      toast('Assistente em breve.');
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: 'Assistente indisponível no momento.' },
+      ]);
       setLoading(false);
-    }
+    }, 400);
   };
 
   return (

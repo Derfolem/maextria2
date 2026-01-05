@@ -30,7 +30,7 @@ export default function Login() {
         navigate('/');
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Erro ao fazer login');
+      toast.error(error?.message || 'Erro ao fazer login');
     } finally {
       setLoading(false);
     }
