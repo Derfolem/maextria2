@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { DashboardStats } from '../../types';
 import api from '../../lib/api';
 import { FaUsers, FaBook, FaDollarSign, FaChartLine } from 'react-icons/fa';
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats>({});
@@ -123,7 +123,7 @@ export default function AdminDashboard() {
                 fill="hsl(var(--primary))"
                 dataKey="value"
               >
-                {userDistribution.map((entry, index) => (
+                {userDistribution.map((_, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>

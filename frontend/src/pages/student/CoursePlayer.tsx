@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Course, Module, Lesson, Progress } from '../../types';
+import { Course, Lesson, Progress } from '../../types';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import { FaCheckCircle, FaCircle, FaDownload, FaArrowLeft, FaCertificate, FaPlay } from 'react-icons/fa';

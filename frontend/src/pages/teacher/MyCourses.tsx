@@ -25,11 +25,11 @@ export default function TeacherMyCourses() {
     }
   };
 
-  const deleteCourse = async (courseId: string) => {
+  const deleteCourse = async (courseId: string | number) => {
     if (!confirm('Tem certeza que deseja excluir este curso?')) return;
 
     try {
-      await api.delete(`/courses/${courseId}`);
+      await api.delete(`/courses/${String(courseId)}`);
       toast.success('Curso excluído com sucesso!');
       loadCourses();
     } catch (error: any) {

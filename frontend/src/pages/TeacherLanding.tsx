@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaArrowRight, FaAward, FaChartLine, FaHandshake, FaShieldAlt, FaStar } from 'react-icons/fa';
+import { FaArrowRight, FaChartLine, FaHandshake, FaShieldAlt, FaStar } from 'react-icons/fa';
 
 export default function TeacherLanding() {
   const [formData, setFormData] = useState({

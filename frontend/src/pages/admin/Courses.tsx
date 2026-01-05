@@ -26,9 +26,9 @@ export default function AdminCourses() {
     }
   };
 
-  const togglePublish = async (courseId: string, currentStatus: boolean) => {
+  const togglePublish = async (courseId: string | number, currentStatus: boolean) => {
     try {
-      await api.patch(`/courses/${courseId}/publish`, { is_published: !currentStatus });
+      await api.patch(`/courses/${String(courseId)}/publish`, { is_published: !currentStatus });
       toast.success(`Curso ${!currentStatus ? 'publicado' : 'despublicado'} com sucesso!`);
       loadCourses();
     } catch (error: any) {
@@ -36,11 +36,11 @@ export default function AdminCourses() {
     }
   };
 
-  const deleteCourse = async (courseId: string) => {
+  const deleteCourse = async (courseId: string | number) => {
     if (!confirm('Tem certeza que deseja excluir este curso?')) return;
 
     try {
-      await api.delete(`/courses/${courseId}`);
+      await api.delete(`/courses/${String(courseId)}`);
       toast.success('Curso excluído com sucesso!');
       loadCourses();
     } catch (error: any) {

@@ -14,7 +14,7 @@ export default function Home() {
     const loadTopCourses = async () => {
       try {
         const response = await api.get('/courses/public');
-        const courses = response.data.map(normalizeCourse);
+        const courses: Course[] = response.data.map(normalizeCourse);
         const maxEnrollments = Math.max(...courses.map((course) => course.enrollment_count ?? 0), 0);
 
         if (maxEnrollments > 0) {

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Course, Module, Lesson, Material } from '../../types';
+import { Module, Lesson } from '../../types';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
-import { FaPlus, FaTrash, FaSave, FaArrowUp, FaArrowDown } from 'react-icons/fa';
+import { FaPlus, FaTrash, FaSave } from 'react-icons/fa';
 import { normalizeCourse } from '../../lib/normalizeCourse';
 
 export default function CourseEditor() {
@@ -124,6 +124,10 @@ export default function CourseEditor() {
   const addModule = async () => {
     if (!isEditing) {
       toast.error('Salve o curso antes de adicionar módulos');
+      return;
+    }
+    if (!id) {
+      toast.error('Curso inválido.');
       return;
     }
 
@@ -411,7 +415,7 @@ export default function CourseEditor() {
                 </p>
               ) : (
                 <div className="space-y-6">
-                  {modules.map((module, moduleIndex) => (
+                  {modules.map((module) => (
                     <div key={module.id} className="border rounded-lg p-4 bg-gray-50">
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex-grow mr-4">
@@ -447,7 +451,7 @@ export default function CourseEditor() {
                           <span>Adicionar Aula</span>
                         </button>
 
-                        {module.lessons?.map((lesson, lessonIndex) => (
+                        {module.lessons?.map((lesson) => (
                           <div key={lesson.id} className="bg-white border rounded-lg p-4 mb-3">
                             <div className="flex justify-between items-start mb-3">
                               <input

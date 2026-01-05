@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { SystemSettings } from '../../types';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import { FaSave, FaPercent } from 'react-icons/fa';

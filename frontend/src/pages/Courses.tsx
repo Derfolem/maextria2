@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Course } from '../types';
 import api from '../lib/api';
-import { FaSearch, FaUsers } from 'react-icons/fa';
+import { FaSearch } from 'react-icons/fa';
 import { normalizeCourse } from '../lib/normalizeCourse';
 
 export default function Courses() {

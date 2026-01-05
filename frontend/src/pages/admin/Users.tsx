@@ -68,19 +68,6 @@ export default function AdminUsers() {
     }
   };
 
-  const getRoleLabel = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'Administrador';
-      case 'teacher':
-        return 'Professor';
-      case 'student':
-        return 'Aluno';
-      default:
-        return role;
-    }
-  };
-
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-12">
