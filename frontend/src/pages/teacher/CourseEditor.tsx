@@ -20,6 +20,7 @@ export default function CourseEditor() {
   const [slug, setSlug] = useState('');
   const [moduleQuizzes, setModuleQuizzes] = useState<Record<string, any>>({});
   const [finalQuiz, setFinalQuiz] = useState<any | null>(null);
+  const [questionDrafts, setQuestionDrafts] = useState<Record<string, any>>({});
   const [modules, setModules] = useState<Module[]>([]);
   const [loading, setLoading] = useState(false);
   const user = useAuthStore((state) => state.user);
@@ -362,15 +363,13 @@ export default function CourseEditor() {
     }
   };
 
-  const addQuestion = async (quizId: string) => {
-    const enunciado = prompt('Enunciado da questão:');
-    if (!enunciado) return;
-    const alternativa_a = prompt('Alternativa A:') || '';
-    const alternativa_b = prompt('Alternativa B:') || '';
-    const alternativa_c = prompt('Alternativa C:') || '';
-    const alternativa_d = prompt('Alternativa D:') || '';
-    const correta = (prompt('Correta (a, b, c, d):') || '').toLowerCase();
-    if (!['a', 'b', 'c', 'd'].includes(correta)) {
+  const addQuestion = async (quizId: string, draft: any) => {
+    const { enunciado, alternativa_a, alternativa_b, alternativa_c, alternativa_d, correta } = draft;
+    if (!enunciado || !alternativa_a || !alternativa_b || !alternativa_c || !alternativa_d) {
+      toast.error('Preencha todas as alternativas.');
+      return;
+    }
+    if (!['a', 'b', 'c', 'd'].includes(String(correta).toLowerCase())) {
       toast.error('Informe a alternativa correta como a, b, c ou d.');
       return;
     }
@@ -385,7 +384,7 @@ export default function CourseEditor() {
           alternativa_b,
           alternativa_c,
           alternativa_d,
-          correta,
+          correta: String(correta).toLowerCase(),
         })
         .select('*')
         .single();
@@ -411,10 +410,31 @@ export default function CourseEditor() {
         });
       }
 
+      setQuestionDrafts((prev) => {
+        const next = { ...prev };
+        delete next[quizId];
+        return next;
+      });
       toast.success('Questão adicionada.');
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao adicionar questão.');
     }
+  };
+
+  const updateQuestionDraft = (quizId: string, field: string, value: string) => {
+    setQuestionDrafts((prev) => ({
+      ...prev,
+      [quizId]: {
+        enunciado: '',
+        alternativa_a: '',
+        alternativa_b: '',
+        alternativa_c: '',
+        alternativa_d: '',
+        correta: 'a',
+        ...(prev[quizId] || {}),
+        [field]: value,
+      },
+    }));
   };
 
   return (
@@ -574,7 +594,7 @@ export default function CourseEditor() {
                               <span>Questionário do módulo configurado.</span>
                               <button
                                 type="button"
-                                onClick={() => addQuestion(moduleQuizzes[String(module.id)].id)}
+                                onClick={() => updateQuestionDraft(moduleQuizzes[String(module.id)].id, 'enunciado', '')}
                                 className="btn-outline text-xs"
                               >
                                 Adicionar questão
@@ -590,6 +610,64 @@ export default function CourseEditor() {
                             </button>
                           )}
                         </div>
+
+                        {moduleQuizzes[String(module.id)] &&
+                          questionDrafts[moduleQuizzes[String(module.id)].id] && (
+                            <div className="border border-[hsl(var(--border))] rounded-[12px] p-4 mb-4 bg-white">
+                              <h4 className="font-semibold mb-3">Nova questão</h4>
+                              <textarea
+                                value={questionDrafts[moduleQuizzes[String(module.id)].id].enunciado || ''}
+                                onChange={(event) =>
+                                  updateQuestionDraft(moduleQuizzes[String(module.id)].id, 'enunciado', event.target.value)
+                                }
+                                className="input-field mb-3"
+                                rows={2}
+                                placeholder="Enunciado"
+                              />
+                              {(['a', 'b', 'c', 'd'] as const).map((key) => (
+                                <input
+                                  key={key}
+                                  type="text"
+                                  value={questionDrafts[moduleQuizzes[String(module.id)].id][`alternativa_${key}`] || ''}
+                                  onChange={(event) =>
+                                    updateQuestionDraft(
+                                      moduleQuizzes[String(module.id)].id,
+                                      `alternativa_${key}`,
+                                      event.target.value
+                                    )
+                                  }
+                                  className="input-field mb-2"
+                                  placeholder={`Alternativa ${key.toUpperCase()}`}
+                                />
+                              ))}
+                              <div className="flex flex-wrap items-center gap-3 mt-2">
+                                <select
+                                  value={questionDrafts[moduleQuizzes[String(module.id)].id].correta || 'a'}
+                                  onChange={(event) =>
+                                    updateQuestionDraft(moduleQuizzes[String(module.id)].id, 'correta', event.target.value)
+                                  }
+                                  className="input-field text-sm max-w-[160px]"
+                                >
+                                  <option value="a">Correta: A</option>
+                                  <option value="b">Correta: B</option>
+                                  <option value="c">Correta: C</option>
+                                  <option value="d">Correta: D</option>
+                                </select>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    addQuestion(
+                                      moduleQuizzes[String(module.id)].id,
+                                      questionDrafts[moduleQuizzes[String(module.id)].id]
+                                    )
+                                  }
+                                  className="btn-accent text-xs"
+                                >
+                                  Salvar questão
+                                </button>
+                              </div>
+                            </div>
+                          )}
 
                         {module.lessons?.map((lesson) => (
                           <div key={lesson.id} className="bg-white border rounded-lg p-4 mb-3">
@@ -671,7 +749,7 @@ export default function CourseEditor() {
                 {finalQuiz ? (
                   <button
                     type="button"
-                    onClick={() => addQuestion(finalQuiz.id)}
+                    onClick={() => updateQuestionDraft(finalQuiz.id, 'enunciado', '')}
                     className="btn-outline text-xs"
                   >
                     Adicionar questão
@@ -686,6 +764,49 @@ export default function CourseEditor() {
                   </button>
                 )}
               </div>
+              {finalQuiz && questionDrafts[finalQuiz.id] && (
+                <div className="border border-[hsl(var(--border))] rounded-[12px] p-4 mb-4 bg-white">
+                  <h4 className="font-semibold mb-3">Nova questão</h4>
+                  <textarea
+                    value={questionDrafts[finalQuiz.id].enunciado || ''}
+                    onChange={(event) => updateQuestionDraft(finalQuiz.id, 'enunciado', event.target.value)}
+                    className="input-field mb-3"
+                    rows={2}
+                    placeholder="Enunciado"
+                  />
+                  {(['a', 'b', 'c', 'd'] as const).map((key) => (
+                    <input
+                      key={key}
+                      type="text"
+                      value={questionDrafts[finalQuiz.id][`alternativa_${key}`] || ''}
+                      onChange={(event) =>
+                        updateQuestionDraft(finalQuiz.id, `alternativa_${key}`, event.target.value)
+                      }
+                      className="input-field mb-2"
+                      placeholder={`Alternativa ${key.toUpperCase()}`}
+                    />
+                  ))}
+                  <div className="flex flex-wrap items-center gap-3 mt-2">
+                    <select
+                      value={questionDrafts[finalQuiz.id].correta || 'a'}
+                      onChange={(event) => updateQuestionDraft(finalQuiz.id, 'correta', event.target.value)}
+                      className="input-field text-sm max-w-[160px]"
+                    >
+                      <option value="a">Correta: A</option>
+                      <option value="b">Correta: B</option>
+                      <option value="c">Correta: C</option>
+                      <option value="d">Correta: D</option>
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => addQuestion(finalQuiz.id, questionDrafts[finalQuiz.id])}
+                      className="btn-accent text-xs"
+                    >
+                      Salvar questão
+                    </button>
+                  </div>
+                </div>
+              )}
               <p className="text-sm text-[hsl(var(--muted-foreground))]">
                 A prova final só fica disponível para o aluno após concluir todas as aulas.
               </p>

@@ -5,6 +5,7 @@ import { FaSave, FaPercent } from 'react-icons/fa';
 
 export default function AdminSettings() {
   const [profitShare, setProfitShare] = useState('');
+  const [minScore, setMinScore] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -16,12 +17,13 @@ export default function AdminSettings() {
     try {
       const { data, error } = await supabase
         .from('configuracoes_site')
-        .select('valor')
-        .eq('chave', 'admin_profit_share')
-        .maybeSingle();
+        .select('chave, valor')
+        .in('chave', ['admin_profit_share', 'nota_minima_prova']);
       if (error) throw error;
-      const adminShare = Number(data?.valor ?? 30);
+      const adminShare = Number(data?.find((item: any) => item.chave === 'admin_profit_share')?.valor ?? 30);
+      const notaMinima = Number(data?.find((item: any) => item.chave === 'nota_minima_prova')?.valor ?? 60);
       setProfitShare((100 - adminShare).toString());
+      setMinScore(notaMinima.toString());
     } catch (error) {
       toast.error('Erro ao carregar configurações');
     } finally {
@@ -33,8 +35,13 @@ export default function AdminSettings() {
     e.preventDefault();
 
     const value = parseFloat(profitShare);
+    const minScoreValue = parseFloat(minScore);
     if (isNaN(value) || value < 0 || value > 100) {
       toast.error('Percentual deve estar entre 0 e 100');
+      return;
+    }
+    if (isNaN(minScoreValue) || minScoreValue < 0 || minScoreValue > 100) {
+      toast.error('Nota mínima deve estar entre 0 e 100');
       return;
     }
 
@@ -44,11 +51,18 @@ export default function AdminSettings() {
       const { error } = await supabase
         .from('configuracoes_site')
         .upsert(
-          {
-            chave: 'admin_profit_share',
-            valor: adminShare,
-            descricao: 'Percentual da plataforma sobre vendas de certificados',
-          },
+          [
+            {
+              chave: 'admin_profit_share',
+              valor: adminShare,
+              descricao: 'Percentual da plataforma sobre vendas de certificados',
+            },
+            {
+              chave: 'nota_minima_prova',
+              valor: minScoreValue.toString(),
+              descricao: 'Nota mínima para aprovação em questionários',
+            },
+          ],
           { onConflict: 'chave' }
         );
       if (error) throw error;
@@ -106,6 +120,29 @@ export default function AdminSettings() {
             <p className="text-sm text-[hsl(var(--muted-foreground))] mt-2">
               Exemplo: Se definir 70%, o professor recebe 70% e a plataforma 30% de cada venda.
             </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+              Nota mínima para aprovação
+            </label>
+            <p className="text-sm text-[hsl(var(--muted-foreground))] mb-3">
+              Defina a nota mínima (0 a 100) para liberar a prova final.
+            </p>
+            <div className="relative max-w-xs">
+              <FaPercent className="absolute right-3 top-3 text-[hsl(var(--muted-foreground))]" />
+              <input
+                type="number"
+                step="1"
+                min="0"
+                max="100"
+                value={minScore}
+                onChange={(e) => setMinScore(e.target.value)}
+                className="input-field pr-10"
+                placeholder="60"
+                required
+              />
+            </div>
           </div>
 
           <div className="bg-[hsl(var(--muted))] border border-[hsl(var(--border))] rounded-lg p-4">
