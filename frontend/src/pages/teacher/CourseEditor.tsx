@@ -84,6 +84,10 @@ export default function CourseEditor() {
       toast.error('Preencha todos os campos obrigatórios');
       return;
     }
+    if (!user?.id) {
+      toast.error('Usuário não autenticado.');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -106,7 +110,7 @@ export default function CourseEditor() {
       } else {
         const { data, error } = await supabase
           .from('cursos')
-          .insert({ ...payload, ativo: false, professor_id: user?.id ?? null })
+          .insert({ ...payload, ativo: false, professor_id: user.id })
           .select('id')
           .single();
         if (error) throw error;
