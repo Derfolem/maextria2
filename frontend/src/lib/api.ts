@@ -1,7 +1,12 @@
 import axios from 'axios';
 
+const fallbackApiUrl =
+  window.location.hostname === 'localhost'
+    ? 'http://localhost:3001/api'
+    : 'https://maextria2-production.up.railway.app/api';
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api',
+  baseURL: import.meta.env.VITE_API_URL || fallbackApiUrl,
   headers: {
     'Content-Type': 'application/json',
   },
