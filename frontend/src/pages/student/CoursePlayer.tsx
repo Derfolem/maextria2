@@ -17,6 +17,12 @@ export default function CoursePlayer() {
   const [loading, setLoading] = useState(true);
   const [enrollmentId, setEnrollmentId] = useState<string | number | null>(null);
   const [note, setNote] = useState('');
+  const [moduleQuizzes, setModuleQuizzes] = useState<Record<string, any>>({});
+  const [finalQuiz, setFinalQuiz] = useState<any | null>(null);
+  const [selectedQuiz, setSelectedQuiz] = useState<any | null>(null);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [submittingQuiz, setSubmittingQuiz] = useState(false);
+  const [quizResult, setQuizResult] = useState<{ percentual: number; aprovado: boolean } | null>(null);
 
   useEffect(() => {
     loadCourse();
@@ -105,6 +111,24 @@ export default function CoursePlayer() {
       });
       setCourse(normalizedCourse);
 
+      const { data: quizzesData } = await supabase
+        .from('questionarios')
+        .select('*, questoes(*)')
+        .eq('curso_id', id);
+      const moduleMap: Record<string, any> = {};
+      let final: any | null = null;
+      (quizzesData || []).forEach((quiz: any) => {
+        if (quiz.tipo === 'final') {
+          final = quiz;
+          return;
+        }
+        if (quiz.modulo_id) {
+          moduleMap[String(quiz.modulo_id)] = quiz;
+        }
+      });
+      setModuleQuizzes(moduleMap);
+      setFinalQuiz(final);
+
       if (normalizedCourse.modules?.[0]?.lessons?.[0]) {
         setSelectedLesson(normalizedCourse.modules[0].lessons[0]);
       }
@@ -130,6 +154,8 @@ export default function CoursePlayer() {
       const mapped = (data || []).map((item: any) => ({
         ...item,
         lesson_id: item.aula_id,
+        completed: item.concluido,
+        completed_at: item.concluido_em,
       }));
       setProgress(mapped);
     } catch (error) {
@@ -193,6 +219,91 @@ export default function CoursePlayer() {
   const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
   const isCompleted = progressPercentage === 100;
 
+  const lessonList = course.modules?.flatMap((module) =>
+    (module.lessons || []).map((lesson) => ({
+      ...lesson,
+      moduleTitle: module.title,
+    }))
+  ) || [];
+  const selectedIndex = selectedLesson
+    ? lessonList.findIndex((lesson) => String(lesson.id) === String(selectedLesson.id))
+    : -1;
+  const previousLesson = selectedIndex > 0 ? lessonList[selectedIndex - 1] : null;
+  const nextLesson = selectedIndex >= 0 && selectedIndex < lessonList.length - 1
+    ? lessonList[selectedIndex + 1]
+    : null;
+
+  const goToLesson = (lesson: Lesson | null) => {
+    if (!lesson) return;
+    setSelectedLesson(lesson);
+  };
+
+  const goToNextLesson = () => {
+    if (!selectedLesson || !nextLesson) return;
+    if (!isLessonCompleted(selectedLesson.id)) {
+      toast.error('Conclua a aula atual antes de avançar.');
+      return;
+    }
+    setSelectedLesson(nextLesson);
+  };
+
+  const goToPreviousLesson = () => {
+    if (!previousLesson) return;
+    setSelectedLesson(previousLesson);
+  };
+
+  const isModuleCompleted = (moduleId: string | number) => {
+    const module = course.modules?.find((mod) => String(mod.id) === String(moduleId));
+    if (!module?.lessons?.length) return false;
+    return module.lessons.every((lesson) => isLessonCompleted(lesson.id));
+  };
+
+  const canAccessFinalQuiz = totalLessons > 0 && completedLessons === totalLessons;
+
+  const openQuiz = (quiz: any) => {
+    setSelectedQuiz(quiz);
+    setAnswers({});
+    setQuizResult(null);
+  };
+
+  const submitQuiz = async () => {
+    if (!user || !selectedQuiz) return;
+    const questions = selectedQuiz.questoes || [];
+    if (!questions.length) {
+      toast.error('Questionário sem questões.');
+      return;
+    }
+
+    const total = questions.length;
+    const correct = questions.reduce((sum: number, q: any) => {
+      const answer = answers[String(q.id)];
+      return sum + (answer && answer === q.correta ? 1 : 0);
+    }, 0);
+    const percentual = Math.round((correct / total) * 100);
+    const aprovado = percentual >= 60;
+
+    setSubmittingQuiz(true);
+    try {
+      const { error } = await supabase
+        .from('respostas_questionario')
+        .insert({
+          questionario_id: selectedQuiz.id,
+          usuario_id: user.id,
+          acertos: correct,
+          total,
+          percentual,
+          aprovado,
+        });
+      if (error) throw error;
+      setQuizResult({ percentual, aprovado });
+      toast.success(aprovado ? 'Prova aprovada!' : 'Nota abaixo do mínimo.');
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao enviar prova.');
+    } finally {
+      setSubmittingQuiz(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[hsl(var(--background))]">
       <div className="max-w-[1400px] mx-auto px-[clamp(24px,5vw,80px)] py-[clamp(40px,6vh,80px)]">
@@ -226,7 +337,50 @@ export default function CoursePlayer() {
         <div className="grid lg:grid-cols-[1fr_360px] gap-8">
           <div className="space-y-6">
             <div className="card">
-              {selectedLesson ? (
+              {selectedQuiz ? (
+                <>
+                  <div className="flex items-center gap-3 text-sm text-[hsl(var(--muted-foreground))] mb-4">
+                    <FaPlay />
+                    <span>{selectedQuiz.titulo}</span>
+                  </div>
+                  <h2 className="headline-font text-3xl mb-4">Questionário</h2>
+
+                  {(selectedQuiz.questoes || []).map((questao: any, index: number) => (
+                    <div key={questao.id} className="border border-[hsl(var(--border))] rounded-[12px] p-4 mb-4">
+                      <p className="font-semibold mb-3">{index + 1}. {questao.enunciado}</p>
+                      {(['a', 'b', 'c', 'd'] as const).map((key) => (
+                        <label key={key} className="flex items-center gap-3 text-sm mb-2">
+                          <input
+                            type="radio"
+                            name={`q-${questao.id}`}
+                            value={key}
+                            checked={answers[String(questao.id)] === key}
+                            onChange={() => setAnswers((prev) => ({ ...prev, [String(questao.id)]: key }))}
+                          />
+                          <span>{questao[`alternativa_${key}`]}</span>
+                        </label>
+                      ))}
+                    </div>
+                  ))}
+
+                  {quizResult ? (
+                    <div className="mt-4 p-4 rounded-[12px] bg-[hsl(var(--muted))]">
+                      <p className="font-semibold">
+                        Resultado: {quizResult.percentual}% ({quizResult.aprovado ? 'Aprovado' : 'Reprovado'})
+                      </p>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={submitQuiz}
+                      disabled={submittingQuiz}
+                      className="btn-accent"
+                    >
+                      {submittingQuiz ? 'Enviando...' : 'Enviar respostas'}
+                    </button>
+                  )}
+                </>
+              ) : selectedLesson ? (
                 <>
                   <div className="flex items-center gap-3 text-sm text-[hsl(var(--muted-foreground))] mb-4">
                     <FaPlay />
@@ -286,19 +440,35 @@ export default function CoursePlayer() {
                   </div>
 
                   <div className="mt-8">
-                    {isLessonCompleted(selectedLesson.id) ? (
-                      <button className="btn-secondary">
-                        <FaCheckCircle className="inline mr-2" />
-                        Aula concluída
-                      </button>
-                    ) : (
+                    <div className="flex flex-wrap items-center gap-3">
+                      {isLessonCompleted(selectedLesson.id) ? (
+                        <button className="btn-secondary">
+                          <FaCheckCircle className="inline mr-2" />
+                          Aula concluída
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => markLessonComplete(selectedLesson.id)}
+                          className="btn-accent"
+                        >
+                          Aula concluída
+                        </button>
+                      )}
                       <button
-                        onClick={() => markLessonComplete(selectedLesson.id)}
-                        className="btn-accent"
+                        onClick={goToPreviousLesson}
+                        className="btn-outline"
+                        disabled={!previousLesson}
                       >
-                        Marcar como concluída
+                        Aula anterior
                       </button>
-                    )}
+                      <button
+                        onClick={goToNextLesson}
+                        className="btn-outline"
+                        disabled={!nextLesson}
+                      >
+                        Próxima aula
+                      </button>
+                    </div>
                   </div>
                 </>
               ) : (
@@ -337,7 +507,7 @@ export default function CoursePlayer() {
                     {module.lessons?.map((lesson) => (
                       <button
                         key={lesson.id}
-                        onClick={() => setSelectedLesson(lesson)}
+                        onClick={() => goToLesson(lesson)}
                         className={`w-full text-left p-3 rounded-[12px] transition flex items-center gap-3 border ${
                           selectedLesson?.id === lesson.id
                             ? 'border-[hsl(var(--primary))] bg-[hsl(var(--muted))]'
@@ -352,9 +522,39 @@ export default function CoursePlayer() {
                         <span className="flex-grow text-sm">{lesson.title}</span>
                       </button>
                     ))}
+                    {moduleQuizzes[String(module.id)] && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!isModuleCompleted(module.id)) {
+                            toast.error('Conclua todas as aulas do módulo para fazer o questionário.');
+                            return;
+                          }
+                          openQuiz(moduleQuizzes[String(module.id)]);
+                        }}
+                        className="w-full text-left p-3 rounded-[12px] border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]"
+                      >
+                        Questionário do módulo
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
+              {finalQuiz && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!canAccessFinalQuiz) {
+                      toast.error('Conclua todas as aulas para liberar a prova final.');
+                      return;
+                    }
+                    openQuiz(finalQuiz);
+                  }}
+                  className="w-full text-left p-3 rounded-[12px] border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]"
+                >
+                  Prova final
+                </button>
+              )}
             </div>
           </aside>
         </div>

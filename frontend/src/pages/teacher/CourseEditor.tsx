@@ -18,6 +18,8 @@ export default function CourseEditor() {
   const [level, setLevel] = useState('');
   const [thumbnail, setThumbnail] = useState('');
   const [slug, setSlug] = useState('');
+  const [moduleQuizzes, setModuleQuizzes] = useState<Record<string, any>>({});
+  const [finalQuiz, setFinalQuiz] = useState<any | null>(null);
   const [modules, setModules] = useState<Module[]>([]);
   const [loading, setLoading] = useState(false);
   const user = useAuthStore((state) => state.user);
@@ -73,6 +75,25 @@ export default function CourseEditor() {
         }));
 
       setModules(mappedModules);
+
+      const { data: quizzesData } = await supabase
+        .from('questionarios')
+        .select('*, questoes(*)')
+        .eq('curso_id', id);
+
+      const moduleMap: Record<string, any> = {};
+      let final: any | null = null;
+      (quizzesData || []).forEach((quiz: any) => {
+        if (quiz.tipo === 'final') {
+          final = quiz;
+          return;
+        }
+        if (quiz.modulo_id) {
+          moduleMap[String(quiz.modulo_id)] = quiz;
+        }
+      });
+      setModuleQuizzes(moduleMap);
+      setFinalQuiz(final);
     } catch (error) {
       toast.error('Erro ao carregar curso');
       navigate('/teacher/my-courses');
@@ -160,9 +181,16 @@ export default function CourseEditor() {
         },
       ]);
       toast.success('Módulo adicionado!');
+      if (modules.length === 0) {
+        navigate('/teacher/my-courses');
+      }
     } catch (error) {
       toast.error('Erro ao adicionar módulo');
     }
+  };
+
+  const updateModuleState = (moduleId: string | number, data: Partial<Module>) => {
+    setModules(modules.map((m) => (m.id === moduleId ? { ...m, ...data } : m)));
   };
 
   const updateModule = async (moduleId: string | number, data: Partial<Module>) => {
@@ -176,7 +204,6 @@ export default function CourseEditor() {
         .update(payload)
         .eq('id', moduleId);
       if (error) throw error;
-      setModules(modules.map((m) => (m.id === moduleId ? { ...m, ...data } : m)));
     } catch (error) {
       toast.error('Erro ao atualizar módulo');
     }
@@ -239,6 +266,15 @@ export default function CourseEditor() {
     }
   };
 
+  const updateLessonState = (lessonId: string | number, data: Partial<Lesson>) => {
+    setModules(
+      modules.map((m) => ({
+        ...m,
+        lessons: m.lessons?.map((l) => (l.id === lessonId ? { ...l, ...data } : l)),
+      }))
+    );
+  };
+
   const updateLesson = async (lessonId: string | number, data: Partial<Lesson>) => {
     try {
       const payload: Record<string, any> = {};
@@ -251,12 +287,6 @@ export default function CourseEditor() {
         .update(payload)
         .eq('id', lessonId);
       if (error) throw error;
-      setModules(
-        modules.map((m) => ({
-          ...m,
-          lessons: m.lessons?.map((l) => (l.id === lessonId ? { ...l, ...data } : l)),
-        }))
-      );
     } catch (error) {
       toast.error('Erro ao atualizar aula');
     }
@@ -286,13 +316,105 @@ export default function CourseEditor() {
 
   const addMaterial = async (lessonId: string | number) => {
     void lessonId;
-    toast.error('Materiais ainda nao estao disponiveis no Supabase.');
+    toast.error('Materiais de apoio ainda nao estao configurados.');
   };
 
-  const deleteMaterial = async (lessonId: string | number, materialId: string | number) => {
-    void lessonId;
-    void materialId;
-    toast.error('Materiais ainda nao estao disponiveis no Supabase.');
+  const ensureModuleQuiz = async (moduleId: string, moduleTitle: string) => {
+    if (!id) return;
+    if (moduleQuizzes[moduleId]) return;
+    try {
+      const { data, error } = await supabase
+        .from('questionarios')
+        .insert({
+          curso_id: id,
+          modulo_id: moduleId,
+          titulo: `Questionário do módulo: ${moduleTitle}`,
+          tipo: 'modulo',
+        })
+        .select('*, questoes(*)')
+        .single();
+      if (error) throw error;
+      setModuleQuizzes((prev) => ({ ...prev, [moduleId]: data }));
+      toast.success('Questionário criado.');
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao criar questionário.');
+    }
+  };
+
+  const ensureFinalQuiz = async () => {
+    if (!id) return;
+    if (finalQuiz) return;
+    try {
+      const { data, error } = await supabase
+        .from('questionarios')
+        .insert({
+          curso_id: id,
+          titulo: 'Prova final',
+          tipo: 'final',
+        })
+        .select('*, questoes(*)')
+        .single();
+      if (error) throw error;
+      setFinalQuiz(data);
+      toast.success('Prova final criada.');
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao criar prova final.');
+    }
+  };
+
+  const addQuestion = async (quizId: string) => {
+    const enunciado = prompt('Enunciado da questão:');
+    if (!enunciado) return;
+    const alternativa_a = prompt('Alternativa A:') || '';
+    const alternativa_b = prompt('Alternativa B:') || '';
+    const alternativa_c = prompt('Alternativa C:') || '';
+    const alternativa_d = prompt('Alternativa D:') || '';
+    const correta = (prompt('Correta (a, b, c, d):') || '').toLowerCase();
+    if (!['a', 'b', 'c', 'd'].includes(correta)) {
+      toast.error('Informe a alternativa correta como a, b, c ou d.');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('questoes')
+        .insert({
+          questionario_id: quizId,
+          enunciado,
+          alternativa_a,
+          alternativa_b,
+          alternativa_c,
+          alternativa_d,
+          correta,
+        })
+        .select('*')
+        .single();
+      if (error) throw error;
+
+      setModuleQuizzes((prev) => {
+        const next = { ...prev };
+        Object.keys(next).forEach((key) => {
+          if (next[key]?.id === quizId) {
+            next[key] = {
+              ...next[key],
+              questoes: [...(next[key].questoes || []), data],
+            };
+          }
+        });
+        return next;
+      });
+
+      if (finalQuiz?.id === quizId) {
+        setFinalQuiz({
+          ...finalQuiz,
+          questoes: [...(finalQuiz.questoes || []), data],
+        });
+      }
+
+      toast.success('Questão adicionada.');
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao adicionar questão.');
+    }
   };
 
   return (
@@ -415,13 +537,15 @@ export default function CourseEditor() {
                           <input
                             type="text"
                             value={module.title}
-                            onChange={(e) => updateModule(module.id, { title: e.target.value })}
+                            onChange={(e) => updateModuleState(module.id, { title: e.target.value })}
+                            onBlur={() => updateModule(module.id, { title: module.title })}
                             className="input-field font-semibold mb-2"
                             placeholder="Título do módulo"
                           />
                           <textarea
                             value={module.description || ''}
-                            onChange={(e) => updateModule(module.id, { description: e.target.value })}
+                            onChange={(e) => updateModuleState(module.id, { description: e.target.value })}
+                            onBlur={() => updateModule(module.id, { description: module.description })}
                             className="input-field"
                             rows={2}
                             placeholder="Descrição do módulo"
@@ -444,13 +568,37 @@ export default function CourseEditor() {
                           <span>Adicionar Aula</span>
                         </button>
 
+                        <div className="mb-4">
+                          {moduleQuizzes[String(module.id)] ? (
+                            <div className="flex flex-wrap items-center gap-3 text-sm text-[hsl(var(--muted-foreground))]">
+                              <span>Questionário do módulo configurado.</span>
+                              <button
+                                type="button"
+                                onClick={() => addQuestion(moduleQuizzes[String(module.id)].id)}
+                                className="btn-outline text-xs"
+                              >
+                                Adicionar questão
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => ensureModuleQuiz(String(module.id), module.title)}
+                              className="btn-outline text-xs"
+                            >
+                              Criar questionário do módulo
+                            </button>
+                          )}
+                        </div>
+
                         {module.lessons?.map((lesson) => (
                           <div key={lesson.id} className="bg-white border rounded-lg p-4 mb-3">
                             <div className="flex justify-between items-start mb-3">
                               <input
                                 type="text"
                                 value={lesson.title}
-                                onChange={(e) => updateLesson(lesson.id, { title: e.target.value })}
+                                onChange={(e) => updateLessonState(lesson.id, { title: e.target.value })}
+                                onBlur={() => updateLesson(lesson.id, { title: lesson.title })}
                                 className="input-field flex-grow mr-2"
                                 placeholder="Título da aula"
                               />
@@ -465,14 +613,16 @@ export default function CourseEditor() {
                             <input
                               type="text"
                               value={lesson.video_url || ''}
-                              onChange={(e) => updateLesson(lesson.id, { video_url: e.target.value })}
+                              onChange={(e) => updateLessonState(lesson.id, { video_url: e.target.value })}
+                              onBlur={() => updateLesson(lesson.id, { video_url: lesson.video_url })}
                               className="input-field mb-2"
                               placeholder="URL do vídeo (YouTube, Vimeo, etc.)"
                             />
 
                             <textarea
                               value={lesson.content || ''}
-                              onChange={(e) => updateLesson(lesson.id, { content: e.target.value })}
+                              onChange={(e) => updateLessonState(lesson.id, { content: e.target.value })}
+                              onBlur={() => updateLesson(lesson.id, { content: lesson.content })}
                               className="input-field mb-2"
                               rows={3}
                               placeholder="Conteúdo da aula (texto, HTML)"
@@ -481,10 +631,11 @@ export default function CourseEditor() {
                             <div className="mt-3">
                               <button
                                 onClick={() => addMaterial(lesson.id)}
-                                className="text-purple-600 hover:text-purple-700 text-sm flex items-center space-x-1"
+                                className="text-[hsl(var(--muted-foreground))] text-sm flex items-center space-x-1 cursor-not-allowed"
+                                disabled
                               >
                                 <FaPlus />
-                                <span>Adicionar Material</span>
+                                <span>Materiais de apoio (em breve)</span>
                               </button>
 
                               {lesson.materials && lesson.materials.length > 0 && (
@@ -513,6 +664,31 @@ export default function CourseEditor() {
                   ))}
                 </div>
               )}
+            </div>
+            <div className="card">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Prova final</h2>
+                {finalQuiz ? (
+                  <button
+                    type="button"
+                    onClick={() => addQuestion(finalQuiz.id)}
+                    className="btn-outline text-xs"
+                  >
+                    Adicionar questão
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={ensureFinalQuiz}
+                    className="btn-outline text-xs"
+                  >
+                    Criar prova final
+                  </button>
+                )}
+              </div>
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                A prova final só fica disponível para o aluno após concluir todas as aulas.
+              </p>
             </div>
           </>
         )}

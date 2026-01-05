@@ -43,10 +43,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     <>
                       <Link to="/student/dashboard" className="nav-link flex items-center space-x-1">
                         <FaChartBar />
-                        <span>Dashboard</span>
+                        <span>{user?.role === 'student' ? 'Dashboard' : 'Aprendizado'}</span>
                       </Link>
                       <Link to="/student/my-courses" className="nav-link">
-                        Meus Cursos
+                        {user?.role === 'student' ? 'Meus Cursos' : 'Cursos (Aluno)'}
                       </Link>
                     </>
                   )}
@@ -147,10 +147,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 {(user?.role === 'student' || user?.role === 'teacher' || user?.role === 'admin') && (
                   <>
                     <Link to="/student/dashboard" className="nav-link" onClick={() => setMobileOpen(false)}>
-                      Dashboard
+                      {user?.role === 'student' ? 'Dashboard' : 'Aprendizado'}
                     </Link>
                     <Link to="/student/my-courses" className="nav-link" onClick={() => setMobileOpen(false)}>
-                      Meus Cursos
+                      {user?.role === 'student' ? 'Meus Cursos' : 'Cursos (Aluno)'}
                     </Link>
                   </>
                 )}
