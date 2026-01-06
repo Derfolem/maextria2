@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { BookOpen, Users, Award, CheckCircle, DollarSign, Settings, UserCog, Mail, BarChart3 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { PieChart, Pie, Cell } from "recharts";
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -13,16 +15,32 @@ export default function AdminDashboard() {
     totalCertificados: 0,
     totalMensagens: 0,
   });
+  const [userDistribution, setUserDistribution] = useState({
+    alunos: 0,
+    admins: 0,
+    professores: 0,
+    total: 0,
+  });
 
   useEffect(() => {
     const fetchStats = async () => {
-      const [cursos, usuarios, provas, certificados, mensagens] = await Promise.all([
+      const [cursos, usuarios, provas, certificados, mensagens, admins, colaboradores] = await Promise.all([
         supabase.from("cursos").select("id", { count: "exact", head: true }),
         supabase.from("usuarios").select("id", { count: "exact", head: true }),
         supabase.from("prova_resultado").select("id", { count: "exact", head: true }),
         supabase.from("certificados").select("id", { count: "exact", head: true }),
         supabase.from("mensagens").select("id", { count: "exact", head: true }).eq("status", "nao_lida"),
+        supabase.from("user_roles").select("user_id").eq("role", "admin"),
+        supabase.from("colaboradores").select("usuario_id").eq("ativo", true),
       ]);
+
+      const adminIds = new Set((admins.data || []).map((row) => row.user_id));
+      const professorIds = new Set((colaboradores.data || []).map((row) => row.usuario_id));
+      const professoresSemAdmin = [...professorIds].filter((id) => !adminIds.has(id));
+      const totalUsuarios = usuarios.count || 0;
+      const adminsCount = adminIds.size;
+      const professoresCount = professoresSemAdmin.length;
+      const alunosCount = Math.max(totalUsuarios - adminsCount - professoresCount, 0);
 
       setStats({
         totalCursos: cursos.count || 0,
@@ -30,6 +48,13 @@ export default function AdminDashboard() {
         totalProvas: provas.count || 0,
         totalCertificados: certificados.count || 0,
         totalMensagens: mensagens.count || 0,
+      });
+
+      setUserDistribution({
+        alunos: alunosCount,
+        admins: adminsCount,
+        professores: professoresCount,
+        total: totalUsuarios,
       });
     };
 
@@ -63,6 +88,13 @@ export default function AdminDashboard() {
     },
   ];
 
+  const userChartData = [
+    { name: "Alunos", value: userDistribution.alunos, color: "hsl(var(--chart-1))" },
+    { name: "Admins", value: userDistribution.admins, color: "hsl(var(--chart-2))" },
+    { name: "Professores", value: userDistribution.professores, color: "hsl(var(--chart-3))" },
+  ];
+  const totalUserCount = userChartData.reduce((sum, item) => sum + item.value, 0);
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
@@ -86,7 +118,7 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle>Ações Rápidas</CardTitle>
@@ -170,6 +202,51 @@ export default function AdminDashboard() {
                 SEO Manager
               </Link>
             </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Distribuição de Usuários</CardTitle>
+            <CardDescription>Percentual por tipo de conta</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {totalUserCount > 0 ? (
+              <ChartContainer config={{}} className="h-[240px]">
+                <PieChart>
+                  <Pie
+                    data={userChartData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    dataKey="value"
+                  >
+                    {userChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                </PieChart>
+              </ChartContainer>
+            ) : (
+              <p className="text-sm text-muted-foreground">Sem dados para exibir.</p>
+            )}
+            <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs text-muted-foreground">
+              <div>
+                <div className="text-base font-semibold text-foreground">{userDistribution.alunos}</div>
+                Alunos
+              </div>
+              <div>
+                <div className="text-base font-semibold text-foreground">{userDistribution.admins}</div>
+                Admins
+              </div>
+              <div>
+                <div className="text-base font-semibold text-foreground">{userDistribution.professores}</div>
+                Professores
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
