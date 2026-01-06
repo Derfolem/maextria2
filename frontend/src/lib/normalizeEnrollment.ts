@@ -13,7 +13,7 @@ export function normalizeEnrollment(raw: RawEnrollment): Enrollment {
     certificate_price: raw.certificate_price ?? rawCourse?.preco_certificado,
     cover_image: raw.cover_image ?? rawCourse?.imagem_capa_url,
     difficulty: raw.difficulty ?? rawCourse?.nivel,
-    teacher_name: raw.teacher_name ?? rawCourse?.teacher_name,
+        teacher_name: raw.teacher_name ?? rawCourse?.teacher_name ?? rawCourse?.professor_nome,
     is_published: rawCourse?.ativo ?? 1,
     created_at: raw.enrolled_at ?? raw.data_matricula,
     updated_at: raw.enrolled_at ?? raw.data_matricula,

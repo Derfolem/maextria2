@@ -18,6 +18,7 @@ export default function CourseEditor() {
   const [level, setLevel] = useState('');
   const [thumbnail, setThumbnail] = useState('');
   const [slug, setSlug] = useState('');
+  const [teacherName, setTeacherName] = useState('');
   const [moduleQuizzes, setModuleQuizzes] = useState<Record<string, any>>({});
   const [finalQuiz, setFinalQuiz] = useState<any | null>(null);
   const [questionDrafts, setQuestionDrafts] = useState<Record<string, any>>({});
@@ -55,6 +56,7 @@ export default function CourseEditor() {
       setLevel(courseData.nivel || '');
       setThumbnail(courseData.imagem_capa_url || '');
       setSlug(courseData.slug || '');
+      setTeacherName(courseData.professor_nome || '');
       const mappedModules = (courseData.modulos || [])
         .sort((a: any, b: any) => (a.ordem ?? 0) - (b.ordem ?? 0))
         .map((module: any) => ({
@@ -121,6 +123,7 @@ export default function CourseEditor() {
         nivel: level || null,
         imagem_capa_url: thumbnail.trim() || null,
         slug: slug || slugify(title),
+        professor_nome: teacherName.trim() || null,
       };
 
       if (isEditing) {
@@ -133,7 +136,12 @@ export default function CourseEditor() {
       } else {
         const { data, error } = await supabase
           .from('cursos')
-          .insert({ ...payload, ativo: false, professor_id: user.id })
+          .insert({
+            ...payload,
+            ativo: false,
+            professor_id: user.id,
+            professor_nome: teacherName.trim() || user.name || null,
+          })
           .select('id')
           .single();
         if (error) throw error;
@@ -530,6 +538,21 @@ export default function CourseEditor() {
                 placeholder="Descreva seu curso..."
               />
             </div>
+
+            {user?.role === 'admin' && (
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nome do professor exibido
+                </label>
+                <input
+                  type="text"
+                  value={teacherName}
+                  onChange={(e) => setTeacherName(e.target.value)}
+                  className="input-field"
+                  placeholder="Ex: Equipe MAEXTRIA"
+                />
+              </div>
+            )}
           </div>
         </div>
 
