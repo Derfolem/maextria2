@@ -339,15 +339,6 @@ export default function CoursePlayer() {
     setSelectedLesson(previousLesson);
   };
 
-  const isModuleCompleted = (moduleId: string | number) => {
-    const module = course.modules?.find((mod) => String(mod.id) === String(moduleId));
-    if (!module?.lessons?.length) return false;
-    const lessonsCompleted = module.lessons.every((lesson) => isLessonCompleted(lesson.id));
-    const moduleQuiz = moduleQuizzes[String(moduleId)];
-    if (!moduleQuiz) return lessonsCompleted;
-    return lessonsCompleted && quizResponses[String(moduleQuiz.id)];
-  };
-
   const isModuleLessonsDone = (moduleId: string | number) => {
     const module = course.modules?.find((mod) => String(mod.id) === String(moduleId));
     if (!module?.lessons?.length) return false;
