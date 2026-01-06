@@ -19,28 +19,43 @@ export default function AdminDashboard() {
     alunos: 0,
     admins: 0,
     professores: 0,
-    total: 0,
+    cadastros: 0,
+    matriculados: 0,
+    pagantes: 0,
   });
 
   useEffect(() => {
     const fetchStats = async () => {
-      const [cursos, usuarios, provas, certificados, mensagens, admins, colaboradores] = await Promise.all([
+      const [cursos, usuarios, provas, certificados, mensagens, roles, matriculas, certificadosPagos] = await Promise.all([
         supabase.from("cursos").select("id", { count: "exact", head: true }),
         supabase.from("usuarios").select("id", { count: "exact", head: true }),
         supabase.from("prova_resultado").select("id", { count: "exact", head: true }),
         supabase.from("certificados").select("id", { count: "exact", head: true }),
         supabase.from("mensagens").select("id", { count: "exact", head: true }).eq("status", "nao_lida"),
-        supabase.from("user_roles").select("user_id").eq("role", "admin"),
-        supabase.from("colaboradores").select("usuario_id").eq("ativo", true),
+        supabase.from("user_roles").select("user_id, role"),
+        supabase.from("matriculas").select("usuario_id").eq("ativa", true),
+        supabase.from("certificados").select("usuario_id").eq("pago", true),
       ]);
 
-      const adminIds = new Set((admins.data || []).map((row) => row.user_id));
-      const professorIds = new Set((colaboradores.data || []).map((row) => row.usuario_id));
-      const professoresSemAdmin = [...professorIds].filter((id) => !adminIds.has(id));
+      const roleRows = roles.data || [];
+      const adminIds = new Set(
+        roleRows.filter((row) => (row.role as string) === "admin").map((row) => row.user_id),
+      );
+      const professorIds = new Set(
+        roleRows.filter((row) => (row.role as string) === "teacher").map((row) => row.user_id),
+      );
+      const roleIds = new Set([...adminIds, ...professorIds]);
+
       const totalUsuarios = usuarios.count || 0;
       const adminsCount = adminIds.size;
-      const professoresCount = professoresSemAdmin.length;
-      const alunosCount = Math.max(totalUsuarios - adminsCount - professoresCount, 0);
+      const professoresCount = professorIds.size;
+      const alunosCount = Math.max(totalUsuarios - roleIds.size, 0);
+
+      const matriculaIds = new Set((matriculas.data || []).map((row) => row.usuario_id));
+      const alunosMatriculadosCount = [...matriculaIds].filter((id) => !roleIds.has(id)).length;
+
+      const pagantesIds = new Set((certificadosPagos.data || []).map((row) => row.usuario_id));
+      const alunosPagantesCount = [...pagantesIds].filter((id) => !roleIds.has(id)).length;
 
       setStats({
         totalCursos: cursos.count || 0,
@@ -54,7 +69,9 @@ export default function AdminDashboard() {
         alunos: alunosCount,
         admins: adminsCount,
         professores: professoresCount,
-        total: totalUsuarios,
+        cadastros: totalUsuarios,
+        matriculados: alunosMatriculadosCount,
+        pagantes: alunosPagantesCount,
       });
     };
 
@@ -89,9 +106,12 @@ export default function AdminDashboard() {
   ];
 
   const userChartData = [
-    { name: "Alunos", value: userDistribution.alunos, color: "hsl(var(--chart-1))" },
-    { name: "Admins", value: userDistribution.admins, color: "hsl(var(--chart-2))" },
-    { name: "Professores", value: userDistribution.professores, color: "hsl(var(--chart-3))" },
+    { name: "Cadastros", value: userDistribution.cadastros, color: "hsl(var(--chart-1))" },
+    { name: "Alunos", value: userDistribution.alunos, color: "hsl(var(--chart-2))" },
+    { name: "Matriculados", value: userDistribution.matriculados, color: "hsl(var(--chart-3))" },
+    { name: "Pagantes", value: userDistribution.pagantes, color: "hsl(var(--chart-4))" },
+    { name: "Admins", value: userDistribution.admins, color: "hsl(var(--chart-5))" },
+    { name: "Professores", value: userDistribution.professores, color: "hsl(var(--chart-6))" },
   ];
   const totalUserCount = userChartData.reduce((sum, item) => sum + item.value, 0);
 
@@ -233,10 +253,22 @@ export default function AdminDashboard() {
             ) : (
               <p className="text-sm text-muted-foreground">Sem dados para exibir.</p>
             )}
-            <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs text-muted-foreground">
+            <div className="mt-4 grid grid-cols-2 gap-2 text-center text-xs text-muted-foreground sm:grid-cols-3 lg:grid-cols-6">
+              <div>
+                <div className="text-base font-semibold text-foreground">{userDistribution.cadastros}</div>
+                Cadastros
+              </div>
               <div>
                 <div className="text-base font-semibold text-foreground">{userDistribution.alunos}</div>
                 Alunos
+              </div>
+              <div>
+                <div className="text-base font-semibold text-foreground">{userDistribution.matriculados}</div>
+                Matriculados
+              </div>
+              <div>
+                <div className="text-base font-semibold text-foreground">{userDistribution.pagantes}</div>
+                Pagantes
               </div>
               <div>
                 <div className="text-base font-semibold text-foreground">{userDistribution.admins}</div>
