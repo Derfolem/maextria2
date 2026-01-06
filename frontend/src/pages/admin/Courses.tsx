@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Course } from '../../types';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
-import { FaTrash, FaEye, FaEyeSlash, FaSearch, FaArrowRight } from 'react-icons/fa';
+import { FaTrash, FaEye, FaEyeSlash, FaSearch, FaArrowRight, FaEdit } from 'react-icons/fa';
 import { normalizeCourse } from '../../lib/normalizeCourse';
 
 export default function AdminCourses() {
@@ -159,6 +159,13 @@ export default function AdminCourses() {
                 >
                   <FaEye />
                   Visualizar
+                </Link>
+                <Link
+                  to={`/teacher/course/${course.id}/edit`}
+                  className="btn-outline flex items-center gap-2"
+                >
+                  <FaEdit />
+                  Editar
                 </Link>
                 <button
                   onClick={() => togglePublish(course.id, course.is_published)}

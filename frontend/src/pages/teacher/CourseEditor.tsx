@@ -32,6 +32,12 @@ export default function CourseEditor() {
     }
   }, [id]);
 
+  useEffect(() => {
+    if (!isEditing && user?.name && !teacherName) {
+      setTeacherName(user.name);
+    }
+  }, [isEditing, user?.name, teacherName]);
+
   const slugify = (value: string) =>
     value
       .toLowerCase()
@@ -123,7 +129,7 @@ export default function CourseEditor() {
         nivel: level || null,
         imagem_capa_url: thumbnail.trim() || null,
         slug: slug || slugify(title),
-        professor_nome: teacherName.trim() || null,
+        professor_nome: teacherName.trim() || user.name || null,
       };
 
       if (isEditing) {
@@ -140,7 +146,6 @@ export default function CourseEditor() {
             ...payload,
             ativo: false,
             professor_id: user.id,
-            professor_nome: teacherName.trim() || user.name || null,
           })
           .select('id')
           .single();
@@ -539,10 +544,10 @@ export default function CourseEditor() {
               />
             </div>
 
-            {user?.role === 'admin' && (
+            {(user?.role === 'admin' || user?.role === 'teacher') && (
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nome do professor exibido
+                  Nome exibido do professor
                 </label>
                 <input
                   type="text"
