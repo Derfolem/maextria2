@@ -322,6 +322,15 @@ export default function CoursePlayer() {
       return;
     }
 
+    if (currentModule) {
+      const moduleQuiz = moduleQuizzes[String(currentModule.id)];
+      const isEnteringNewModule = currentModule.id !== nextLesson.module_id;
+      if (moduleQuiz && isEnteringNewModule && !quizResponses[String(moduleQuiz.id)]) {
+        toast.error('Conclua o questionário do módulo antes de avançar.');
+        return;
+      }
+    }
+
     setSelectedLesson(nextLesson);
   };
 
@@ -337,6 +346,12 @@ export default function CoursePlayer() {
     const moduleQuiz = moduleQuizzes[String(moduleId)];
     if (!moduleQuiz) return lessonsCompleted;
     return lessonsCompleted && quizResponses[String(moduleQuiz.id)];
+  };
+
+  const isModuleLessonsDone = (moduleId: string | number) => {
+    const module = course.modules?.find((mod) => String(mod.id) === String(moduleId));
+    if (!module?.lessons?.length) return false;
+    return module.lessons.every((lesson) => isLessonCompleted(lesson.id));
   };
 
   const allModuleQuizzesPassed = Object.values(moduleQuizzes).every(
@@ -618,7 +633,7 @@ export default function CoursePlayer() {
                       <button
                         type="button"
                         onClick={() => {
-                          if (!isModuleCompleted(module.id)) {
+                          if (!isModuleLessonsDone(module.id)) {
                             toast.error('Conclua todas as aulas do módulo para fazer o questionário.');
                             return;
                           }
