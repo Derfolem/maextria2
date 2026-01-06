@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../lib/store';
-import { FaBook, FaUser, FaSignOutAlt, FaCog, FaChartBar, FaUsers, FaBars, FaTimes, FaInstagram, FaLinkedinIn, FaYoutube } from 'react-icons/fa';
+import { FaBook, FaUser, FaSignOutAlt, FaCog, FaChartBar, FaUsers, FaBars, FaTimes, FaInstagram, FaLinkedinIn, FaYoutube, FaBell } from 'react-icons/fa';
 import AIChat from './AIChat';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -72,6 +72,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       <Link to="/admin/users" className="nav-link flex items-center space-x-1">
                         <FaUsers />
                         <span>Usuários</span>
+                      </Link>
+                      <Link to="/admin/notifications" className="nav-link flex items-center space-x-1">
+                        <FaBell />
+                        <span>Notificações</span>
                       </Link>
                       <Link to="/admin/courses" className="nav-link">
                         Cursos
@@ -171,6 +175,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     </Link>
                     <Link to="/admin/users" className="nav-link" onClick={() => setMobileOpen(false)}>
                       Usuarios
+                    </Link>
+                    <Link to="/admin/notifications" className="nav-link" onClick={() => setMobileOpen(false)}>
+                      Notificacoes
                     </Link>
                     <Link to="/admin/courses" className="nav-link" onClick={() => setMobileOpen(false)}>
                       Cursos

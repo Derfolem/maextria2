@@ -5,6 +5,7 @@ import { FaBook, FaCertificate, FaTrophy, FaChartLine, FaPaperPlane, FaArrowRigh
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { normalizeEnrollment } from '../../lib/normalizeEnrollment';
 import { supabase } from '../../lib/supabase';
+import toast from 'react-hot-toast';
 
 export default function StudentDashboard() {
   const [stats, setStats] = useState<DashboardStats>({});
@@ -91,17 +92,38 @@ export default function StudentDashboard() {
     setSuggestion((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSuggestionSubmit = (event: React.FormEvent) => {
+  const handleSuggestionSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setSending(true);
-    const subject = 'Sugestao de curso - MAEXTRIA';
-    const body = [
-      `Curso sugerido: ${suggestion.course}`,
-      `Motivo/interesse: ${suggestion.reason}`,
-    ].join('\n');
-    const mailto = `mailto:melfredfred25@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailto;
-    setSending(false);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('Você precisa estar logado para enviar uma sugestão.');
+      }
+
+      const course = suggestion.course.trim();
+      const reason = suggestion.reason.trim();
+      if (!course || !reason) {
+        throw new Error('Preencha o curso e o motivo.');
+      }
+
+      const { error } = await supabase
+        .from('curso_sugestoes')
+        .insert({
+          usuario_id: user.id,
+          curso: course,
+          motivo: reason,
+        });
+
+      if (error) throw error;
+
+      toast.success('Sugestão enviada com sucesso!');
+      setSuggestion({ course: '', reason: '' });
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao enviar sugestão.');
+    } finally {
+      setSending(false);
+    }
   };
 
   if (loading) {

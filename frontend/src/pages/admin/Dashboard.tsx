@@ -1,17 +1,30 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { DashboardStats } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { FaUsers, FaBook, FaDollarSign, FaChartLine } from 'react-icons/fa';
 import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Link } from 'react-router-dom';
+
+type AdminNotification = {
+  id: string;
+  tipo: string;
+  titulo: string;
+  descricao: string;
+  criado_em: string;
+  metadata?: Record<string, any>;
+};
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats>({});
   const [loading, setLoading] = useState(true);
   const [revenueData, setRevenueData] = useState<Array<{ month: string; revenue: number }>>([]);
   const [userDistribution, setUserDistribution] = useState<Array<{ name: string; value: number }>>([]);
+  const [recentNotifications, setRecentNotifications] = useState<AdminNotification[]>([]);
+  const [loadingNotifications, setLoadingNotifications] = useState(true);
 
   useEffect(() => {
     loadStats();
+    loadNotifications();
   }, []);
 
   const loadStats = async () => {
@@ -101,6 +114,51 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadNotifications = async () => {
+    setLoadingNotifications(true);
+    const since = new Date();
+    since.setDate(since.getDate() - 30);
+
+    const { data, error } = await supabase
+      .from('admin_notifications')
+      .select('id, tipo, titulo, descricao, criado_em, metadata')
+      .gte('criado_em', since.toISOString())
+      .order('criado_em', { ascending: false })
+      .limit(6);
+
+    if (!error) {
+      setRecentNotifications(data || []);
+    }
+
+    setLoadingNotifications(false);
+  };
+
+  const relativeFormatter = useMemo(
+    () => new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto' }),
+    []
+  );
+
+  const formatTimeAgo = (value: string) => {
+    const date = new Date(value);
+    const diffSeconds = Math.floor((Date.now() - date.getTime()) / 1000);
+    if (Number.isNaN(diffSeconds)) return 'agora';
+
+    const minutes = Math.floor(diffSeconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (Math.abs(days) >= 1) {
+      return relativeFormatter.format(-days, 'day');
+    }
+    if (Math.abs(hours) >= 1) {
+      return relativeFormatter.format(-hours, 'hour');
+    }
+    if (Math.abs(minutes) >= 1) {
+      return relativeFormatter.format(-minutes, 'minute');
+    }
+    return relativeFormatter.format(-diffSeconds, 'second');
   };
 
   const COLORS = [
@@ -197,33 +255,30 @@ export default function AdminDashboard() {
       </div>
 
       <div className="card">
-        <h2 className="text-xl font-semibold mb-4">Atividade recente</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">Atividade recente</h2>
+          <Link to="/admin/notifications" className="text-sm text-[hsl(var(--primary))] hover:underline">
+            Ver todas
+          </Link>
+        </div>
         <div className="space-y-3">
-          {[
-            {
-              title: 'Nova matricula',
-              desc: 'Joao Silva se inscreveu em "React Avancado"',
-              time: 'Ha 2 horas',
-            },
-            {
-              title: 'Novo curso publicado',
-              desc: 'Maria Santos publicou "Python para Iniciantes"',
-              time: 'Ha 5 horas',
-            },
-            {
-              title: 'Certificado emitido',
-              desc: 'Carlos Oliveira concluiu "JavaScript Essencial"',
-              time: 'Ha 1 dia',
-            },
-          ].map((item) => (
-            <div key={item.title} className="flex items-center justify-between p-3 border border-[hsl(var(--border))] rounded-[12px]">
-              <div>
-                <p className="font-semibold">{item.title}</p>
-                <p className="text-sm text-[hsl(var(--muted-foreground))]">{item.desc}</p>
+          {loadingNotifications ? (
+            <p className="text-sm text-[hsl(var(--muted-foreground))]">Carregando notificações...</p>
+          ) : recentNotifications.length === 0 ? (
+            <p className="text-sm text-[hsl(var(--muted-foreground))]">Sem atividades recentes.</p>
+          ) : (
+            recentNotifications.map((item) => (
+              <div key={item.id} className="flex items-center justify-between gap-6 p-3 border border-[hsl(var(--border))] rounded-[12px]">
+                <div>
+                  <p className="font-semibold">{item.titulo}</p>
+                  <p className="text-sm text-[hsl(var(--muted-foreground))]">{item.descricao}</p>
+                </div>
+                <span className="text-sm text-[hsl(var(--muted-foreground))] whitespace-nowrap">
+                  {formatTimeAgo(item.criado_em)}
+                </span>
               </div>
-              <span className="text-sm text-[hsl(var(--muted-foreground))]">{item.time}</span>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
     </div>

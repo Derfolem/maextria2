@@ -18,6 +18,7 @@ import AdminDashboard from './pages/admin/Dashboard';
 import AdminUsers from './pages/admin/Users';
 import AdminCourses from './pages/admin/Courses';
 import AdminSettings from './pages/admin/Settings';
+import AdminNotifications from './pages/admin/Notifications';
 import TeacherLanding from './pages/TeacherLanding';
 
 function ProtectedRoute({ children, roles }: { children: React.ReactNode; roles?: string[] }) {
@@ -112,6 +113,11 @@ function App() {
         <Route path="/admin/settings" element={
           <ProtectedRoute roles={['admin']}>
             <AdminSettings />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/notifications" element={
+          <ProtectedRoute roles={['admin']}>
+            <AdminNotifications />
           </ProtectedRoute>
         } />
       </Routes>
