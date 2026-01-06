@@ -24,6 +24,7 @@ export default function CoursePlayer() {
   const [submittingQuiz, setSubmittingQuiz] = useState(false);
   const [quizResult, setQuizResult] = useState<{ percentual: number; aprovado: boolean } | null>(null);
   const [minScore, setMinScore] = useState(60);
+  const [quizResponses, setQuizResponses] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     loadCourse();
@@ -129,6 +130,22 @@ export default function CoursePlayer() {
       });
       setModuleQuizzes(moduleMap);
       setFinalQuiz(final);
+
+      const quizIds = (quizzesData || []).map((quiz: any) => quiz.id);
+      if (quizIds.length > 0) {
+        const { data: responsesData } = await supabase
+          .from('respostas_questionario')
+          .select('questionario_id, aprovado')
+          .eq('usuario_id', user.id)
+          .in('questionario_id', quizIds);
+        const responseMap = (responsesData || []).reduce((acc: Record<string, boolean>, item: any) => {
+          acc[String(item.questionario_id)] = Boolean(item.aprovado);
+          return acc;
+        }, {});
+        setQuizResponses(responseMap);
+      } else {
+        setQuizResponses({});
+      }
 
       const { data: settingsData } = await supabase
         .from('configuracoes_site')
@@ -248,8 +265,14 @@ export default function CoursePlayer() {
 
   const totalLessons = course.modules?.reduce((acc, mod) => acc + (mod.lessons?.length || 0), 0) || 0;
   const completedLessons = progress.filter((p) => p.completed).length;
-  const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
-  const isCompleted = progressPercentage === 100;
+  const totalQuizzes = Object.keys(moduleQuizzes).length + (finalQuiz ? 1 : 0);
+  const completedQuizzes = Object.values(moduleQuizzes).filter((quiz: any) => quizResponses[String(quiz.id)]).length
+    + (finalQuiz && quizResponses[String(finalQuiz.id)] ? 1 : 0);
+  const totalProgressItems = totalLessons + totalQuizzes;
+  const completedProgressItems = completedLessons + completedQuizzes;
+  const progressPercentage = totalProgressItems > 0
+    ? Math.round((completedProgressItems / totalProgressItems) * 100)
+    : 0;
 
   const lessonList = course.modules?.flatMap((module) =>
     (module.lessons || []).map((lesson) => ({
@@ -267,6 +290,7 @@ export default function CoursePlayer() {
 
   const goToLesson = (lesson: Lesson | null) => {
     if (!lesson) return;
+    setSelectedQuiz(null);
     setSelectedLesson(lesson);
   };
 
@@ -276,6 +300,28 @@ export default function CoursePlayer() {
       toast.error('Conclua a aula atual antes de avançar.');
       return;
     }
+
+    const currentModule = course.modules?.find((module) =>
+      module.lessons?.some((lesson) => String(lesson.id) === String(selectedLesson.id))
+    );
+    const isLastLessonInModule = currentModule
+      ? String(currentModule.lessons?.[currentModule.lessons.length - 1]?.id) === String(selectedLesson.id)
+      : false;
+
+    if (currentModule && isLastLessonInModule) {
+      const moduleQuiz = moduleQuizzes[String(currentModule.id)];
+      if (moduleQuiz && !quizResponses[String(moduleQuiz.id)]) {
+        openQuiz(moduleQuiz);
+        return;
+      }
+    }
+
+    const isLastLessonOverall = String(lessonList[lessonList.length - 1]?.id) === String(selectedLesson.id);
+    if (isLastLessonOverall && finalQuiz && !quizResponses[String(finalQuiz.id)]) {
+      openQuiz(finalQuiz);
+      return;
+    }
+
     setSelectedLesson(nextLesson);
   };
 
@@ -287,12 +333,20 @@ export default function CoursePlayer() {
   const isModuleCompleted = (moduleId: string | number) => {
     const module = course.modules?.find((mod) => String(mod.id) === String(moduleId));
     if (!module?.lessons?.length) return false;
-    return module.lessons.every((lesson) => isLessonCompleted(lesson.id));
+    const lessonsCompleted = module.lessons.every((lesson) => isLessonCompleted(lesson.id));
+    const moduleQuiz = moduleQuizzes[String(moduleId)];
+    if (!moduleQuiz) return lessonsCompleted;
+    return lessonsCompleted && quizResponses[String(moduleQuiz.id)];
   };
 
-  const canAccessFinalQuiz = totalLessons > 0 && completedLessons === totalLessons;
+  const allModuleQuizzesPassed = Object.values(moduleQuizzes).every(
+    (quiz: any) => quizResponses[String(quiz.id)]
+  );
+  const canAccessFinalQuiz = totalLessons > 0 && completedLessons === totalLessons && allModuleQuizzesPassed;
+  const finalQuizPassed = finalQuiz ? quizResponses[String(finalQuiz.id)] : true;
 
   const openQuiz = (quiz: any) => {
+    setSelectedLesson(null);
     setSelectedQuiz(quiz);
     setAnswers({});
     setQuizResult(null);
@@ -318,16 +372,17 @@ export default function CoursePlayer() {
     try {
       const { error } = await supabase
         .from('respostas_questionario')
-        .insert({
+        .upsert({
           questionario_id: selectedQuiz.id,
           usuario_id: user.id,
           acertos: correct,
           total,
           percentual,
           aprovado,
-        });
+        }, { onConflict: 'questionario_id,usuario_id' });
       if (error) throw error;
-    setQuizResult({ percentual, aprovado });
+      setQuizResult({ percentual, aprovado });
+      setQuizResponses((prev) => ({ ...prev, [String(selectedQuiz.id)]: aprovado }));
       toast.success(aprovado ? 'Prova aprovada!' : `Nota abaixo do mínimo (${minScore}%).`);
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao enviar prova.');
@@ -335,6 +390,11 @@ export default function CoursePlayer() {
       setSubmittingQuiz(false);
     }
   };
+
+  const isCourseCompleted = totalLessons > 0
+    && completedLessons === totalLessons
+    && allModuleQuizzesPassed
+    && finalQuizPassed;
 
   return (
     <div className="min-h-screen bg-[hsl(var(--background))]">
@@ -360,7 +420,7 @@ export default function CoursePlayer() {
                 ></div>
               </div>
               <p className="text-sm text-[hsl(var(--muted-foreground))] mt-2">
-                {completedLessons} de {totalLessons} aulas concluídas
+                {completedProgressItems} de {totalProgressItems} etapas concluídas
               </p>
             </div>
           </div>
@@ -510,7 +570,7 @@ export default function CoursePlayer() {
               )}
             </div>
 
-            {isCompleted && (
+            {isCourseCompleted && (
               <div className="card flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
                   <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--primary))]">Certificado</p>
@@ -566,7 +626,9 @@ export default function CoursePlayer() {
                         }}
                         className="w-full text-left p-3 rounded-[12px] border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]"
                       >
-                        Questionário do módulo
+                        {quizResponses[String(moduleQuizzes[String(module.id)].id)]
+                          ? 'Questionário do módulo (concluído)'
+                          : 'Questionário do módulo'}
                       </button>
                     )}
                   </div>
@@ -584,7 +646,7 @@ export default function CoursePlayer() {
                   }}
                   className="w-full text-left p-3 rounded-[12px] border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]"
                 >
-                  Prova final
+                  {quizResponses[String(finalQuiz.id)] ? 'Prova final (concluída)' : 'Prova final'}
                 </button>
               )}
             </div>

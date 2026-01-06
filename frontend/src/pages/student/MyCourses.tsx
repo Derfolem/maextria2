@@ -4,18 +4,22 @@ import { Enrollment } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { FaPlay, FaCertificate } from 'react-icons/fa';
 import { normalizeEnrollment } from '../../lib/normalizeEnrollment';
+import { useAuthStore } from '../../lib/store';
+import toast from 'react-hot-toast';
 
 export default function MyCourses() {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'in-progress' | 'completed'>('all');
+  const user = useAuthStore((state) => state.user);
 
   useEffect(() => {
     loadEnrollments();
-  }, []);
+  }, [user?.id]);
 
   const loadEnrollments = async () => {
     try {
+      if (!user?.id) return;
       const { data, error } = await supabase
         .from('matriculas')
         .select('*, cursos(*)')
@@ -23,7 +27,105 @@ export default function MyCourses() {
       if (error) {
         throw error;
       }
-      setEnrollments((data || []).map(normalizeEnrollment));
+      const normalized = (data || []).map(normalizeEnrollment);
+      const courseIds = normalized.map((item) => item.course_id);
+
+      if (courseIds.length === 0) {
+        setEnrollments(normalized);
+        return;
+      }
+
+      const [
+        modulesRes,
+        progressRes,
+        quizzesRes,
+        responsesRes,
+        certsRes,
+      ] = await Promise.all([
+        supabase
+          .from('modulos')
+          .select('id, curso_id, aulas(id)')
+          .in('curso_id', courseIds),
+        supabase
+          .from('progresso_aula')
+          .select('concluido, aulas!inner(modulos!inner(curso_id))')
+          .eq('usuario_id', user.id),
+        supabase
+          .from('questionarios')
+          .select('id, curso_id')
+          .in('curso_id', courseIds),
+        supabase
+          .from('respostas_questionario')
+          .select('questionario_id, aprovado')
+          .eq('usuario_id', user.id),
+        supabase
+          .from('certificados')
+          .select('id, curso_id, link_pdf')
+          .eq('usuario_id', user.id),
+      ]);
+
+      if (modulesRes.error) throw modulesRes.error;
+      if (progressRes.error) throw progressRes.error;
+      if (quizzesRes.error) throw quizzesRes.error;
+      if (responsesRes.error) throw responsesRes.error;
+      if (certsRes.error) throw certsRes.error;
+
+      const lessonsByCourse = (modulesRes.data || []).reduce((acc: Record<string, number>, mod: any) => {
+        const count = mod.aulas?.length || 0;
+        acc[String(mod.curso_id)] = (acc[String(mod.curso_id)] || 0) + count;
+        return acc;
+      }, {});
+
+      const completedLessonsByCourse = (progressRes.data || []).reduce((acc: Record<string, number>, item: any) => {
+        if (!item.concluido) return acc;
+        const courseId = item.aulas?.modulos?.curso_id;
+        if (!courseId) return acc;
+        acc[String(courseId)] = (acc[String(courseId)] || 0) + 1;
+        return acc;
+      }, {});
+
+      const quizIdToCourse: Record<string, string> = {};
+      const quizzesByCourse = (quizzesRes.data || []).reduce((acc: Record<string, number>, quiz: any) => {
+        const key = String(quiz.curso_id);
+        acc[key] = (acc[key] || 0) + 1;
+        quizIdToCourse[String(quiz.id)] = key;
+        return acc;
+      }, {});
+
+      const completedQuizzesByCourse = (responsesRes.data || []).reduce((acc: Record<string, number>, response: any) => {
+        if (!response.aprovado) return acc;
+        const courseId = quizIdToCourse[String(response.questionario_id)];
+        if (!courseId) return acc;
+        acc[courseId] = (acc[courseId] || 0) + 1;
+        return acc;
+      }, {});
+
+      const certsByCourse = (certsRes.data || []).reduce((acc: Record<string, any>, cert: any) => {
+        acc[String(cert.curso_id)] = cert;
+        return acc;
+      }, {});
+
+      const withProgress = normalized.map((enrollment) => {
+        const courseId = String(enrollment.course_id);
+        const totalLessons = lessonsByCourse[courseId] || 0;
+        const completedLessons = completedLessonsByCourse[courseId] || 0;
+        const totalQuizzes = quizzesByCourse[courseId] || 0;
+        const completedQuizzes = completedQuizzesByCourse[courseId] || 0;
+        const totalItems = totalLessons + totalQuizzes;
+        const completedItems = completedLessons + completedQuizzes;
+        const progress = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+        const completed = totalLessons > 0 && completedLessons === totalLessons && completedQuizzes === totalQuizzes;
+        const certificate = certsByCourse[courseId];
+
+        return {
+          ...enrollment,
+          progress,
+          completed,
+          certificate,
+        } as Enrollment & { certificate?: { id: string; link_pdf?: string } };
+      });
+
+      setEnrollments(withProgress);
     } catch (error) {
       console.error('Error loading enrollments:', error);
     } finally {
@@ -121,10 +223,26 @@ export default function MyCourses() {
                     <span>{enrollment.completed ? 'Revisar' : 'Continuar'}</span>
                   </Link>
                   {enrollment.completed && (
-                    <button className="btn-outline flex items-center space-x-2">
-                      <FaCertificate />
-                      <span>Certificado</span>
-                    </button>
+                    (enrollment as any).certificate?.link_pdf ? (
+                      <a
+                        href={(enrollment as any).certificate.link_pdf}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn-outline flex items-center space-x-2"
+                      >
+                        <FaCertificate />
+                        <span>Baixar certificado</span>
+                      </a>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn-outline flex items-center space-x-2"
+                        onClick={() => toast('Certificado disponível. Em breve: compra/geração automática.')}
+                      >
+                        <FaCertificate />
+                        <span>Certificado disponível</span>
+                      </button>
+                    )
                   )}
                 </div>
               </div>
