@@ -716,24 +716,6 @@ export default function CourseEditor() {
                                 <span>Materiais de apoio (em breve)</span>
                               </button>
 
-                              {lesson.materials && lesson.materials.length > 0 && (
-                                <div className="mt-2 space-y-1">
-                                  {lesson.materials.map((material) => (
-                                    <div
-                                      key={material.id}
-                                      className="flex justify-between items-center p-2 bg-gray-50 rounded"
-                                    >
-                                      <span className="text-sm">{material.title}</span>
-                                      <button
-                                        onClick={() => deleteMaterial(lesson.id, material.id)}
-                                        className="text-red-600 hover:text-red-700 text-sm"
-                                      >
-                                        <FaTrash />
-                                      </button>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
                             </div>
                           </div>
                         ))}
