@@ -26,12 +26,16 @@ export default function AdminDashboard() {
         enrollmentsRes,
         usersRes,
         rolesRes,
+        matriculasRes,
+        certificadosRes,
         revenueRes,
       ] = await Promise.all([
         supabase.from('cursos').select('id', { count: 'exact', head: true }),
         supabase.from('matriculas').select('id', { count: 'exact', head: true }),
         supabase.from('usuarios').select('id', { count: 'exact', head: true }),
         supabase.from('user_roles').select('user_id, role'),
+        supabase.from('matriculas').select('usuario_id').eq('ativa', true),
+        supabase.from('certificados').select('usuario_id').eq('pago', true),
         supabase
           .from('transacoes_pagamento')
           .select('valor, criado_em')
@@ -45,8 +49,16 @@ export default function AdminDashboard() {
 
       const totalUsers = usersRes.count ?? 0;
       const roleRows = rolesRes.error ? [] : (rolesRes.data || []);
-      const adminCount = roleRows.filter((row) => row.role === 'admin').length;
-      const studentCount = Math.max(totalUsers - adminCount, 0);
+      const adminIds = new Set(roleRows.filter((row) => row.role === 'admin').map((row) => row.user_id));
+      const teacherIds = new Set(roleRows.filter((row) => row.role === 'teacher').map((row) => row.user_id));
+      const roleIds = new Set([...adminIds, ...teacherIds]);
+      const studentCount = Math.max(totalUsers - roleIds.size, 0);
+
+      const matriculaIds = new Set((matriculasRes.data || []).map((row) => row.usuario_id));
+      const enrolledStudents = [...matriculaIds].filter((id) => !roleIds.has(id)).length;
+
+      const pagantesIds = new Set((certificadosRes.data || []).map((row) => row.usuario_id));
+      const payingStudents = [...pagantesIds].filter((id) => !roleIds.has(id)).length;
 
       const revenueRows = revenueRes.error ? [] : (revenueRes.data || []);
       const revenueTotals = revenueRows.reduce((acc, row) => {
@@ -77,9 +89,12 @@ export default function AdminDashboard() {
       );
 
       setUserDistribution([
+        { name: 'Cadastros', value: totalUsers },
         { name: 'Alunos', value: studentCount },
-        { name: 'Professores', value: 0 },
-        { name: 'Admins', value: adminCount },
+        { name: 'Matriculados', value: enrolledStudents },
+        { name: 'Pagantes', value: payingStudents },
+        { name: 'Admins', value: adminIds.size },
+        { name: 'Professores', value: teacherIds.size },
       ]);
     } catch (error) {
       console.error('Error loading stats:', error);
@@ -88,7 +103,14 @@ export default function AdminDashboard() {
     }
   };
 
-  const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))'];
+  const COLORS = [
+    'hsl(var(--primary))',
+    'hsl(var(--secondary))',
+    'hsl(var(--accent))',
+    'hsl(190 80% 45%)',
+    'hsl(145 60% 38%)',
+    'hsl(25 85% 55%)',
+  ];
 
   if (loading) {
     return (
