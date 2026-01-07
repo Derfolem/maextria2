@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import Perfil from "./pages/Perfil";
 import Prova from "./pages/Prova";
 import PagamentoCertificado from "./pages/PagamentoCertificado";
+import VerificarCertificado from "./pages/VerificarCertificado";
 import NotFound from "./pages/NotFound";
 import Sobre from "./pages/Sobre";
 import ComoFunciona from "./pages/ComoFunciona";
@@ -61,6 +62,7 @@ const App = () => (
           <Route path="/perfil" element={<Perfil />} />
           <Route path="/prova/:cursoId" element={<Prova />} />
           <Route path="/pagamento-certificado/:cursoId" element={<PagamentoCertificado />} />
+          <Route path="/verificar-certificado" element={<VerificarCertificado />} />
           <Route path="/sobre" element={<Sobre />} />
           <Route path="/como-funciona" element={<ComoFunciona />} />
           <Route path="/categorias" element={<Categorias />} />

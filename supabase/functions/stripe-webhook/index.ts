@@ -3,7 +3,7 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-  apiVersion: "2025-08-27.basil",
+  apiVersion: "2024-06-20",
 });
 
 const cryptoProvider = Stripe.createSubtleCryptoProvider();
@@ -38,7 +38,7 @@ serve(async (req) => {
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SERVICE_ROLE_KEY") ?? ""
     );
 
     switch (receivedEvent.type) {
@@ -120,11 +120,11 @@ serve(async (req) => {
         const session = receivedEvent.data.object as Stripe.Checkout.Session;
         console.log("Checkout session expired:", session.id);
 
-        // Update transaction status to expired
+        // Update transaction status to canceled
         const { error } = await supabaseAdmin
           .from("transacoes_pagamento")
           .update({
-            status: "expirado",
+            status: "cancelado",
             atualizado_em: new Date().toISOString(),
           })
           .eq("stripe_session_id", session.id);

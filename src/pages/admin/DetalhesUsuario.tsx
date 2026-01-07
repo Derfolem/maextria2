@@ -6,6 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -40,7 +47,9 @@ interface Usuario {
 
 interface Matricula {
   id: string;
+  curso_id: string;
   cursos: {
+    id: string;
     titulo: string;
   };
   data_matricula: string;
@@ -69,6 +78,9 @@ export default function DetalhesUsuario() {
   });
   const [novaSenha, setNovaSenha] = useState("");
   const [showNovaSenha, setShowNovaSenha] = useState(false);
+  const [isEmitirDialogOpen, setIsEmitirDialogOpen] = useState(false);
+  const [cursoSelecionado, setCursoSelecionado] = useState("");
+  const [emitindo, setEmitindo] = useState(false);
 
   useEffect(() => {
     if (userId) {
@@ -103,7 +115,7 @@ export default function DetalhesUsuario() {
     // Fetch matriculas
     const { data: matriculasData } = await supabase
       .from("matriculas")
-      .select("id, data_matricula, cursos(titulo)")
+      .select("id, curso_id, data_matricula, cursos(id, titulo)")
       .eq("usuario_id", userId)
       .eq("ativa", true);
 
@@ -202,6 +214,83 @@ export default function DetalhesUsuario() {
         description: "O usuário e todos os dados associados foram removidos",
       });
       navigate("/admin/usuarios");
+    }
+  };
+
+  const gerarCodigoValidacao = () => {
+    return `MAEX-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+  };
+
+  const handleEmitirCertificado = async () => {
+    if (!usuario || !cursoSelecionado) return;
+
+    setEmitindo(true);
+
+    try {
+      const { data: existingCert } = await supabase
+        .from("certificados")
+        .select("id, pago")
+        .eq("usuario_id", usuario.id)
+        .eq("curso_id", cursoSelecionado)
+        .maybeSingle();
+
+      if (existingCert) {
+        const { error: updateError } = await supabase
+          .from("certificados")
+          .update({ pago: true })
+          .eq("id", existingCert.id);
+
+        if (updateError) throw updateError;
+
+        toast({
+          title: "Certificado atualizado",
+          description: "O certificado foi marcado como pago.",
+        });
+      } else {
+        let insertError: any = null;
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          const codigoValidacao = gerarCodigoValidacao();
+          const { error } = await supabase.from("certificados").insert({
+            usuario_id: usuario.id,
+            curso_id: cursoSelecionado,
+            codigo_validacao: codigoValidacao,
+            pago: true,
+            emitido_em: new Date().toISOString(),
+          });
+
+          if (!error) {
+            insertError = null;
+            break;
+          }
+
+          if (error.code === "23505") {
+            insertError = error;
+            continue;
+          }
+
+          insertError = error;
+          break;
+        }
+
+        if (insertError) throw insertError;
+
+        toast({
+          title: "Certificado emitido",
+          description: "O certificado foi criado e está válido para verificação.",
+        });
+      }
+
+      setCursoSelecionado("");
+      setIsEmitirDialogOpen(false);
+      fetchUsuarioDetalhes();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao emitir certificado",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setEmitindo(false);
     }
   };
 
@@ -413,10 +502,52 @@ export default function DetalhesUsuario() {
         {/* Certificados */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Award className="h-5 w-5" />
-              Certificados ({certificados.length})
-            </CardTitle>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <CardTitle className="flex items-center gap-2">
+                <Award className="h-5 w-5" />
+                Certificados ({certificados.length})
+              </CardTitle>
+              <Dialog open={isEmitirDialogOpen} onOpenChange={setIsEmitirDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm">
+                    Emitir certificado
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Emitir certificado</DialogTitle>
+                    <DialogDescription>
+                      Selecione o curso para emitir o certificado deste usuário.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label>Curso</Label>
+                      <Select value={cursoSelecionado} onValueChange={setCursoSelecionado}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o curso" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {matriculas.map((matricula) => (
+                            <SelectItem key={matricula.id} value={matricula.curso_id}>
+                              {matricula.cursos?.titulo}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsEmitirDialogOpen(false)}>
+                      Cancelar
+                    </Button>
+                    <Button onClick={handleEmitirCertificado} disabled={!cursoSelecionado || emitindo}>
+                      {emitindo ? "Emitindo..." : "Emitir"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
           </CardHeader>
           <CardContent>
             {certificados.length === 0 ? (

@@ -6,6 +6,21 @@ verify_jwt = true
 [functions.generate-certificate]
 verify_jwt = true
 
+[functions.verify-payment]
+verify_jwt = true
+
+[functions.verify-mercadopago-payment]
+verify_jwt = true
+
+[functions.verify-certificate]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.mercadopago-webhook]
+verify_jwt = false
+
 [functions.generate-copy]
 verify_jwt = true
 

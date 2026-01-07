@@ -102,6 +102,9 @@ export const Navbar = () => {
           <Link to="/cursos">
             <Button variant="ghost" className="font-semibold">Cursos</Button>
           </Link>
+          <Link to="/verificar-certificado">
+            <Button variant="ghost" className="font-semibold">Verificar certificado</Button>
+          </Link>
 
           {user ? (
             <>
