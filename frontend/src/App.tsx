@@ -8,6 +8,8 @@ import Register from './pages/Register';
 import Courses from './pages/Courses';
 import CourseDetail from './pages/CourseDetail';
 import Settings from './pages/Settings';
+import PagamentoCertificado from './pages/PagamentoCertificado';
+import VerificarCertificado from './pages/VerificarCertificado';
 import StudentDashboard from './pages/student/Dashboard';
 import StudentMyCourses from './pages/student/MyCourses';
 import CoursePlayer from './pages/student/CoursePlayer';
@@ -51,6 +53,13 @@ function App() {
         <Route path="/courses" element={<Courses />} />
         <Route path="/courses/:id" element={<CourseDetail />} />
         <Route path="/sou-professor" element={<TeacherLanding />} />
+        <Route path="/verificar-certificado" element={<VerificarCertificado />} />
+
+        <Route path="/pagamento-certificado/:cursoId" element={
+          <ProtectedRoute roles={['student', 'teacher', 'admin']}>
+            <PagamentoCertificado />
+          </ProtectedRoute>
+        } />
 
         <Route path="/settings" element={
           <ProtectedRoute>

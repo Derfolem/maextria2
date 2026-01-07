@@ -31,6 +31,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <FaBook />
                 <span>Cursos</span>
               </Link>
+              <Link to="/verificar-certificado" className="nav-link">
+                Verificar certificado
+              </Link>
               {isHome && (
                 <Link to="/sou-professor" className="nav-link">
                   Sou professor
@@ -140,6 +143,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
             <Link to="/courses" className="nav-link" onClick={() => setMobileOpen(false)}>
               Cursos
+            </Link>
+            <Link to="/verificar-certificado" className="nav-link" onClick={() => setMobileOpen(false)}>
+              Verificar certificado
             </Link>
             {isHome && (
               <Link to="/sou-professor" className="nav-link" onClick={() => setMobileOpen(false)}>

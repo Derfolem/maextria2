@@ -240,7 +240,11 @@ export default function CoursePlayer() {
 
   const getCertificate = async () => {
     if (!enrollmentId) return;
-    toast('Em breve: emissão automática de certificados.');
+    if (!course?.id) {
+      toast.error('Curso nao encontrado para emitir certificado.');
+      return;
+    }
+    navigate(`/pagamento-certificado/${course.id}`);
   };
 
   const saveNote = () => {
