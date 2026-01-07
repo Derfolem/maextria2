@@ -21,6 +21,11 @@ export default function PagamentoCertificado() {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [processingMethod, setProcessingMethod] = useState<'stripe' | 'pix' | 'mercadopago' | null>(null);
+
+  const getAccessToken = async () => {
+    const { data: authSession } = await supabase.auth.getSession();
+    return authSession.session?.access_token || localStorage.getItem('token') || null;
+  };
   const [pixData, setPixData] = useState<{
     paymentId: string;
     qrCode?: string;
@@ -115,15 +120,15 @@ export default function PagamentoCertificado() {
       setProcessing(true);
       setProcessingMethod('stripe');
 
-      const { data: authSession } = await supabase.auth.getSession();
-      if (!authSession.session) {
+      const accessToken = await getAccessToken();
+      if (!accessToken) {
         throw new Error('Voce precisa estar logado para confirmar o pagamento.');
       }
 
       const { error } = await supabase.functions.invoke('verify-payment', {
         body: { sessionId },
         headers: {
-          Authorization: `Bearer ${authSession.session.access_token}`,
+          Authorization: `Bearer ${accessToken}`,
         },
       });
 
@@ -146,15 +151,15 @@ export default function PagamentoCertificado() {
       setProcessing(true);
       setProcessingMethod('mercadopago');
 
-      const { data: authSession } = await supabase.auth.getSession();
-      if (!authSession.session) {
+      const accessToken = await getAccessToken();
+      if (!accessToken) {
         throw new Error('Voce precisa estar logado para confirmar o pagamento.');
       }
 
       const { error } = await supabase.functions.invoke('verify-mercadopago-payment', {
         body: { paymentId },
         headers: {
-          Authorization: `Bearer ${authSession.session.access_token}`,
+          Authorization: `Bearer ${accessToken}`,
         },
       });
 
@@ -176,15 +181,15 @@ export default function PagamentoCertificado() {
     setProcessingMethod(metodo);
 
     try {
-      const { data: authSession } = await supabase.auth.getSession();
-      if (!authSession.session) {
+      const accessToken = await getAccessToken();
+      if (!accessToken) {
         throw new Error('Voce precisa estar logado para iniciar o pagamento.');
       }
 
       const { data, error } = await supabase.functions.invoke('create-payment', {
         body: { cursoId, metodo },
         headers: {
-          Authorization: `Bearer ${authSession.session.access_token}`,
+          Authorization: `Bearer ${accessToken}`,
         },
       });
 
@@ -216,15 +221,15 @@ export default function PagamentoCertificado() {
     setProcessingMethod('pix');
 
     try {
-      const { data: authSession } = await supabase.auth.getSession();
-      if (!authSession.session) {
+      const accessToken = await getAccessToken();
+      if (!accessToken) {
         throw new Error('Voce precisa estar logado para confirmar o pagamento.');
       }
 
       const { error } = await supabase.functions.invoke('verify-mercadopago-payment', {
         body: { paymentId: pixData.paymentId },
         headers: {
-          Authorization: `Bearer ${authSession.session.access_token}`,
+          Authorization: `Bearer ${accessToken}`,
         },
       });
 
