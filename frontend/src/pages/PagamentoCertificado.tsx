@@ -20,6 +20,7 @@ export default function PagamentoCertificado() {
   const [certificado, setCertificado] = useState<Certificado | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const [processingMethod, setProcessingMethod] = useState<'stripe' | 'pix' | 'mercadopago' | null>(null);
   const [pixData, setPixData] = useState<{
     paymentId: string;
     qrCode?: string;
@@ -112,9 +113,18 @@ export default function PagamentoCertificado() {
       }
 
       setProcessing(true);
+      setProcessingMethod('stripe');
+
+      const { data: authSession } = await supabase.auth.getSession();
+      if (!authSession.session) {
+        throw new Error('Voce precisa estar logado para confirmar o pagamento.');
+      }
 
       const { error } = await supabase.functions.invoke('verify-payment', {
         body: { sessionId },
+        headers: {
+          Authorization: `Bearer ${authSession.session.access_token}`,
+        },
       });
 
       if (error) throw error;
@@ -125,6 +135,7 @@ export default function PagamentoCertificado() {
       toast.error(error?.message || 'Erro ao confirmar pagamento.');
     } finally {
       setProcessing(false);
+      setProcessingMethod(null);
     }
   };
 
@@ -133,9 +144,18 @@ export default function PagamentoCertificado() {
 
     try {
       setProcessing(true);
+      setProcessingMethod('mercadopago');
+
+      const { data: authSession } = await supabase.auth.getSession();
+      if (!authSession.session) {
+        throw new Error('Voce precisa estar logado para confirmar o pagamento.');
+      }
 
       const { error } = await supabase.functions.invoke('verify-mercadopago-payment', {
         body: { paymentId },
+        headers: {
+          Authorization: `Bearer ${authSession.session.access_token}`,
+        },
       });
 
       if (error) throw error;
@@ -146,16 +166,26 @@ export default function PagamentoCertificado() {
       toast.error(error?.message || 'Erro ao confirmar pagamento.');
     } finally {
       setProcessing(false);
+      setProcessingMethod(null);
     }
   };
 
   const handlePayment = async (metodo: 'stripe' | 'pix' | 'mercadopago') => {
     if (!cursoId) return;
     setProcessing(true);
+    setProcessingMethod(metodo);
 
     try {
+      const { data: authSession } = await supabase.auth.getSession();
+      if (!authSession.session) {
+        throw new Error('Voce precisa estar logado para iniciar o pagamento.');
+      }
+
       const { data, error } = await supabase.functions.invoke('create-payment', {
         body: { cursoId, metodo },
+        headers: {
+          Authorization: `Bearer ${authSession.session.access_token}`,
+        },
       });
 
       if (error) throw error;
@@ -175,6 +205,7 @@ export default function PagamentoCertificado() {
       toast.error(error?.message || 'Erro ao iniciar pagamento.');
     } finally {
       setProcessing(false);
+      setProcessingMethod(null);
     }
   };
 
@@ -182,10 +213,19 @@ export default function PagamentoCertificado() {
     if (!pixData?.paymentId) return;
 
     setProcessing(true);
+    setProcessingMethod('pix');
 
     try {
+      const { data: authSession } = await supabase.auth.getSession();
+      if (!authSession.session) {
+        throw new Error('Voce precisa estar logado para confirmar o pagamento.');
+      }
+
       const { error } = await supabase.functions.invoke('verify-mercadopago-payment', {
         body: { paymentId: pixData.paymentId },
+        headers: {
+          Authorization: `Bearer ${authSession.session.access_token}`,
+        },
       });
 
       if (error) throw error;
@@ -198,6 +238,7 @@ export default function PagamentoCertificado() {
       toast.error(error?.message || 'Pagamento ainda nao confirmado.');
     } finally {
       setProcessing(false);
+      setProcessingMethod(null);
     }
   };
 
@@ -306,13 +347,13 @@ export default function PagamentoCertificado() {
 
           <div className="grid gap-3">
             <button type="button" className="btn-accent" onClick={() => handlePayment('stripe')} disabled={processing}>
-              {processing ? 'Processando...' : 'Pagar com Cartao (Stripe)'}
+              {processingMethod === 'stripe' ? 'Processando...' : 'Pagar com Cartao (Stripe)'}
             </button>
             <button type="button" className="btn-secondary" onClick={() => handlePayment('pix')} disabled={processing}>
-              {processing ? 'Gerando Pix...' : 'Pagar com Pix (Mercado Pago)'}
+              {processingMethod === 'pix' ? 'Gerando Pix...' : 'Pagar com Pix (Mercado Pago)'}
             </button>
             <button type="button" className="btn-outline" onClick={() => handlePayment('mercadopago')} disabled={processing}>
-              {processing ? 'Abrindo Mercado Pago...' : 'Pagar com Mercado Pago'}
+              {processingMethod === 'mercadopago' ? 'Abrindo Mercado Pago...' : 'Pagar com Mercado Pago'}
             </button>
           </div>
 
