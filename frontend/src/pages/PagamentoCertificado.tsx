@@ -34,7 +34,7 @@ export default function PagamentoCertificado() {
     }
 
     if (cursoId) {
-      fetchData(user.id, cursoId);
+      fetchData(String(user.id), cursoId);
     }
   }, [user, cursoId, navigate]);
 
@@ -71,9 +71,10 @@ export default function PagamentoCertificado() {
     }
   }, [searchParams, user]);
 
-  const fetchData = async (userId: string, courseId: string) => {
+  const fetchData = async (userId: string | number, courseId: string) => {
     setLoading(true);
     try {
+      const userIdString = String(userId);
       const { data: courseData, error: courseError } = await supabase
         .from('cursos')
         .select('*')
@@ -86,7 +87,7 @@ export default function PagamentoCertificado() {
       const { data: certData } = await supabase
         .from('certificados')
         .select('*')
-        .eq('usuario_id', userId)
+        .eq('usuario_id', userIdString)
         .eq('curso_id', courseId)
         .maybeSingle();
 
@@ -119,7 +120,7 @@ export default function PagamentoCertificado() {
       if (error) throw error;
 
       toast.success('Pagamento confirmado! Seu certificado foi emitido.');
-      fetchData(user.id, cursoId);
+      fetchData(String(user.id), cursoId);
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao confirmar pagamento.');
     } finally {
@@ -140,7 +141,7 @@ export default function PagamentoCertificado() {
       if (error) throw error;
 
       toast.success('Pagamento confirmado! Seu certificado foi emitido.');
-      fetchData(user.id, cursoId);
+      fetchData(String(user.id), cursoId);
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao confirmar pagamento.');
     } finally {
@@ -191,7 +192,7 @@ export default function PagamentoCertificado() {
 
       toast.success('Pagamento confirmado! Seu certificado foi emitido.');
       if (user && cursoId) {
-        fetchData(user.id, cursoId);
+        fetchData(String(user.id), cursoId);
       }
     } catch (error: any) {
       toast.error(error?.message || 'Pagamento ainda nao confirmado.');
