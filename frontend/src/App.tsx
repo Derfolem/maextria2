@@ -25,7 +25,15 @@ import AdminNotifications from './pages/admin/Notifications';
 import TeacherLanding from './pages/TeacherLanding';
 
 function ProtectedRoute({ children, roles }: { children: React.ReactNode; roles?: string[] }) {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, isLoading } = useAuthStore();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center text-[hsl(var(--muted-foreground))]">
+        Carregando...
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;

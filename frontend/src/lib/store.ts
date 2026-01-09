@@ -6,6 +6,7 @@ interface AuthState {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
+  isLoading: boolean;
   login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<{ needsEmailConfirmation: boolean }>;
   logout: () => void;
@@ -47,6 +48,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   token: null,
   isAuthenticated: false,
+  isLoading: true,
 
   login: async (email: string, password: string, rememberMe = getRememberMeDefault()) => {
     setRememberMe(rememberMe);
@@ -66,7 +68,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     const storage = rememberMe ? window.localStorage : window.sessionStorage;
     storage.setItem('token', session.access_token);
     storage.setItem('user', JSON.stringify(user));
-    set({ user, token: session.access_token, isAuthenticated: true });
+    set({ user, token: session.access_token, isAuthenticated: true, isLoading: false });
   },
 
   register: async (name: string, email: string, password: string) => {
@@ -92,10 +94,11 @@ export const useAuthStore = create<AuthState>((set) => ({
       );
       window.localStorage.setItem('token', session.access_token);
       window.localStorage.setItem('user', JSON.stringify(user));
-      set({ user, token: session.access_token, isAuthenticated: true });
+      set({ user, token: session.access_token, isAuthenticated: true, isLoading: false });
       return { needsEmailConfirmation: false };
     }
 
+    set({ isLoading: false });
     return { needsEmailConfirmation: true };
   },
 
@@ -105,13 +108,13 @@ export const useAuthStore = create<AuthState>((set) => ({
     window.localStorage.removeItem('user');
     window.sessionStorage.removeItem('token');
     window.sessionStorage.removeItem('user');
-    set({ user: null, token: null, isAuthenticated: false });
+    set({ user: null, token: null, isAuthenticated: false, isLoading: false });
   },
 
   loadUser: () => {
     supabase.auth.getSession().then(async ({ data }) => {
       if (!data.session?.user) {
-        set({ user: null, token: null, isAuthenticated: false });
+        set({ user: null, token: null, isAuthenticated: false, isLoading: false });
         return;
       }
 
@@ -127,7 +130,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       const storage = rememberMe ? window.localStorage : window.sessionStorage;
       storage.setItem('token', session.access_token);
       storage.setItem('user', JSON.stringify(user));
-      set({ user, token: session.access_token, isAuthenticated: true });
+      set({ user, token: session.access_token, isAuthenticated: true, isLoading: false });
     });
   },
 }));
