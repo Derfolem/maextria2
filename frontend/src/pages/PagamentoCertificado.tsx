@@ -22,9 +22,15 @@ export default function PagamentoCertificado() {
   const [processing, setProcessing] = useState(false);
   const [processingMethod, setProcessingMethod] = useState<'stripe' | 'pix' | 'mercadopago' | null>(null);
 
+  const resolveAuthStorage = () => {
+    const remember = window.localStorage.getItem('maextria_remember_me');
+    const useLocal = remember === null || remember === '1';
+    return useLocal ? window.localStorage : window.sessionStorage;
+  };
+
   const getAccessToken = async () => {
     const { data: authSession } = await supabase.auth.getSession();
-    return authSession.session?.access_token || localStorage.getItem('token') || null;
+    return authSession.session?.access_token || resolveAuthStorage().getItem('token') || null;
   };
   const [pixData, setPixData] = useState<{
     paymentId: string;

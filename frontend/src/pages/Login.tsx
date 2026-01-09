@@ -3,10 +3,12 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../lib/store';
 import toast from 'react-hot-toast';
 import { FaEnvelope, FaLock } from 'react-icons/fa';
+import { getRememberMeDefault, supabase } from '../lib/supabase';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(getRememberMeDefault());
   const [loading, setLoading] = useState(false);
   const login = useAuthStore((state) => state.login);
   const navigate = useNavigate();
@@ -16,7 +18,7 @@ export default function Login() {
     setLoading(true);
 
     try {
-      await login(email, password);
+      await login(email, password, rememberMe);
       toast.success('Login realizado com sucesso!');
       const user = useAuthStore.getState().user;
 
@@ -33,6 +35,25 @@ export default function Login() {
       toast.error(error?.message || 'Erro ao fazer login');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      toast.error('Informe seu email para recuperar a senha.');
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) {
+        throw error;
+      }
+      toast.success('Enviamos um link de redefinição para o seu email.');
+    } catch (error: any) {
+      toast.error(error?.message || 'Nao foi possivel enviar o link de redefinicao.');
     }
   };
 
@@ -78,6 +99,25 @@ export default function Login() {
                 required
               />
             </div>
+          </div>
+
+          <div className="flex items-center justify-between text-sm">
+            <label className="flex items-center gap-2 text-[hsl(var(--muted-foreground))]">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="accent-[hsl(var(--primary))]"
+              />
+              Me mantenha conectado a este dispositivo
+            </label>
+            <button
+              type="button"
+              onClick={handleForgotPassword}
+              className="text-[hsl(var(--primary))] hover:text-[hsl(var(--foreground))] font-semibold"
+            >
+              Esqueci minha senha
+            </button>
           </div>
 
           <button

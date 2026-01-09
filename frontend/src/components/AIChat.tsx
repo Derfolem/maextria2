@@ -31,8 +31,11 @@ export default function AIChat() {
     <>
       {!isOpen && (
         <button
-          onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] p-4 rounded-full shadow-lg hover:shadow-xl transition z-50"
+          type="button"
+          disabled
+          aria-disabled="true"
+          title="Em breve"
+          className="fixed bottom-6 right-6 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] p-4 rounded-full shadow-lg opacity-60 cursor-not-allowed z-50"
         >
           <FaRobot className="text-2xl" />
         </button>

@@ -1,12 +1,12 @@
 import { create } from 'zustand';
 import { User } from '../types';
-import { supabase } from './supabase';
+import { getRememberMeDefault, setRememberMe, supabase } from './supabase';
 
 interface AuthState {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<{ needsEmailConfirmation: boolean }>;
   logout: () => void;
   loadUser: () => void;
@@ -48,7 +48,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   token: null,
   isAuthenticated: false,
 
-  login: async (email: string, password: string) => {
+  login: async (email: string, password: string, rememberMe = getRememberMeDefault()) => {
+    setRememberMe(rememberMe);
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error || !data.session?.user) {
       throw new Error(error?.message || 'Falha ao autenticar.');
@@ -62,8 +63,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       session.user.created_at
     );
 
-    localStorage.setItem('token', session.access_token);
-    localStorage.setItem('user', JSON.stringify(user));
+    const storage = rememberMe ? window.localStorage : window.sessionStorage;
+    storage.setItem('token', session.access_token);
+    storage.setItem('user', JSON.stringify(user));
     set({ user, token: session.access_token, isAuthenticated: true });
   },
 
@@ -88,8 +90,8 @@ export const useAuthStore = create<AuthState>((set) => ({
         name,
         session.user.created_at
       );
-      localStorage.setItem('token', session.access_token);
-      localStorage.setItem('user', JSON.stringify(user));
+      window.localStorage.setItem('token', session.access_token);
+      window.localStorage.setItem('user', JSON.stringify(user));
       set({ user, token: session.access_token, isAuthenticated: true });
       return { needsEmailConfirmation: false };
     }
@@ -99,8 +101,10 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: () => {
     supabase.auth.signOut();
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    window.localStorage.removeItem('token');
+    window.localStorage.removeItem('user');
+    window.sessionStorage.removeItem('token');
+    window.sessionStorage.removeItem('user');
     set({ user: null, token: null, isAuthenticated: false });
   },
 
@@ -119,8 +123,10 @@ export const useAuthStore = create<AuthState>((set) => ({
         session.user.created_at
       );
 
-      localStorage.setItem('token', session.access_token);
-      localStorage.setItem('user', JSON.stringify(user));
+      const rememberMe = getRememberMeDefault();
+      const storage = rememberMe ? window.localStorage : window.sessionStorage;
+      storage.setItem('token', session.access_token);
+      storage.setItem('user', JSON.stringify(user));
       set({ user, token: session.access_token, isAuthenticated: true });
     });
   },
