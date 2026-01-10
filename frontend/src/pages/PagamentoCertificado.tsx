@@ -16,7 +16,11 @@ export default function PagamentoCertificado() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? '';
+  const buildAuthHeaders = (accessToken: string) => ({
+    Authorization: `Bearer ${accessToken}`,
+    ...(supabaseAnonKey ? { apikey: supabaseAnonKey } : {}),
+  });
   const [curso, setCurso] = useState<any>(null);
   const [certificado, setCertificado] = useState<Certificado | null>(null);
   const [loading, setLoading] = useState(true);
@@ -124,10 +128,7 @@ export default function PagamentoCertificado() {
 
       const { error } = await supabase.functions.invoke('verify-payment', {
         body: { sessionId },
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          apikey: supabaseAnonKey,
-        },
+        headers: buildAuthHeaders(accessToken),
       });
 
       if (error) throw error;
@@ -156,10 +157,7 @@ export default function PagamentoCertificado() {
 
       const { error } = await supabase.functions.invoke('verify-mercadopago-payment', {
         body: { paymentId },
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          apikey: supabaseAnonKey,
-        },
+        headers: buildAuthHeaders(accessToken),
       });
 
       if (error) throw error;
@@ -187,10 +185,7 @@ export default function PagamentoCertificado() {
 
       const { data, error } = await supabase.functions.invoke('create-payment', {
         body: { cursoId, metodo },
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          apikey: supabaseAnonKey,
-        },
+        headers: buildAuthHeaders(accessToken),
       });
 
       if (error) throw error;
@@ -231,10 +226,7 @@ export default function PagamentoCertificado() {
 
       const { error } = await supabase.functions.invoke('verify-mercadopago-payment', {
         body: { paymentId: pixData.paymentId },
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          apikey: supabaseAnonKey,
-        },
+        headers: buildAuthHeaders(accessToken),
       });
 
       if (error) throw error;
