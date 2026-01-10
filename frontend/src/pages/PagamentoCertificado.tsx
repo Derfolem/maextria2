@@ -190,6 +190,7 @@ export default function PagamentoCertificado() {
       });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       if (metodo === 'pix') {
         if (!data?.paymentId) throw new Error('Nao foi possivel gerar o Pix');
@@ -200,7 +201,9 @@ export default function PagamentoCertificado() {
           ticketUrl: data.ticketUrl,
         });
       } else if (data?.url) {
-        window.open(data.url, '_blank');
+        window.location.href = data.url;
+      } else {
+        throw new Error('Nao foi possivel iniciar o pagamento.');
       }
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao iniciar pagamento.');
