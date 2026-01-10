@@ -112,9 +112,6 @@ export default function Courses() {
                   <p className="text-[hsl(var(--muted-foreground))] line-clamp-2">{course.description}</p>
                   <div className="flex items-center justify-between text-sm text-[hsl(var(--muted-foreground))]">
                     <span>{course.teacher_name || 'Instrutor MAEXTRIA'}</span>
-                    <span className="text-[hsl(var(--primary))] font-semibold">
-                      {course.price === 0 ? 'Sem custo' : `R$ ${course.price.toFixed(2)}`}
-                    </span>
                   </div>
                 </div>
               </Link>

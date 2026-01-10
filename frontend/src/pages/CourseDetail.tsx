@@ -204,13 +204,6 @@ export default function CourseDetail() {
 
         <div>
           <div className="card sticky top-6 space-y-6">
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--primary))]">Investimento</p>
-              <div className="text-3xl font-bold text-[hsl(var(--primary))] mt-2">
-                {course.price === 0 ? 'Sem custo' : `R$ ${course.price.toFixed(2)}`}
-              </div>
-            </div>
-
             {isEnrolled ? (
               <button
                 onClick={() => navigate('/student/my-courses')}
@@ -224,7 +217,7 @@ export default function CourseDetail() {
                 disabled={enrolling}
                 className="w-full btn-accent py-3"
               >
-                {enrolling ? 'Inscrevendo...' : 'Inscrever-se'}
+                {enrolling ? 'Inscrevendo...' : 'Matricule-se grátis'}
               </button>
             )}
 

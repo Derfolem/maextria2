@@ -144,7 +144,6 @@ export default function AdminCourses() {
                 <div className="flex flex-wrap items-center gap-3 text-sm text-[hsl(var(--muted-foreground))]">
                   <span>Professor: {course.teacher_name || 'N/A'}</span>
                   <span>•</span>
-                  <span>Preco: R$ {course.price.toFixed(2)}</span>
                   <span>•</span>
                   <span>{course.enrollment_count || 0} alunos</span>
                   <span>•</span>

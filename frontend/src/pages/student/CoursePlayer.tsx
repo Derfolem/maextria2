@@ -589,10 +589,17 @@ export default function CoursePlayer() {
                     Gere seu certificado e finalize esta etapa.
                   </p>
                 </div>
-                <button onClick={getCertificate} className="btn-accent flex items-center gap-2">
-                  <FaCertificate />
-                  Obter certificado
-                </button>
+                <div className="flex flex-col items-start gap-2">
+                  <button onClick={getCertificate} className="btn-accent flex items-center gap-2">
+                    <FaCertificate />
+                    Obter certificado
+                  </button>
+                  {course && (
+                    <span className="text-sm text-[hsl(var(--muted-foreground))]">
+                      {course.price === 0 ? 'Certificado gratuito' : `Valor do certificado: R$ ${course.price.toFixed(2)}`}
+                    </span>
+                  )}
+                </div>
               </div>
             )}
           </div>

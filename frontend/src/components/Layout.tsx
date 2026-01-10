@@ -39,82 +39,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   Sou professor
                 </Link>
               )}
-
-              {isAuthenticated ? (
-                <>
-                  {(user?.role === 'student' || user?.role === 'teacher' || user?.role === 'admin') && (
-                    <>
-                      <Link to="/student/dashboard" className="nav-link flex items-center space-x-1">
-                        <FaChartBar />
-                        <span>{user?.role === 'student' ? 'Dashboard' : 'Aprendizado'}</span>
-                      </Link>
-                      <Link to="/student/my-courses" className="nav-link">
-                        {user?.role === 'student' ? 'Meus Cursos' : 'Cursos (Aluno)'}
-                      </Link>
-                    </>
-                  )}
-
-                  {user?.role === 'teacher' && (
-                    <>
-                      <Link to="/teacher/dashboard" className="nav-link flex items-center space-x-1">
-                        <FaChartBar />
-                        <span>Dashboard</span>
-                      </Link>
-                      <Link to="/teacher/my-courses" className="nav-link">
-                        Meus Cursos
-                      </Link>
-                    </>
-                  )}
-
-                  {user?.role === 'admin' && (
-                    <>
-                      <Link to="/admin/dashboard" className="nav-link flex items-center space-x-1">
-                        <FaChartBar />
-                        <span>Dashboard</span>
-                      </Link>
-                      <Link to="/admin/users" className="nav-link flex items-center space-x-1">
-                        <FaUsers />
-                        <span>Usuários</span>
-                      </Link>
-                      <Link to="/admin/notifications" className="nav-link flex items-center space-x-1">
-                        <FaBell />
-                        <span>Notificações</span>
-                      </Link>
-                      <Link to="/admin/courses" className="nav-link">
-                        Cursos
-                      </Link>
-                      <Link to="/admin/settings" className="nav-link flex items-center space-x-1">
-                        <FaCog />
-                        <span>Configurações</span>
-                      </Link>
-                    </>
-                  )}
-
-                  <Link to="/settings" className="nav-link">
-                    <FaUser />
-                  </Link>
-                  <button onClick={handleLogout} className="nav-link flex items-center space-x-1">
-                    <FaSignOutAlt />
-                    <span>Sair</span>
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Link to="/login" className="nav-link">
-                    Entrar
-                  </Link>
-                  <Link to="/register" className="btn-outline">
-                    Iniciar
-                  </Link>
-                </>
-              )}
             </div>
 
             <button
               type="button"
-              className="md:hidden text-[hsl(var(--foreground))]"
-              onClick={() => setMobileOpen(true)}
-              aria-label="Abrir menu"
+              className="text-[hsl(var(--foreground))]"
+              onClick={() => setMobileOpen((prev) => !prev)}
+              aria-label="Abrir menu do usuario"
             >
               <FaBars className="text-xl" />
             </button>
@@ -127,14 +58,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </main>
 
       {mobileOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
+        <div className="fixed inset-0 z-50">
           <button
             type="button"
-            className="absolute inset-0 bg-black/40"
+            className="absolute inset-0 bg-black/40 md:bg-black/10"
             onClick={() => setMobileOpen(false)}
             aria-label="Fechar menu"
           />
-          <div className="absolute right-0 top-0 h-full w-72 bg-[hsl(var(--graphite))] shadow-xl p-6 flex flex-col gap-6 transition-transform duration-200 translate-x-0">
+          <div className="absolute right-0 top-0 h-full w-72 bg-[hsl(var(--graphite))] shadow-xl p-6 flex flex-col gap-6 transition-transform duration-200 translate-x-0 md:top-16 md:right-6 md:h-auto md:rounded-[18px]">
             <div className="flex items-center justify-between">
               <span className="text-lg font-semibold">MAEXTRIA</span>
               <button type="button" onClick={() => setMobileOpen(false)} aria-label="Fechar menu">

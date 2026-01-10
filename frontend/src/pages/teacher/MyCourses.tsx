@@ -131,7 +131,6 @@ export default function TeacherMyCourses() {
                   </div>
                   <p className="text-[hsl(var(--muted-foreground))] mb-3">{course.description}</p>
                   <div className="flex items-center space-x-4 text-sm text-[hsl(var(--muted-foreground))]">
-                    <span>Preço: R$ {course.price.toFixed(2)}</span>
                     <span>•</span>
                     <span>{course.enrollment_count || 0} alunos</span>
                     <span>•</span>
