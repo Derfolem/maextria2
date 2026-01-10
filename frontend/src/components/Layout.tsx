@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../lib/store';
-import { FaBook, FaUser, FaSignOutAlt, FaCog, FaChartBar, FaUsers, FaBars, FaTimes, FaInstagram, FaLinkedinIn, FaYoutube, FaBell } from 'react-icons/fa';
+import { FaBook, FaBars, FaTimes, FaInstagram, FaLinkedinIn, FaYoutube } from 'react-icons/fa';
 import AIChat from './AIChat';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
