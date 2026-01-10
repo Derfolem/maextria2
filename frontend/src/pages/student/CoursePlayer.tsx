@@ -16,7 +16,8 @@ export default function CoursePlayer() {
   const [progress, setProgress] = useState<Progress[]>([]);
   const [loading, setLoading] = useState(true);
   const [enrollmentId, setEnrollmentId] = useState<string | number | null>(null);
-  const [note, setNote] = useState('');
+  const [noteDraft, setNoteDraft] = useState('');
+  const [notes, setNotes] = useState<Array<{ id: string; text: string; createdAt: string }>>([]);
   const [moduleQuizzes, setModuleQuizzes] = useState<Record<string, any>>({});
   const [finalQuiz, setFinalQuiz] = useState<any | null>(null);
   const [selectedQuiz, setSelectedQuiz] = useState<any | null>(null);
@@ -38,11 +39,34 @@ export default function CoursePlayer() {
 
   useEffect(() => {
     if (!selectedLesson) {
-      setNote('');
+      setNoteDraft('');
+      setNotes([]);
       return;
     }
     const stored = localStorage.getItem(`maextria_note_${selectedLesson.id}`);
-    setNote(stored || '');
+    if (!stored) {
+      setNotes([]);
+      setNoteDraft('');
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
+        setNotes(parsed);
+        setNoteDraft('');
+        return;
+      }
+    } catch (error) {
+      // Falls back to legacy single-note format.
+    }
+
+    setNotes([{
+      id: `legacy-${selectedLesson.id}`,
+      text: stored,
+      createdAt: new Date().toISOString(),
+    }]);
+    setNoteDraft('');
   }, [selectedLesson]);
 
   const loadCourse = async () => {
@@ -249,7 +273,25 @@ export default function CoursePlayer() {
 
   const saveNote = () => {
     if (!selectedLesson) return;
-    localStorage.setItem(`maextria_note_${selectedLesson.id}`, note);
+    const trimmed = noteDraft.trim();
+    if (!trimmed) {
+      toast.error('Digite uma anotacao antes de salvar.');
+      return;
+    }
+    const noteId = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const nextNotes = [
+      ...notes,
+      {
+        id: noteId,
+        text: trimmed,
+        createdAt: new Date().toISOString(),
+      },
+    ];
+    localStorage.setItem(`maextria_note_${selectedLesson.id}`, JSON.stringify(nextNotes));
+    setNotes(nextNotes);
+    setNoteDraft('');
     toast.success('Anotacao salva.');
   };
 
@@ -534,11 +576,32 @@ export default function CoursePlayer() {
                       </button>
                     </div>
                     <textarea
-                      value={note}
-                      onChange={(event) => setNote(event.target.value)}
+                      value={noteDraft}
+                      onChange={(event) => setNoteDraft(event.target.value)}
                       placeholder="Registre insights, referencias e proximos passos..."
                       className="input-field min-h-[140px]"
                     />
+                    <div className="space-y-3">
+                      <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--muted-foreground))]">
+                        Suas anotacoes desta aula
+                      </p>
+                      {notes.length === 0 ? (
+                        <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                          Nenhuma anotacao salva ainda.
+                        </p>
+                      ) : (
+                        <div className="space-y-3">
+                          {notes.slice().reverse().map((item) => (
+                            <div key={item.id} className="rounded-[12px] border border-[hsl(var(--border))] p-3">
+                              <p className="text-sm whitespace-pre-line">{item.text}</p>
+                              <p className="mt-2 text-xs text-[hsl(var(--muted-foreground))]">
+                                {new Date(item.createdAt).toLocaleString('pt-BR')}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="mt-8">
