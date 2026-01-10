@@ -16,6 +16,7 @@ export default function PagamentoCertificado() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
   const [curso, setCurso] = useState<any>(null);
   const [certificado, setCertificado] = useState<Certificado | null>(null);
   const [loading, setLoading] = useState(true);
@@ -125,6 +126,7 @@ export default function PagamentoCertificado() {
         body: { sessionId },
         headers: {
           Authorization: `Bearer ${accessToken}`,
+          apikey: supabaseAnonKey,
         },
       });
 
@@ -156,6 +158,7 @@ export default function PagamentoCertificado() {
         body: { paymentId },
         headers: {
           Authorization: `Bearer ${accessToken}`,
+          apikey: supabaseAnonKey,
         },
       });
 
@@ -186,6 +189,7 @@ export default function PagamentoCertificado() {
         body: { cursoId, metodo },
         headers: {
           Authorization: `Bearer ${accessToken}`,
+          apikey: supabaseAnonKey,
         },
       });
 
@@ -229,6 +233,7 @@ export default function PagamentoCertificado() {
         body: { paymentId: pixData.paymentId },
         headers: {
           Authorization: `Bearer ${accessToken}`,
+          apikey: supabaseAnonKey,
         },
       });
 
