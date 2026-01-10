@@ -91,7 +91,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 if (typeof window !== 'undefined') {
   supabase.auth.onAuthStateChange((event) => {
-    if (event === 'SIGNED_OUT') {
+    if (event === 'SIGNED_OUT' || (event as string) === 'TOKEN_REFRESH_FAILED') {
       clearAllAuthStorage();
     }
   });
