@@ -37,6 +37,25 @@ const clearSupabaseSession = (storage: Storage) => {
   keysToRemove.forEach((key) => storage.removeItem(key));
 };
 
+const clearAppSession = () => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  window.localStorage.removeItem('token');
+  window.localStorage.removeItem('user');
+  window.sessionStorage.removeItem('token');
+  window.sessionStorage.removeItem('user');
+};
+
+const clearAllAuthStorage = () => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  clearSupabaseSession(window.localStorage);
+  clearSupabaseSession(window.sessionStorage);
+  clearAppSession();
+};
+
 export const setRememberMe = (remember: boolean) => {
   if (typeof window === 'undefined') {
     return;
@@ -44,6 +63,7 @@ export const setRememberMe = (remember: boolean) => {
   window.localStorage.setItem(REMEMBER_ME_KEY, remember ? '1' : '0');
   clearSupabaseSession(window.localStorage);
   clearSupabaseSession(window.sessionStorage);
+  clearAppSession();
 };
 
 export const getRememberMeDefault = () => resolveRememberPreference();
@@ -68,3 +88,31 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     storage: authStorage,
   },
 });
+
+if (typeof window !== 'undefined') {
+  supabase.auth.onAuthStateChange((event) => {
+    if (event === 'TOKEN_REFRESH_FAILED' || event === 'SIGNED_OUT') {
+      clearAllAuthStorage();
+    }
+  });
+}
+
+export const getValidAccessToken = async () => {
+  const { data, error } = await supabase.auth.getSession();
+  if (error || !data.session) {
+    await supabase.auth.signOut();
+    return null;
+  }
+
+  const expiresAt = data.session.expires_at;
+  if (expiresAt && Date.now() / 1000 > expiresAt - 60) {
+    const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+    if (refreshError || !refreshed.session) {
+      await supabase.auth.signOut();
+      return null;
+    }
+    return refreshed.session.access_token;
+  }
+
+  return data.session.access_token;
+};

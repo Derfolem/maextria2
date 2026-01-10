@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { supabase } from '../lib/supabase';
+import { getValidAccessToken, supabase } from '../lib/supabase';
 import { useAuthStore } from '../lib/store';
 
 interface Certificado {
@@ -22,16 +22,6 @@ export default function PagamentoCertificado() {
   const [processing, setProcessing] = useState(false);
   const [processingMethod, setProcessingMethod] = useState<'stripe' | 'pix' | 'mercadopago' | null>(null);
 
-  const resolveAuthStorage = () => {
-    const remember = window.localStorage.getItem('maextria_remember_me');
-    const useLocal = remember === null || remember === '1';
-    return useLocal ? window.localStorage : window.sessionStorage;
-  };
-
-  const getAccessToken = async () => {
-    const { data: authSession } = await supabase.auth.getSession();
-    return authSession.session?.access_token || resolveAuthStorage().getItem('token') || null;
-  };
   const [pixData, setPixData] = useState<{
     paymentId: string;
     qrCode?: string;
@@ -126,7 +116,7 @@ export default function PagamentoCertificado() {
       setProcessing(true);
       setProcessingMethod('stripe');
 
-      const accessToken = await getAccessToken();
+      const accessToken = await getValidAccessToken();
       if (!accessToken) {
         throw new Error('Voce precisa estar logado para confirmar o pagamento.');
       }
@@ -157,7 +147,7 @@ export default function PagamentoCertificado() {
       setProcessing(true);
       setProcessingMethod('mercadopago');
 
-      const accessToken = await getAccessToken();
+      const accessToken = await getValidAccessToken();
       if (!accessToken) {
         throw new Error('Voce precisa estar logado para confirmar o pagamento.');
       }
@@ -187,7 +177,7 @@ export default function PagamentoCertificado() {
     setProcessingMethod(metodo);
 
     try {
-      const accessToken = await getAccessToken();
+      const accessToken = await getValidAccessToken();
       if (!accessToken) {
         throw new Error('Voce precisa estar logado para iniciar o pagamento.');
       }
@@ -227,7 +217,7 @@ export default function PagamentoCertificado() {
     setProcessingMethod('pix');
 
     try {
-      const accessToken = await getAccessToken();
+      const accessToken = await getValidAccessToken();
       if (!accessToken) {
         throw new Error('Voce precisa estar logado para confirmar o pagamento.');
       }
