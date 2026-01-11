@@ -195,7 +195,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="w-full overflow-hidden">
             {banner.linkUrl ? (
               <a href={banner.linkUrl} className="block w-full" target="_blank" rel="noreferrer">
-                <div className="w-full aspect-[8/1]">
+                <div className="w-full aspect-[1536/289]">
                   <img
                     src={banner.imageUrl}
                     alt={banner.alt}
@@ -204,7 +204,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </div>
               </a>
             ) : (
-              <div className="w-full aspect-[8/1]">
+              <div className="w-full aspect-[1536/289]">
                 <img
                   src={banner.imageUrl}
                   alt={banner.alt}

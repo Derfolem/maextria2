@@ -347,8 +347,8 @@ export default function AdminSettings() {
             <div className="rounded-[12px] border border-[hsl(var(--border))] bg-[hsl(var(--muted))] p-4 text-sm text-[hsl(var(--muted-foreground))] space-y-2">
               <p className="font-semibold text-[hsl(var(--foreground))]">Especificacoes da arte</p>
               <p>Formato: PNG ou JPG.</p>
-              <p>Tamanho recomendado: 1920 x 240 px (proporcao 8:1).</p>
-              <p>Tamanho minimo: 1200 x 150 px. Peso maximo: 300 KB.</p>
+              <p>Tamanho recomendado: 1536 x 289 px (proporcao 1536:289).</p>
+              <p>Tamanho minimo: 1200 x 226 px. Peso maximo: 300 KB.</p>
               <p>Evite texto nas bordas. Use fundo transparente se possivel.</p>
             </div>
 
