@@ -1,16 +1,33 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
-import { FaSave, FaPercent } from 'react-icons/fa';
+import { FaSave, FaPercent, FaBullhorn, FaCode, FaSearch } from 'react-icons/fa';
 
 export default function AdminSettings() {
   const [profitShare, setProfitShare] = useState('');
   const [minScore, setMinScore] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [marketingLoading, setMarketingLoading] = useState(true);
+  const [marketingSaving, setMarketingSaving] = useState(false);
+  const [marketing, setMarketing] = useState({
+    bannerEnabled: false,
+    bannerImageUrl: '',
+    bannerLinkUrl: '',
+    bannerAlt: 'Banner promocional',
+    pixelHead: '',
+    pixelBody: '',
+    seoTitle: '',
+    seoDescription: '',
+    seoKeywords: '',
+    seoRobots: 'index,follow',
+    seoCanonical: '',
+    backlinks: '',
+  });
 
   useEffect(() => {
     loadSettings();
+    loadMarketing();
   }, []);
 
   const loadSettings = async () => {
@@ -28,6 +45,86 @@ export default function AdminSettings() {
       toast.error('Erro ao carregar configurações');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMarketing = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('configuracoes_site')
+        .select('chave, valor')
+        .in('chave', [
+          'marketing_banner_enabled',
+          'marketing_banner_image_url',
+          'marketing_banner_link_url',
+          'marketing_banner_alt',
+          'marketing_pixel_head',
+          'marketing_pixel_body',
+          'seo_meta_title',
+          'seo_meta_description',
+          'seo_meta_keywords',
+          'seo_meta_robots',
+          'seo_canonical_url',
+          'marketing_backlinks',
+        ]);
+      if (error) throw error;
+      const resolve = (key: string) => data?.find((item: any) => item.chave === key)?.valor ?? '';
+      setMarketing({
+        bannerEnabled: resolve('marketing_banner_enabled') === '1',
+        bannerImageUrl: resolve('marketing_banner_image_url'),
+        bannerLinkUrl: resolve('marketing_banner_link_url'),
+        bannerAlt: resolve('marketing_banner_alt') || 'Banner promocional',
+        pixelHead: resolve('marketing_pixel_head'),
+        pixelBody: resolve('marketing_pixel_body'),
+        seoTitle: resolve('seo_meta_title'),
+        seoDescription: resolve('seo_meta_description'),
+        seoKeywords: resolve('seo_meta_keywords'),
+        seoRobots: resolve('seo_meta_robots') || 'index,follow',
+        seoCanonical: resolve('seo_canonical_url'),
+        backlinks: resolve('marketing_backlinks'),
+      });
+    } catch (error) {
+      toast.error('Erro ao carregar marketing');
+    } finally {
+      setMarketingLoading(false);
+    }
+  };
+
+  const handleMarketingChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value, type, checked } = event.target;
+    setMarketing((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
+
+  const handleMarketingSave = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setMarketingSaving(true);
+    try {
+      const payload = [
+        { chave: 'marketing_banner_enabled', valor: marketing.bannerEnabled ? '1' : '0' },
+        { chave: 'marketing_banner_image_url', valor: marketing.bannerImageUrl },
+        { chave: 'marketing_banner_link_url', valor: marketing.bannerLinkUrl },
+        { chave: 'marketing_banner_alt', valor: marketing.bannerAlt },
+        { chave: 'marketing_pixel_head', valor: marketing.pixelHead },
+        { chave: 'marketing_pixel_body', valor: marketing.pixelBody },
+        { chave: 'seo_meta_title', valor: marketing.seoTitle },
+        { chave: 'seo_meta_description', valor: marketing.seoDescription },
+        { chave: 'seo_meta_keywords', valor: marketing.seoKeywords },
+        { chave: 'seo_meta_robots', valor: marketing.seoRobots },
+        { chave: 'seo_canonical_url', valor: marketing.seoCanonical },
+        { chave: 'marketing_backlinks', valor: marketing.backlinks },
+      ];
+      const { error } = await supabase
+        .from('configuracoes_site')
+        .upsert(payload, { onConflict: 'chave' });
+      if (error) throw error;
+      toast.success('Marketing atualizado com sucesso!');
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao salvar marketing');
+    } finally {
+      setMarketingSaving(false);
     }
   };
 
@@ -190,6 +287,175 @@ export default function AdminSettings() {
             </label>
           </div>
         </div>
+      </div>
+
+      <div className="card mt-8">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="h-11 w-11 rounded-2xl bg-[hsl(var(--muted))] flex items-center justify-center text-[hsl(var(--primary))]">
+            <FaBullhorn />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold">Marketing e Banner Global</h2>
+            <p className="text-sm text-[hsl(var(--muted-foreground))]">
+              Configure o banner do topo e campanhas de visibilidade.
+            </p>
+          </div>
+        </div>
+
+        {marketingLoading ? (
+          <p className="text-sm text-[hsl(var(--muted-foreground))]">Carregando marketing...</p>
+        ) : (
+          <form onSubmit={handleMarketingSave} className="space-y-6">
+            <label className="flex items-center gap-3 text-sm">
+              <input
+                type="checkbox"
+                name="bannerEnabled"
+                checked={marketing.bannerEnabled}
+                onChange={handleMarketingChange}
+              />
+              Ativar banner global
+            </label>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <input
+                name="bannerImageUrl"
+                value={marketing.bannerImageUrl}
+                onChange={handleMarketingChange}
+                placeholder="URL da imagem do banner"
+                className="input-field"
+                required={marketing.bannerEnabled}
+              />
+              <input
+                name="bannerLinkUrl"
+                value={marketing.bannerLinkUrl}
+                onChange={handleMarketingChange}
+                placeholder="Link do banner (opcional)"
+                className="input-field"
+              />
+            </div>
+
+            <input
+              name="bannerAlt"
+              value={marketing.bannerAlt}
+              onChange={handleMarketingChange}
+              placeholder="Texto alternativo do banner"
+              className="input-field"
+            />
+
+            <div className="rounded-[12px] border border-[hsl(var(--border))] bg-[hsl(var(--muted))] p-4 text-sm text-[hsl(var(--muted-foreground))] space-y-2">
+              <p className="font-semibold text-[hsl(var(--foreground))]">Especificacoes da arte</p>
+              <p>Formato: PNG ou JPG.</p>
+              <p>Tamanho recomendado: 1440 x 120 px (alta), com area segura central.</p>
+              <p>Tamanho minimo: 1200 x 96 px. Peso maximo: 300 KB.</p>
+              <p>Evite texto nas bordas. Use fundo transparente se possivel.</p>
+            </div>
+
+            <button type="submit" className="btn-accent inline-flex items-center gap-2" disabled={marketingSaving}>
+              <FaSave />
+              <span>{marketingSaving ? 'Salvando...' : 'Salvar marketing'}</span>
+            </button>
+          </form>
+        )}
+      </div>
+
+      <div className="card mt-8">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="h-11 w-11 rounded-2xl bg-[hsl(var(--muted))] flex items-center justify-center text-[hsl(var(--primary))]">
+            <FaCode />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold">Pixels e codigos de rastreio</h2>
+            <p className="text-sm text-[hsl(var(--muted-foreground))]">
+              Insira scripts de conversao, analytics e remarketing.
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={handleMarketingSave} className="space-y-4">
+          <textarea
+            name="pixelHead"
+            value={marketing.pixelHead}
+            onChange={handleMarketingChange}
+            placeholder="Codigo para inserir no <head>"
+            className="input-field min-h-[140px] font-mono text-xs"
+          />
+          <textarea
+            name="pixelBody"
+            value={marketing.pixelBody}
+            onChange={handleMarketingChange}
+            placeholder="Codigo para inserir no <body>"
+            className="input-field min-h-[140px] font-mono text-xs"
+          />
+          <button type="submit" className="btn-accent inline-flex items-center gap-2" disabled={marketingSaving}>
+            <FaSave />
+            <span>{marketingSaving ? 'Salvando...' : 'Salvar pixels'}</span>
+          </button>
+        </form>
+      </div>
+
+      <div className="card mt-8">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="h-11 w-11 rounded-2xl bg-[hsl(var(--muted))] flex items-center justify-center text-[hsl(var(--primary))]">
+            <FaSearch />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold">SEO e backlinks</h2>
+            <p className="text-sm text-[hsl(var(--muted-foreground))]">
+              Ajuste meta tags e registre backlinks estrategicos.
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={handleMarketingSave} className="space-y-4">
+          <input
+            name="seoTitle"
+            value={marketing.seoTitle}
+            onChange={handleMarketingChange}
+            placeholder="Titulo SEO global"
+            className="input-field"
+          />
+          <textarea
+            name="seoDescription"
+            value={marketing.seoDescription}
+            onChange={handleMarketingChange}
+            placeholder="Descricao SEO"
+            className="input-field min-h-[120px]"
+          />
+          <input
+            name="seoKeywords"
+            value={marketing.seoKeywords}
+            onChange={handleMarketingChange}
+            placeholder="Palavras-chave (separadas por virgula)"
+            className="input-field"
+          />
+          <div className="grid md:grid-cols-2 gap-4">
+            <input
+              name="seoRobots"
+              value={marketing.seoRobots}
+              onChange={handleMarketingChange}
+              placeholder="Robots (ex: index,follow)"
+              className="input-field"
+            />
+            <input
+              name="seoCanonical"
+              value={marketing.seoCanonical}
+              onChange={handleMarketingChange}
+              placeholder="Canonical URL"
+              className="input-field"
+            />
+          </div>
+          <textarea
+            name="backlinks"
+            value={marketing.backlinks}
+            onChange={handleMarketingChange}
+            placeholder="Backlinks (um por linha ou anotações)"
+            className="input-field min-h-[140px]"
+          />
+          <button type="submit" className="btn-accent inline-flex items-center gap-2" disabled={marketingSaving}>
+            <FaSave />
+            <span>{marketingSaving ? 'Salvando...' : 'Salvar SEO'}</span>
+          </button>
+        </form>
       </div>
     </div>
   );

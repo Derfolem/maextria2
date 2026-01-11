@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../lib/store';
 import { FaBook, FaBars, FaTimes, FaInstagram, FaLinkedinIn, FaYoutube } from 'react-icons/fa';
 import AIChat from './AIChat';
+import { supabase } from '../lib/supabase';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, user, logout } = useAuthStore();
@@ -10,15 +11,171 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const isHome = location.pathname === '/';
+  const [banner, setBanner] = useState({
+    enabled: false,
+    imageUrl: '',
+    linkUrl: '',
+    alt: 'Banner promocional',
+  });
+  const [seoConfig, setSeoConfig] = useState({
+    title: '',
+    description: '',
+    keywords: '',
+    robots: 'index,follow',
+    canonical: '',
+  });
+  const bannerHeight = 44;
+  const bannerEnabled = banner.enabled && Boolean(banner.imageUrl);
+
+  const pageViewKey = useMemo(() => {
+    const base = location.pathname + location.search;
+    return `maextria_pv_${base}`;
+  }, [location.pathname, location.search]);
 
   const handleLogout = () => {
     logout();
     navigate('/');
   };
 
+  useEffect(() => {
+    const loadMarketingConfig = async () => {
+      const { data } = await supabase
+        .from('configuracoes_site')
+        .select('chave, valor')
+        .in('chave', [
+          'marketing_banner_enabled',
+          'marketing_banner_image_url',
+          'marketing_banner_link_url',
+          'marketing_banner_alt',
+          'marketing_pixel_head',
+          'marketing_pixel_body',
+          'seo_meta_title',
+          'seo_meta_description',
+          'seo_meta_keywords',
+          'seo_meta_robots',
+          'seo_canonical_url',
+        ]);
+
+      const resolve = (key: string) => data?.find((item: any) => item.chave === key)?.valor ?? '';
+      const bannerEnabledValue = resolve('marketing_banner_enabled') === '1';
+      setBanner({
+        enabled: bannerEnabledValue,
+        imageUrl: resolve('marketing_banner_image_url'),
+        linkUrl: resolve('marketing_banner_link_url'),
+        alt: resolve('marketing_banner_alt') || 'Banner promocional',
+      });
+      setSeoConfig({
+        title: resolve('seo_meta_title'),
+        description: resolve('seo_meta_description'),
+        keywords: resolve('seo_meta_keywords'),
+        robots: resolve('seo_meta_robots') || 'index,follow',
+        canonical: resolve('seo_canonical_url'),
+      });
+
+      const headCode = resolve('marketing_pixel_head');
+      const bodyCode = resolve('marketing_pixel_body');
+      if (headCode) {
+        const marker = document.getElementById('maextria-pixel-head');
+        if (!marker) {
+          const container = document.createElement('div');
+          container.id = 'maextria-pixel-head';
+          container.innerHTML = headCode;
+          document.head.appendChild(container);
+        }
+      }
+      if (bodyCode) {
+        const marker = document.getElementById('maextria-pixel-body');
+        if (!marker) {
+          const container = document.createElement('div');
+          container.id = 'maextria-pixel-body';
+          container.innerHTML = bodyCode;
+          document.body.appendChild(container);
+        }
+      }
+    };
+
+    loadMarketingConfig();
+  }, []);
+
+  useEffect(() => {
+    if (seoConfig.title) {
+      document.title = seoConfig.title;
+    }
+    const ensureMeta = (name: string, content: string) => {
+      if (!content) return;
+      let tag = document.querySelector(`meta[name="${name}"]`);
+      if (!tag) {
+        tag = document.createElement('meta');
+        tag.setAttribute('name', name);
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute('content', content);
+    };
+    ensureMeta('description', seoConfig.description);
+    ensureMeta('keywords', seoConfig.keywords);
+    ensureMeta('robots', seoConfig.robots);
+    if (seoConfig.canonical) {
+      let canonical = document.querySelector('link[rel="canonical"]');
+      if (!canonical) {
+        canonical = document.createElement('link');
+        canonical.setAttribute('rel', 'canonical');
+        document.head.appendChild(canonical);
+      }
+      canonical.setAttribute('href', seoConfig.canonical);
+    }
+  }, [seoConfig]);
+
+  useEffect(() => {
+    const trackPageView = async () => {
+      try {
+        const sessionKey = 'maextria_session_id';
+        let sessionId = window.localStorage.getItem(sessionKey);
+        if (!sessionId) {
+          sessionId = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+          window.localStorage.setItem(sessionKey, sessionId);
+        }
+        if (window.localStorage.getItem(pageViewKey)) {
+          return;
+        }
+        window.localStorage.setItem(pageViewKey, '1');
+        const { data: authData } = await supabase.auth.getUser();
+        await supabase.from('marketing_pageviews').insert({
+          session_id: sessionId,
+          path: `${location.pathname}${location.search}`,
+          referrer: document.referrer || null,
+          user_agent: navigator.userAgent,
+          user_id: authData.user?.id ?? null,
+        });
+      } catch (error) {
+        console.error('Pageview error:', error);
+      }
+    };
+
+    trackPageView();
+  }, [location.pathname, location.search, pageViewKey]);
+
   return (
     <div className="min-h-screen flex flex-col">
-      <nav className="fixed top-0 inset-x-0 z-50 bg-[hsl(var(--background))]/95 backdrop-blur border-b border-[hsl(var(--border))]">
+      {bannerEnabled && (
+        <div
+          className="fixed top-0 inset-x-0 z-50 bg-[hsl(var(--primary))] text-white"
+          style={{ height: `${bannerHeight}px` }}
+        >
+          <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-center">
+            {banner.linkUrl ? (
+              <a href={banner.linkUrl} className="h-full flex items-center" target="_blank" rel="noreferrer">
+                <img src={banner.imageUrl} alt={banner.alt} className="h-full object-contain" />
+              </a>
+            ) : (
+              <img src={banner.imageUrl} alt={banner.alt} className="h-full object-contain" />
+            )}
+          </div>
+        </div>
+      )}
+      <nav
+        className="fixed inset-x-0 z-50 bg-[hsl(var(--background))]/95 backdrop-blur border-b border-[hsl(var(--border))]"
+        style={{ top: bannerEnabled ? `${bannerHeight}px` : '0' }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link to="/" className="flex items-center space-x-3 text-[hsl(var(--foreground))] hover:text-[hsl(var(--secondary))] transition">
@@ -53,7 +210,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </nav>
 
-      <main className="flex-grow pt-16 page-fade">
+      <main
+        className="flex-grow page-fade"
+        style={{ paddingTop: bannerEnabled ? `${bannerHeight + 64}px` : '64px' }}
+      >
         {children}
       </main>
 

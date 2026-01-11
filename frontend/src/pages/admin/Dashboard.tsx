@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { DashboardStats } from '../../types';
 import { supabase } from '../../lib/supabase';
-import { FaUsers, FaBook, FaDollarSign, FaChartLine, FaInbox, FaTrash } from 'react-icons/fa';
+import { FaUsers, FaBook, FaDollarSign, FaChartLine, FaInbox, FaTrash, FaBullhorn } from 'react-icons/fa';
 import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -22,6 +22,12 @@ export default function AdminDashboard() {
   const [userDistribution, setUserDistribution] = useState<Array<{ name: string; value: number }>>([]);
   const [recentNotifications, setRecentNotifications] = useState<AdminNotification[]>([]);
   const [loadingNotifications, setLoadingNotifications] = useState(true);
+  const [marketingStats, setMarketingStats] = useState({
+    pageviews: 0,
+    sessions: 0,
+    topPages: [] as Array<{ path: string; total: number }>,
+  });
+  const [loadingMarketing, setLoadingMarketing] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [threads, setThreads] = useState<Array<any>>([]);
   const [threadsLoading, setThreadsLoading] = useState(true);
@@ -48,6 +54,7 @@ export default function AdminDashboard() {
     loadNotifications();
     loadMessaging();
     loadMailConfig();
+    loadMarketingStats();
   }, []);
 
   useEffect(() => {
@@ -163,6 +170,40 @@ export default function AdminDashboard() {
     }
 
     setLoadingNotifications(false);
+  };
+
+  const loadMarketingStats = async () => {
+    setLoadingMarketing(true);
+    try {
+      const since = new Date();
+      since.setDate(since.getDate() - 30);
+
+      const { data: pageviews } = await supabase
+        .from('marketing_pageviews')
+        .select('path, session_id')
+        .gte('created_at', since.toISOString());
+
+      const total = pageviews?.length || 0;
+      const sessionCount = new Set((pageviews || []).map((row: any) => row.session_id)).size;
+      const counts = (pageviews || []).reduce((acc: Record<string, number>, row: any) => {
+        acc[row.path] = (acc[row.path] || 0) + 1;
+        return acc;
+      }, {});
+      const topPages = Object.entries(counts)
+        .map(([path, count]) => ({ path, total: count }))
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 5);
+
+      setMarketingStats({
+        pageviews: total,
+        sessions: sessionCount,
+        topPages,
+      });
+    } catch (error) {
+      console.error('Error loading marketing stats:', error);
+    } finally {
+      setLoadingMarketing(false);
+    }
   };
 
   const loadMailConfig = async () => {
@@ -474,6 +515,49 @@ export default function AdminDashboard() {
             </PieChart>
           </ResponsiveContainer>
         </div>
+      </div>
+
+      <div className="card mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="h-11 w-11 rounded-2xl bg-[hsl(var(--muted))] flex items-center justify-center text-[hsl(var(--primary))]">
+              <FaBullhorn />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold">Metricas de marketing (30 dias)</h2>
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">Visao geral de alcance e trafego</p>
+            </div>
+          </div>
+        </div>
+        {loadingMarketing ? (
+          <p className="text-sm text-[hsl(var(--muted-foreground))]">Carregando metricas...</p>
+        ) : (
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="rounded-[12px] border border-[hsl(var(--border))] p-4">
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">Pageviews</p>
+              <p className="text-3xl font-semibold mt-2">{marketingStats.pageviews}</p>
+            </div>
+            <div className="rounded-[12px] border border-[hsl(var(--border))] p-4">
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">Sessoes</p>
+              <p className="text-3xl font-semibold mt-2">{marketingStats.sessions}</p>
+            </div>
+            <div className="rounded-[12px] border border-[hsl(var(--border))] p-4">
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">Top paginas</p>
+              <div className="mt-2 space-y-2">
+                {marketingStats.topPages.length === 0 ? (
+                  <p className="text-sm text-[hsl(var(--muted-foreground))]">Sem dados</p>
+                ) : (
+                  marketingStats.topPages.map((item) => (
+                    <div key={item.path} className="flex items-center justify-between text-sm">
+                      <span className="truncate max-w-[160px]">{item.path}</span>
+                      <span className="text-[hsl(var(--primary))] font-semibold">{item.total}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="card">
