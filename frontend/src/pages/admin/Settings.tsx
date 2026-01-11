@@ -91,10 +91,12 @@ export default function AdminSettings() {
   };
 
   const handleMarketingChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type, checked } = event.target;
+    const target = event.target;
+    const { name, value } = target;
+    const isCheckbox = target instanceof HTMLInputElement && target.type === 'checkbox';
     setMarketing((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: isCheckbox ? target.checked : value,
     }));
   };
 
