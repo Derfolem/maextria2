@@ -195,18 +195,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="w-full overflow-hidden">
             {banner.linkUrl ? (
               <a href={banner.linkUrl} className="block w-full" target="_blank" rel="noreferrer">
+                <div className="w-full aspect-[6/1]">
+                  <img
+                    src={banner.imageUrl}
+                    alt={banner.alt}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              </a>
+            ) : (
+              <div className="w-full aspect-[6/1]">
                 <img
                   src={banner.imageUrl}
                   alt={banner.alt}
-                  className="w-full h-[120px] md:h-[140px] object-cover"
+                  className="w-full h-full object-contain"
                 />
-              </a>
-            ) : (
-              <img
-                src={banner.imageUrl}
-                alt={banner.alt}
-                className="w-full h-[120px] md:h-[140px] object-cover"
-              />
+              </div>
             )}
           </div>
         )}
