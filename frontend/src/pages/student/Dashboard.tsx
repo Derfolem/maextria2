@@ -40,11 +40,6 @@ export default function StudentDashboard() {
   const [sendingQuestion, setSendingQuestion] = useState(false);
   const [replyBody, setReplyBody] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
-  const [questionForm, setQuestionForm] = useState({
-    subject: '',
-    message: '',
-  });
-  const [sendingQuestion, setSendingQuestion] = useState(false);
 
   useEffect(() => {
     loadDashboard();
@@ -362,29 +357,6 @@ export default function StudentDashboard() {
       toast.success('Mensagem excluida.');
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao excluir mensagem.');
-    }
-  };
-
-  const handleQuestionChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = event.target;
-    setQuestionForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleQuestionSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setSendingQuestion(true);
-    try {
-      const subject = questionForm.subject.trim();
-      const message = questionForm.message.trim();
-      if (!subject || !message) {
-        throw new Error('Preencha o assunto e a duvida.');
-      }
-      toast.success('Duvida enviada. O professor respondera pela plataforma.');
-      setQuestionForm({ subject: '', message: '' });
-    } catch (error: any) {
-      toast.error(error?.message || 'Erro ao enviar duvida.');
-    } finally {
-      setSendingQuestion(false);
     }
   };
 
@@ -735,34 +707,6 @@ export default function StudentDashboard() {
         </form>
       </div>
 
-      <div className="card mt-10">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">Tirar duvidas com o professor</h2>
-          <span className="text-sm text-[hsl(var(--muted-foreground))]">Respostas chegam dentro da plataforma</span>
-        </div>
-        <form onSubmit={handleQuestionSubmit} className="space-y-4">
-          <input
-            name="subject"
-            value={questionForm.subject}
-            onChange={handleQuestionChange}
-            placeholder="Assunto da duvida"
-            className="input-field"
-            required
-          />
-          <textarea
-            name="message"
-            value={questionForm.message}
-            onChange={handleQuestionChange}
-            placeholder="Descreva sua pergunta para o professor"
-            className="input-field min-h-[140px]"
-            required
-          />
-          <button type="submit" className="btn-accent inline-flex items-center gap-2" disabled={sendingQuestion}>
-            {sendingQuestion ? 'Enviando...' : 'Enviar duvida'}
-            <FaPaperPlane />
-          </button>
-        </form>
-      </div>
     </div>
   );
 }
