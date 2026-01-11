@@ -24,7 +24,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     robots: 'index,follow',
     canonical: '',
   });
-  const bannerHeight = 44;
   const bannerEnabled = banner.enabled && Boolean(banner.imageUrl);
 
   const pageViewKey = useMemo(() => {
@@ -156,26 +155,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {bannerEnabled && (
-        <div
-          className="fixed top-0 inset-x-0 z-50 bg-[hsl(var(--primary))] text-white"
-          style={{ height: `${bannerHeight}px` }}
-        >
-          <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-center">
-            {banner.linkUrl ? (
-              <a href={banner.linkUrl} className="h-full flex items-center" target="_blank" rel="noreferrer">
-                <img src={banner.imageUrl} alt={banner.alt} className="h-full object-contain" />
-              </a>
-            ) : (
-              <img src={banner.imageUrl} alt={banner.alt} className="h-full object-contain" />
-            )}
-          </div>
-        </div>
-      )}
-      <nav
-        className="fixed inset-x-0 z-50 bg-[hsl(var(--background))]/95 backdrop-blur border-b border-[hsl(var(--border))]"
-        style={{ top: bannerEnabled ? `${bannerHeight}px` : '0' }}
-      >
+      <nav className="fixed inset-x-0 top-0 z-50 bg-[hsl(var(--background))]/95 backdrop-blur border-b border-[hsl(var(--border))]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link to="/" className="flex items-center space-x-3 text-[hsl(var(--foreground))] hover:text-[hsl(var(--secondary))] transition">
@@ -210,10 +190,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </nav>
 
-      <main
-        className="flex-grow page-fade"
-        style={{ paddingTop: bannerEnabled ? `${bannerHeight + 64}px` : '64px' }}
-      >
+      <main className="flex-grow page-fade pt-16">
+        {bannerEnabled && (
+          <div className="w-full bg-[hsl(var(--primary))] text-white">
+            <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-center">
+              {banner.linkUrl ? (
+                <a href={banner.linkUrl} className="w-full flex items-center justify-center" target="_blank" rel="noreferrer">
+                  <img src={banner.imageUrl} alt={banner.alt} className="max-h-[120px] w-full object-contain" />
+                </a>
+              ) : (
+                <img src={banner.imageUrl} alt={banner.alt} className="max-h-[120px] w-full object-contain" />
+              )}
+            </div>
+          </div>
+        )}
         {children}
       </main>
 
