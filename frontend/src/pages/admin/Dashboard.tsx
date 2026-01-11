@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { DashboardStats } from '../../types';
 import { supabase } from '../../lib/supabase';
-import { FaUsers, FaBook, FaDollarSign, FaChartLine } from 'react-icons/fa';
+import { FaUsers, FaBook, FaDollarSign, FaChartLine, FaInbox, FaTrash } from 'react-icons/fa';
 import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -22,16 +22,35 @@ export default function AdminDashboard() {
   const [userDistribution, setUserDistribution] = useState<Array<{ name: string; value: number }>>([]);
   const [recentNotifications, setRecentNotifications] = useState<AdminNotification[]>([]);
   const [loadingNotifications, setLoadingNotifications] = useState(true);
-  const [messageForm, setMessageForm] = useState({
-    title: '',
-    message: '',
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [threads, setThreads] = useState<Array<any>>([]);
+  const [threadsLoading, setThreadsLoading] = useState(true);
+  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
+  const [threadMessages, setThreadMessages] = useState<Array<any>>([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [broadcastForm, setBroadcastForm] = useState({
+    target: 'students',
+    subject: '',
+    body: '',
+    expiresAt: '',
   });
-  const [sendingMessage, setSendingMessage] = useState(false);
+  const [sendingBroadcast, setSendingBroadcast] = useState(false);
+  const [mailBlocked, setMailBlocked] = useState(false);
+  const [mailBlockedMessage, setMailBlockedMessage] = useState('Correio interno temporariamente indisponivel.');
+  const [savingMailConfig, setSavingMailConfig] = useState(false);
 
   useEffect(() => {
     loadStats();
     loadNotifications();
+    loadMessaging();
+    loadMailConfig();
   }, []);
+
+  useEffect(() => {
+    if (selectedThreadId) {
+      loadThreadMessages(selectedThreadId);
+    }
+  }, [selectedThreadId]);
 
   const loadStats = async () => {
     try {
@@ -141,6 +160,60 @@ export default function AdminDashboard() {
     setLoadingNotifications(false);
   };
 
+  const loadMailConfig = async () => {
+    const { data } = await supabase
+      .from('configuracoes_site')
+      .select('chave, valor')
+      .in('chave', ['correio_interno_bloqueado', 'correio_interno_mensagem']);
+    const blockedValue = data?.find((item) => item.chave === 'correio_interno_bloqueado')?.valor;
+    const blockedMessage = data?.find((item) => item.chave === 'correio_interno_mensagem')?.valor;
+    setMailBlocked(blockedValue === '1');
+    if (blockedMessage) {
+      setMailBlockedMessage(blockedMessage);
+    }
+  };
+
+  const loadMessaging = async () => {
+    setThreadsLoading(true);
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      const userId = authData.user?.id ?? null;
+      setCurrentUserId(userId);
+
+      const { data: threadsData } = await supabase
+        .from('internal_threads')
+        .select('id, type, subject, course_id, created_at, expires_at')
+        .order('created_at', { ascending: false });
+
+      setThreads(threadsData || []);
+      if ((threadsData || []).length > 0) {
+        setSelectedThreadId(threadsData?.[0]?.id ?? null);
+      } else {
+        setSelectedThreadId(null);
+      }
+    } catch (error) {
+      console.error('Error loading messages:', error);
+    } finally {
+      setThreadsLoading(false);
+    }
+  };
+
+  const loadThreadMessages = async (threadId: string) => {
+    setMessagesLoading(true);
+    try {
+      const { data } = await supabase
+        .from('internal_messages')
+        .select('id, body, created_at, sender_id')
+        .eq('thread_id', threadId)
+        .order('created_at', { ascending: true });
+      setThreadMessages(data || []);
+    } catch (error) {
+      console.error('Error loading thread messages:', error);
+    } finally {
+      setMessagesLoading(false);
+    }
+  };
+
   const relativeFormatter = useMemo(
     () => new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto' }),
     []
@@ -167,26 +240,94 @@ export default function AdminDashboard() {
     return relativeFormatter.format(-diffSeconds, 'second');
   };
 
-  const handleMessageChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleBroadcastChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = event.target;
-    setMessageForm((prev) => ({ ...prev, [name]: value }));
+    setBroadcastForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleMessageSubmit = (event: React.FormEvent) => {
+  const handleSendBroadcast = async (event: React.FormEvent) => {
     event.preventDefault();
-    setSendingMessage(true);
+    if (!currentUserId) {
+      toast.error('Você precisa estar logado para enviar.');
+      return;
+    }
+    setSendingBroadcast(true);
     try {
-      const title = messageForm.title.trim();
-      const message = messageForm.message.trim();
-      if (!title || !message) {
-        throw new Error('Preencha o titulo e a mensagem.');
+      const subject = broadcastForm.subject.trim();
+      const body = broadcastForm.body.trim();
+      if (!subject || !body) {
+        throw new Error('Preencha assunto e mensagem.');
       }
-      toast.success('Mensagem interna preparada para envio.');
-      setMessageForm({ title: '', message: '' });
+      const expiresAt = broadcastForm.expiresAt
+        ? new Date(`${broadcastForm.expiresAt}T23:59:59`).toISOString()
+        : null;
+
+      const { data: thread, error: threadError } = await supabase
+        .from('internal_threads')
+        .insert({
+          type: 'broadcast',
+          subject,
+          created_by: currentUserId,
+          recipient_role: broadcastForm.target === 'teachers' ? 'teacher' : 'student',
+          expires_at: expiresAt,
+        })
+        .select('id')
+        .single();
+      if (threadError) throw threadError;
+
+      const { error: messageError } = await supabase
+        .from('internal_messages')
+        .insert({
+          thread_id: thread.id,
+          sender_id: currentUserId,
+          body,
+        });
+      if (messageError) throw messageError;
+
+      toast.success('Mensagem enviada.');
+      setBroadcastForm({ target: 'students', subject: '', body: '', expiresAt: '' });
+      await loadMessaging();
+      setSelectedThreadId(thread.id);
     } catch (error: any) {
-      toast.error(error?.message || 'Erro ao preparar mensagem.');
+      toast.error(error?.message || 'Erro ao enviar mensagem.');
     } finally {
-      setSendingMessage(false);
+      setSendingBroadcast(false);
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!currentUserId) return;
+    try {
+      const { error } = await supabase
+        .from('internal_message_deletions')
+        .insert({ message_id: messageId, user_id: currentUserId });
+      if (error) throw error;
+      if (selectedThreadId) {
+        await loadThreadMessages(selectedThreadId);
+      }
+      toast.success('Mensagem excluida.');
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao excluir mensagem.');
+    }
+  };
+
+  const handleMailConfigSave = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSavingMailConfig(true);
+    try {
+      const payload = [
+        { chave: 'correio_interno_bloqueado', valor: mailBlocked ? '1' : '0' },
+        { chave: 'correio_interno_mensagem', valor: mailBlockedMessage },
+      ];
+      const { error } = await supabase
+        .from('configuracoes_site')
+        .upsert(payload, { onConflict: 'chave' });
+      if (error) throw error;
+      toast.success('Configuracao atualizada.');
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao salvar configuracao.');
+    } finally {
+      setSavingMailConfig(false);
     }
   };
 
@@ -313,28 +454,148 @@ export default function AdminDashboard() {
 
       <div className="card mt-8">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">Mensagens internas para alunos</h2>
-          <span className="text-sm text-[hsl(var(--muted-foreground))]">Envio centralizado pela administracao</span>
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <FaInbox />
+            Mensagens internas
+          </h2>
         </div>
-        <form onSubmit={handleMessageSubmit} className="space-y-4">
-          <input
-            name="title"
-            value={messageForm.title}
-            onChange={handleMessageChange}
-            placeholder="Titulo da mensagem"
-            className="input-field"
-            required
-          />
+
+        <div className="grid lg:grid-cols-[280px_1fr] gap-6">
+          <div className="space-y-3">
+            <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--muted-foreground))]">Conversas</p>
+            {threadsLoading ? (
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">Carregando...</p>
+            ) : threads.length === 0 ? (
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">Nenhuma mensagem ainda.</p>
+            ) : (
+              threads.map((thread) => (
+                <button
+                  key={thread.id}
+                  type="button"
+                  onClick={() => setSelectedThreadId(thread.id)}
+                  className={`w-full text-left p-3 rounded-[12px] border transition ${
+                    selectedThreadId === thread.id
+                      ? 'border-[hsl(var(--primary))] bg-[hsl(var(--muted))]'
+                      : 'border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]'
+                  }`}
+                >
+                  <p className="text-sm font-semibold">{thread.subject}</p>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                    {thread.type === 'broadcast' ? 'Comunicado' : 'Conversa'}
+                  </p>
+                </button>
+              ))
+            )}
+          </div>
+
+          <div className="space-y-4">
+            <form onSubmit={handleSendBroadcast} className="space-y-4">
+              <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--muted-foreground))]">Nova mensagem</p>
+              <div className="grid md:grid-cols-2 gap-4">
+                <select
+                  name="target"
+                  value={broadcastForm.target}
+                  onChange={handleBroadcastChange}
+                  className="input-field"
+                >
+                  <option value="students">Todos os alunos</option>
+                  <option value="teachers">Todos os professores</option>
+                </select>
+                <input
+                  type="date"
+                  name="expiresAt"
+                  value={broadcastForm.expiresAt}
+                  onChange={handleBroadcastChange}
+                  className="input-field"
+                />
+              </div>
+              <input
+                name="subject"
+                value={broadcastForm.subject}
+                onChange={handleBroadcastChange}
+                placeholder="Assunto da mensagem"
+                className="input-field"
+                required
+              />
+              <textarea
+                name="body"
+                value={broadcastForm.body}
+                onChange={handleBroadcastChange}
+                placeholder="Escreva a mensagem interna"
+                className="input-field min-h-[140px]"
+                required
+              />
+              <button type="submit" className="btn-accent inline-flex items-center gap-2" disabled={sendingBroadcast}>
+                {sendingBroadcast ? 'Enviando...' : 'Enviar mensagem'}
+              </button>
+              <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                Selecione uma data de expiracao para remover automaticamente do correio interno.
+              </p>
+            </form>
+
+            <div className="space-y-3">
+              <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--muted-foreground))]">Mensagens</p>
+              {selectedThreadId ? (
+                messagesLoading ? (
+                  <p className="text-sm text-[hsl(var(--muted-foreground))]">Carregando mensagens...</p>
+                ) : threadMessages.length === 0 ? (
+                  <p className="text-sm text-[hsl(var(--muted-foreground))]">Sem mensagens nesta conversa.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {threadMessages.map((message) => {
+                      const isOwn = message.sender_id === currentUserId;
+                      return (
+                        <div key={message.id} className="rounded-[12px] border border-[hsl(var(--border))] p-3">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-semibold">{isOwn ? 'Você' : 'Professor'}</p>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteMessage(message.id)}
+                              className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))]"
+                            >
+                              <FaTrash />
+                            </button>
+                          </div>
+                          <p className="text-sm mt-2 whitespace-pre-line">{message.body}</p>
+                          <p className="text-xs text-[hsl(var(--muted-foreground))] mt-2">
+                            {new Date(message.created_at).toLocaleString('pt-BR')}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
+              ) : (
+                <p className="text-sm text-[hsl(var(--muted-foreground))]">Selecione uma conversa.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="card mt-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">Bloqueio do correio interno</h2>
+          <span className="text-sm text-[hsl(var(--muted-foreground))]">Mensagem exibida para alunos e professores</span>
+        </div>
+        <form onSubmit={handleMailConfigSave} className="space-y-4">
+          <label className="flex items-center gap-3 text-sm">
+            <input
+              type="checkbox"
+              checked={mailBlocked}
+              onChange={(event) => setMailBlocked(event.target.checked)}
+            />
+            Bloquear envio e recebimento de mensagens
+          </label>
           <textarea
-            name="message"
-            value={messageForm.message}
-            onChange={handleMessageChange}
-            placeholder="Escreva a mensagem interna para os alunos"
-            className="input-field min-h-[140px]"
+            value={mailBlockedMessage}
+            onChange={(event) => setMailBlockedMessage(event.target.value)}
+            placeholder="Mensagem exibida quando o correio interno estiver bloqueado"
+            className="input-field min-h-[120px]"
             required
           />
-          <button type="submit" className="btn-accent inline-flex items-center gap-2" disabled={sendingMessage}>
-            {sendingMessage ? 'Enviando...' : 'Enviar mensagem'}
+          <button type="submit" className="btn-accent inline-flex items-center gap-2" disabled={savingMailConfig}>
+            {savingMailConfig ? 'Salvando...' : 'Salvar configuracao'}
           </button>
         </form>
       </div>

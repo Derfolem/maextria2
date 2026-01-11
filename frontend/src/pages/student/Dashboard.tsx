@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { DashboardStats, Enrollment, Certificate } from '../../types';
-import { FaBook, FaCertificate, FaTrophy, FaChartLine, FaPaperPlane, FaArrowRight } from 'react-icons/fa';
+import { FaBook, FaCertificate, FaTrophy, FaChartLine, FaPaperPlane, FaArrowRight, FaInbox, FaTrash } from 'react-icons/fa';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { normalizeEnrollment } from '../../lib/normalizeEnrollment';
 import { supabase } from '../../lib/supabase';
@@ -18,6 +18,28 @@ export default function StudentDashboard() {
     reason: '',
   });
   const [sending, setSending] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [mailBlocked, setMailBlocked] = useState(false);
+  const [mailBlockedMessage, setMailBlockedMessage] = useState('Correio interno temporariamente indisponivel.');
+  const [threads, setThreads] = useState<Array<any>>([]);
+  const [threadsLoading, setThreadsLoading] = useState(true);
+  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
+  const [threadMessages, setThreadMessages] = useState<Array<any>>([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [showCompose, setShowCompose] = useState(true);
+  const [courses, setCourses] = useState<Array<{ id: string; title: string }>>([]);
+  const [modules, setModules] = useState<Array<{ id: string; title: string }>>([]);
+  const [lessons, setLessons] = useState<Array<{ id: string; title: string }>>([]);
+  const [compose, setCompose] = useState({
+    courseId: '',
+    moduleId: '',
+    lessonId: '',
+    subject: '',
+    body: '',
+  });
+  const [sendingQuestion, setSendingQuestion] = useState(false);
+  const [replyBody, setReplyBody] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
   const [questionForm, setQuestionForm] = useState({
     subject: '',
     message: '',
@@ -26,7 +48,14 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     loadDashboard();
+    loadMessaging();
   }, []);
+
+  useEffect(() => {
+    if (selectedThreadId) {
+      loadThreadMessages(selectedThreadId);
+    }
+  }, [selectedThreadId]);
 
   const loadDashboard = async () => {
     try {
@@ -84,6 +113,76 @@ export default function StudentDashboard() {
     }
   };
 
+  const loadMessaging = async () => {
+    setThreadsLoading(true);
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      const userId = authData.user?.id ?? null;
+      setCurrentUserId(userId);
+
+      const [{ data: configs }, { data: enrollments }] = await Promise.all([
+        supabase
+          .from('configuracoes_site')
+          .select('chave, valor')
+          .in('chave', ['correio_interno_bloqueado', 'correio_interno_mensagem']),
+        userId
+          ? supabase
+              .from('matriculas')
+              .select('curso_id, cursos(id, titulo)')
+              .eq('usuario_id', userId)
+              .order('data_matricula', { ascending: false })
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
+
+      const blockedValue = configs?.find((item) => item.chave === 'correio_interno_bloqueado')?.valor;
+      const blockedMessage = configs?.find((item) => item.chave === 'correio_interno_mensagem')?.valor;
+      setMailBlocked(blockedValue === '1');
+      if (blockedMessage) {
+        setMailBlockedMessage(blockedMessage);
+      }
+
+      const courseList = (enrollments || [])
+        .map((row: any) => ({
+          id: row.curso_id ?? row.cursos?.id,
+          title: row.cursos?.titulo ?? 'Curso',
+        }))
+        .filter((item: any) => item.id);
+      setCourses(courseList);
+
+      const { data: threadsData } = await supabase
+        .from('internal_threads')
+        .select('id, type, subject, course_id, module_id, lesson_id, created_at, expires_at, cursos(titulo), modulos(titulo_modulo), aulas(titulo)')
+        .order('created_at', { ascending: false });
+
+      setThreads(threadsData || []);
+      if ((threadsData || []).length > 0) {
+        setSelectedThreadId(threadsData?.[0]?.id ?? null);
+      } else {
+        setSelectedThreadId(null);
+      }
+    } catch (error) {
+      console.error('Error loading messages:', error);
+    } finally {
+      setThreadsLoading(false);
+    }
+  };
+
+  const loadThreadMessages = async (threadId: string) => {
+    setMessagesLoading(true);
+    try {
+      const { data } = await supabase
+        .from('internal_messages')
+        .select('id, body, created_at, sender_id')
+        .eq('thread_id', threadId)
+        .order('created_at', { ascending: true });
+      setThreadMessages(data || []);
+    } catch (error) {
+      console.error('Error loading thread messages:', error);
+    } finally {
+      setMessagesLoading(false);
+    }
+  };
+
   const progressData = [
     { month: 'Jan', progress: 20 },
     { month: 'Fev', progress: 35 },
@@ -128,6 +227,141 @@ export default function StudentDashboard() {
       toast.error(error?.message || 'Erro ao enviar sugestão.');
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleComposeChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = event.target;
+    setCompose((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCourseChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const courseId = event.target.value;
+    setCompose((prev) => ({ ...prev, courseId, moduleId: '', lessonId: '' }));
+    setModules([]);
+    setLessons([]);
+    if (!courseId) return;
+
+    const { data } = await supabase
+      .from('modulos')
+      .select('id, titulo_modulo')
+      .eq('curso_id', courseId)
+      .order('ordem', { ascending: true });
+    setModules((data || []).map((item: any) => ({ id: item.id, title: item.titulo_modulo })));
+  };
+
+  const handleModuleChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const moduleId = event.target.value;
+    setCompose((prev) => ({ ...prev, moduleId, lessonId: '' }));
+    setLessons([]);
+    if (!moduleId) return;
+
+    const { data } = await supabase
+      .from('aulas')
+      .select('id, titulo')
+      .eq('modulo_id', moduleId)
+      .order('ordem', { ascending: true });
+    setLessons((data || []).map((item: any) => ({ id: item.id, title: item.titulo })));
+  };
+
+  const handleSendQuestion = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (mailBlocked) {
+      toast.error(mailBlockedMessage);
+      return;
+    }
+    if (!currentUserId) {
+      toast.error('Você precisa estar logado para enviar.');
+      return;
+    }
+    setSendingQuestion(true);
+    try {
+      const subject = compose.subject.trim();
+      const body = compose.body.trim();
+      if (!compose.courseId || !compose.moduleId || !compose.lessonId || !subject || !body) {
+        throw new Error('Selecione curso, modulo e aula, e preencha assunto e mensagem.');
+      }
+
+      const { data: thread, error: threadError } = await supabase
+        .from('internal_threads')
+        .insert({
+          type: 'course_question',
+          subject,
+          course_id: compose.courseId,
+          module_id: compose.moduleId,
+          lesson_id: compose.lessonId,
+          created_by: currentUserId,
+        })
+        .select('id')
+        .single();
+      if (threadError) throw threadError;
+
+      const { error: messageError } = await supabase
+        .from('internal_messages')
+        .insert({
+          thread_id: thread.id,
+          sender_id: currentUserId,
+          body,
+        });
+      if (messageError) throw messageError;
+
+      toast.success('Duvida enviada. O professor respondera aqui.');
+      setCompose({ courseId: '', moduleId: '', lessonId: '', subject: '', body: '' });
+      setModules([]);
+      setLessons([]);
+      await loadMessaging();
+      setSelectedThreadId(thread.id);
+      setShowCompose(false);
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao enviar duvida.');
+    } finally {
+      setSendingQuestion(false);
+    }
+  };
+
+  const handleReply = async () => {
+    if (!selectedThreadId || !currentUserId) return;
+    if (mailBlocked) {
+      toast.error(mailBlockedMessage);
+      return;
+    }
+    const body = replyBody.trim();
+    if (!body) {
+      toast.error('Digite uma mensagem.');
+      return;
+    }
+    setSendingReply(true);
+    try {
+      const { error } = await supabase
+        .from('internal_messages')
+        .insert({
+          thread_id: selectedThreadId,
+          sender_id: currentUserId,
+          body,
+        });
+      if (error) throw error;
+      setReplyBody('');
+      await loadThreadMessages(selectedThreadId);
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao enviar mensagem.');
+    } finally {
+      setSendingReply(false);
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!currentUserId) return;
+    try {
+      const { error } = await supabase
+        .from('internal_message_deletions')
+        .insert({ message_id: messageId, user_id: currentUserId });
+      if (error) throw error;
+      if (selectedThreadId) {
+        await loadThreadMessages(selectedThreadId);
+      }
+      toast.success('Mensagem excluida.');
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao excluir mensagem.');
     }
   };
 
@@ -300,6 +534,176 @@ export default function StudentDashboard() {
             ))}
           </div>
         )}
+      </div>
+
+      <div className="card mt-10">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <FaInbox />
+            Mensagens
+          </h2>
+          <button type="button" className="btn-outline" onClick={() => setShowCompose((prev) => !prev)}>
+            {showCompose ? 'Fechar nova mensagem' : 'Nova mensagem'}
+          </button>
+        </div>
+
+        {mailBlocked && (
+          <div className="mb-4 rounded-[12px] border border-[hsl(var(--border))] bg-[hsl(var(--muted))] p-3 text-sm">
+            {mailBlockedMessage}
+          </div>
+        )}
+
+        <div className="grid lg:grid-cols-[280px_1fr] gap-6">
+          <div className="space-y-3">
+            <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--muted-foreground))]">Conversas</p>
+            {threadsLoading ? (
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">Carregando...</p>
+            ) : threads.length === 0 ? (
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">Nenhuma mensagem ainda.</p>
+            ) : (
+              threads.map((thread) => (
+                <button
+                  key={thread.id}
+                  type="button"
+                  onClick={() => setSelectedThreadId(thread.id)}
+                  className={`w-full text-left p-3 rounded-[12px] border transition ${
+                    selectedThreadId === thread.id
+                      ? 'border-[hsl(var(--primary))] bg-[hsl(var(--muted))]'
+                      : 'border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]'
+                  }`}
+                >
+                  <p className="text-sm font-semibold">{thread.subject}</p>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                    {thread.type === 'broadcast' ? 'Comunicado' : 'Duvida do curso'}
+                  </p>
+                </button>
+              ))
+            )}
+          </div>
+
+          <div className="space-y-4">
+            {showCompose && (
+              <form onSubmit={handleSendQuestion} className="space-y-4">
+                <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--muted-foreground))]">Nova duvida</p>
+                <div className="grid md:grid-cols-3 gap-4">
+                  <select
+                    name="courseId"
+                    value={compose.courseId}
+                    onChange={handleCourseChange}
+                    className="input-field"
+                    disabled={mailBlocked}
+                    required
+                  >
+                    <option value="">Curso</option>
+                    {courses.map((course) => (
+                      <option key={course.id} value={course.id}>{course.title}</option>
+                    ))}
+                  </select>
+                  <select
+                    name="moduleId"
+                    value={compose.moduleId}
+                    onChange={handleModuleChange}
+                    className="input-field"
+                    disabled={mailBlocked || !compose.courseId}
+                    required
+                  >
+                    <option value="">Modulo</option>
+                    {modules.map((module) => (
+                      <option key={module.id} value={module.id}>{module.title}</option>
+                    ))}
+                  </select>
+                  <select
+                    name="lessonId"
+                    value={compose.lessonId}
+                    onChange={handleComposeChange}
+                    className="input-field"
+                    disabled={mailBlocked || !compose.moduleId}
+                    required
+                  >
+                    <option value="">Aula</option>
+                    {lessons.map((lesson) => (
+                      <option key={lesson.id} value={lesson.id}>{lesson.title}</option>
+                    ))}
+                  </select>
+                </div>
+                <input
+                  name="subject"
+                  value={compose.subject}
+                  onChange={handleComposeChange}
+                  placeholder="Assunto da duvida"
+                  className="input-field"
+                  disabled={mailBlocked}
+                  required
+                />
+                <textarea
+                  name="body"
+                  value={compose.body}
+                  onChange={handleComposeChange}
+                  placeholder="Descreva sua pergunta para o professor"
+                  className="input-field min-h-[140px]"
+                  disabled={mailBlocked}
+                  required
+                />
+                <button type="submit" className="btn-accent inline-flex items-center gap-2" disabled={sendingQuestion || mailBlocked}>
+                  {sendingQuestion ? 'Enviando...' : 'Enviar duvida'}
+                  <FaPaperPlane />
+                </button>
+              </form>
+            )}
+
+            <div className="space-y-3">
+              <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--muted-foreground))]">Mensagens</p>
+              {selectedThreadId ? (
+                messagesLoading ? (
+                  <p className="text-sm text-[hsl(var(--muted-foreground))]">Carregando mensagens...</p>
+                ) : threadMessages.length === 0 ? (
+                  <p className="text-sm text-[hsl(var(--muted-foreground))]">Sem mensagens nesta conversa.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {threadMessages.map((message) => {
+                      const isOwn = message.sender_id === currentUserId;
+                      return (
+                        <div key={message.id} className="rounded-[12px] border border-[hsl(var(--border))] p-3">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-semibold">{isOwn ? 'Você' : 'Professor/Equipe'}</p>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteMessage(message.id)}
+                              className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))]"
+                            >
+                              <FaTrash />
+                            </button>
+                          </div>
+                          <p className="text-sm mt-2 whitespace-pre-line">{message.body}</p>
+                          <p className="text-xs text-[hsl(var(--muted-foreground))] mt-2">
+                            {new Date(message.created_at).toLocaleString('pt-BR')}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
+              ) : (
+                <p className="text-sm text-[hsl(var(--muted-foreground))]">Selecione uma conversa.</p>
+              )}
+            </div>
+
+            {selectedThreadId && (
+              <div className="space-y-3">
+                <textarea
+                  value={replyBody}
+                  onChange={(event) => setReplyBody(event.target.value)}
+                  placeholder="Responder..."
+                  className="input-field min-h-[120px]"
+                  disabled={mailBlocked}
+                />
+                <button type="button" className="btn-accent" onClick={handleReply} disabled={sendingReply || mailBlocked}>
+                  {sendingReply ? 'Enviando...' : 'Enviar resposta'}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="card mt-10">
