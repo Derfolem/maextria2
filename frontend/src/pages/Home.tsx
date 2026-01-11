@@ -213,6 +213,40 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="py-[clamp(80px,10vh,160px)]">
+        <div className="max-w-7xl mx-auto px-[clamp(24px,5vw,80px)]">
+          <div className="grid lg:grid-cols-[1fr_1fr] gap-12 items-center">
+            <div className="hero-frame rounded-[32px] p-6 order-2 lg:order-1">
+              <img src="/hero-04.png" alt="Tire duvidas com os autores" className="rounded-[24px]" />
+            </div>
+            <div className="space-y-6 order-1 lg:order-2">
+              <p className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--primary))]">Relacao direta</p>
+              <h2 className="headline-font text-4xl md:text-5xl">
+                Tire duvidas com os autores dos cursos
+              </h2>
+              <p className="text-base text-[hsl(var(--muted-foreground))]">
+                Cada aluno pode enviar perguntas diretamente aos professores autores,
+                com respostas organizadas dentro da plataforma.
+              </p>
+              <div className="grid gap-3 text-sm text-[hsl(var(--muted-foreground))]">
+                {[
+                  'Canal exclusivo por curso para esclarecer conceitos.',
+                  'Respostas registradas para consulta futura.',
+                  'Troca qualificada que acelera o aprendizado.',
+                ].map((text) => (
+                  <div key={text} className="flex items-center gap-3 rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-4 py-3">
+                    <span className="h-10 w-10 rounded-2xl flex items-center justify-center bg-[hsl(var(--primary))] text-white">
+                      <FaChalkboardTeacher />
+                    </span>
+                    <span>{text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="py-[clamp(80px,10vh,160px)] bg-[hsl(var(--graphite))]">
         <div className="max-w-7xl mx-auto px-[clamp(24px,5vw,80px)]">
           <div className="grid lg:grid-cols-[1fr_1fr] gap-12 items-center">

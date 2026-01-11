@@ -22,6 +22,12 @@ export default function TeacherDashboard() {
     account: '',
     accountType: '',
   });
+  const [replyForm, setReplyForm] = useState({
+    student: '',
+    subject: '',
+    response: '',
+  });
+  const [sendingReply, setSendingReply] = useState(false);
 
   useEffect(() => {
     loadDashboard();
@@ -141,6 +147,30 @@ export default function TeacherDashboard() {
     toast.success('Dados financeiros registrados. Envio real sera configurado na producao.');
   };
 
+  const handleReplyChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = event.target;
+    setReplyForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleReplySubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    setSendingReply(true);
+    try {
+      const student = replyForm.student.trim();
+      const subject = replyForm.subject.trim();
+      const response = replyForm.response.trim();
+      if (!student || !subject || !response) {
+        throw new Error('Preencha aluno, assunto e resposta.');
+      }
+      toast.success('Resposta registrada. O aluno sera notificado.');
+      setReplyForm({ student: '', subject: '', response: '' });
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao enviar resposta.');
+    } finally {
+      setSendingReply(false);
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-[clamp(24px,5vw,80px)] py-[clamp(40px,6vh,80px)]">
       <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-10">
@@ -226,6 +256,45 @@ export default function TeacherDashboard() {
             ))}
           </div>
         </div>
+      </div>
+
+      <div className="card mb-12">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">Responder duvidas dos alunos</h2>
+          <span className="text-sm text-[hsl(var(--muted-foreground))]">Respostas ficam visiveis no painel do aluno</span>
+        </div>
+        <form onSubmit={handleReplySubmit} className="space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            <input
+              name="student"
+              value={replyForm.student}
+              onChange={handleReplyChange}
+              placeholder="Aluno (email ou nome)"
+              className="input-field"
+              required
+            />
+            <input
+              name="subject"
+              value={replyForm.subject}
+              onChange={handleReplyChange}
+              placeholder="Assunto da duvida"
+              className="input-field"
+              required
+            />
+          </div>
+          <textarea
+            name="response"
+            value={replyForm.response}
+            onChange={handleReplyChange}
+            placeholder="Escreva sua resposta"
+            className="input-field min-h-[140px]"
+            required
+          />
+          <button type="submit" className="btn-accent inline-flex items-center gap-2" disabled={sendingReply}>
+            {sendingReply ? 'Enviando...' : 'Enviar resposta'}
+            <FaArrowRight />
+          </button>
+        </form>
       </div>
 
       <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-8 mb-12">

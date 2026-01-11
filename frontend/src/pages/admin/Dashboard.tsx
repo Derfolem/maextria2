@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { FaUsers, FaBook, FaDollarSign, FaChartLine } from 'react-icons/fa';
 import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 type AdminNotification = {
   id: string;
@@ -21,6 +22,11 @@ export default function AdminDashboard() {
   const [userDistribution, setUserDistribution] = useState<Array<{ name: string; value: number }>>([]);
   const [recentNotifications, setRecentNotifications] = useState<AdminNotification[]>([]);
   const [loadingNotifications, setLoadingNotifications] = useState(true);
+  const [messageForm, setMessageForm] = useState({
+    title: '',
+    message: '',
+  });
+  const [sendingMessage, setSendingMessage] = useState(false);
 
   useEffect(() => {
     loadStats();
@@ -161,6 +167,29 @@ export default function AdminDashboard() {
     return relativeFormatter.format(-diffSeconds, 'second');
   };
 
+  const handleMessageChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = event.target;
+    setMessageForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleMessageSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    setSendingMessage(true);
+    try {
+      const title = messageForm.title.trim();
+      const message = messageForm.message.trim();
+      if (!title || !message) {
+        throw new Error('Preencha o titulo e a mensagem.');
+      }
+      toast.success('Mensagem interna preparada para envio.');
+      setMessageForm({ title: '', message: '' });
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao preparar mensagem.');
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
   const COLORS = [
     'hsl(var(--primary))',
     'hsl(var(--secondary))',
@@ -280,6 +309,34 @@ export default function AdminDashboard() {
             ))
           )}
         </div>
+      </div>
+
+      <div className="card mt-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">Mensagens internas para alunos</h2>
+          <span className="text-sm text-[hsl(var(--muted-foreground))]">Envio centralizado pela administracao</span>
+        </div>
+        <form onSubmit={handleMessageSubmit} className="space-y-4">
+          <input
+            name="title"
+            value={messageForm.title}
+            onChange={handleMessageChange}
+            placeholder="Titulo da mensagem"
+            className="input-field"
+            required
+          />
+          <textarea
+            name="message"
+            value={messageForm.message}
+            onChange={handleMessageChange}
+            placeholder="Escreva a mensagem interna para os alunos"
+            className="input-field min-h-[140px]"
+            required
+          />
+          <button type="submit" className="btn-accent inline-flex items-center gap-2" disabled={sendingMessage}>
+            {sendingMessage ? 'Enviando...' : 'Enviar mensagem'}
+          </button>
+        </form>
       </div>
     </div>
   );
