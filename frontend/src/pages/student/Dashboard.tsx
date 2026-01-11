@@ -5,9 +5,11 @@ import { FaBook, FaCertificate, FaTrophy, FaChartLine, FaPaperPlane, FaArrowRigh
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { normalizeEnrollment } from '../../lib/normalizeEnrollment';
 import { supabase } from '../../lib/supabase';
+import { useAuthStore } from '../../lib/store';
 import toast from 'react-hot-toast';
 
 export default function StudentDashboard() {
+  const user = useAuthStore((state) => state.user);
   const [stats, setStats] = useState<DashboardStats>({});
   const [recentCourses, setRecentCourses] = useState<Enrollment[]>([]);
   const [certificates, setCertificates] = useState<Certificate[]>([]);
@@ -26,7 +28,8 @@ export default function StudentDashboard() {
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [threadMessages, setThreadMessages] = useState<Array<any>>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
-  const [showCompose, setShowCompose] = useState(true);
+  const [activeTab, setActiveTab] = useState<'inbox' | 'new'>('inbox');
+  const [showReply, setShowReply] = useState(false);
   const [courses, setCourses] = useState<Array<{ id: string; title: string }>>([]);
   const [modules, setModules] = useState<Array<{ id: string; title: string }>>([]);
   const [lessons, setLessons] = useState<Array<{ id: string; title: string }>>([]);
@@ -49,6 +52,7 @@ export default function StudentDashboard() {
   useEffect(() => {
     if (selectedThreadId) {
       loadThreadMessages(selectedThreadId);
+      setShowReply(false);
     }
   }, [selectedThreadId]);
 
@@ -146,7 +150,7 @@ export default function StudentDashboard() {
 
       const { data: threadsData } = await supabase
         .from('internal_threads')
-        .select('id, type, subject, course_id, module_id, lesson_id, created_at, expires_at, cursos(titulo), modulos(titulo_modulo), aulas(titulo)')
+        .select('id, type, subject, course_id, module_id, lesson_id, created_at, expires_at, created_by_role, recipient_role, cursos(titulo), modulos(titulo_modulo), aulas(titulo)')
         .order('created_at', { ascending: false });
 
       setThreads(threadsData || []);
@@ -167,7 +171,7 @@ export default function StudentDashboard() {
     try {
       const { data } = await supabase
         .from('internal_messages')
-        .select('id, body, created_at, sender_id')
+        .select('id, body, created_at, sender_id, sender_role')
         .eq('thread_id', threadId)
         .order('created_at', { ascending: true });
       setThreadMessages(data || []);
@@ -286,6 +290,7 @@ export default function StudentDashboard() {
           module_id: compose.moduleId,
           lesson_id: compose.lessonId,
           created_by: currentUserId,
+          created_by_role: user?.role ?? 'student',
         })
         .select('id')
         .single();
@@ -297,6 +302,7 @@ export default function StudentDashboard() {
           thread_id: thread.id,
           sender_id: currentUserId,
           body,
+          sender_role: user?.role ?? 'student',
         });
       if (messageError) throw messageError;
 
@@ -306,7 +312,7 @@ export default function StudentDashboard() {
       setLessons([]);
       await loadMessaging();
       setSelectedThreadId(thread.id);
-      setShowCompose(false);
+      setActiveTab('inbox');
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao enviar duvida.');
     } finally {
@@ -333,6 +339,7 @@ export default function StudentDashboard() {
           thread_id: selectedThreadId,
           sender_id: currentUserId,
           body,
+          sender_role: user?.role ?? 'student',
         });
       if (error) throw error;
       setReplyBody('');
@@ -359,6 +366,8 @@ export default function StudentDashboard() {
       toast.error(error?.message || 'Erro ao excluir mensagem.');
     }
   };
+
+  const selectedThread = threads.find((thread) => thread.id === selectedThreadId);
 
   if (loading) {
     return (
@@ -514,13 +523,26 @@ export default function StudentDashboard() {
             <FaInbox />
             Mensagens
           </h2>
-          <button type="button" className="btn-outline" onClick={() => setShowCompose((prev) => !prev)}>
-            {showCompose ? 'Fechar nova mensagem' : 'Nova mensagem'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className={activeTab === 'inbox' ? 'btn-accent' : 'btn-outline'}
+              onClick={() => setActiveTab('inbox')}
+            >
+              Caixa de entrada
+            </button>
+            <button
+              type="button"
+              className={activeTab === 'new' ? 'btn-accent' : 'btn-outline'}
+              onClick={() => setActiveTab('new')}
+            >
+              Nova mensagem
+            </button>
+          </div>
         </div>
 
         {mailBlocked && (
-          <div className="mb-4 rounded-[12px] border border-[hsl(var(--border))] bg-[hsl(var(--muted))] p-3 text-sm">
+          <div className="mb-4 rounded-[12px] border border-[hsl(38_90%_45%)] bg-[hsl(42_95%_90%)] p-3 text-sm text-[hsl(30_80%_30%)]">
             {mailBlockedMessage}
           </div>
         )}
@@ -544,9 +566,18 @@ export default function StudentDashboard() {
                       : 'border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]'
                   }`}
                 >
-                  <p className="text-sm font-semibold">{thread.subject}</p>
-                  <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                    {thread.type === 'broadcast' ? 'Comunicado' : 'Duvida do curso'}
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-semibold">{thread.subject}</p>
+                    <span className={`text-[10px] uppercase tracking-[0.2em] px-2 py-1 rounded-full ${
+                      thread.type === 'broadcast'
+                        ? 'bg-[hsl(38_90%_88%)] text-[hsl(28_70%_35%)]'
+                        : 'bg-[hsl(210_80%_92%)] text-[hsl(210_70%_35%)]'
+                    }`}>
+                      {thread.type === 'broadcast' ? 'Comunicado' : 'Duvida'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                    {thread.type === 'broadcast' ? 'Equipe MAEXTRIA' : 'Professor'}
                   </p>
                 </button>
               ))
@@ -554,7 +585,7 @@ export default function StudentDashboard() {
           </div>
 
           <div className="space-y-4">
-            {showCompose && (
+            {activeTab === 'new' && (
               <form onSubmit={handleSendQuestion} className="space-y-4">
                 <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--muted-foreground))]">Nova duvida</p>
                 <div className="grid md:grid-cols-3 gap-4">
@@ -625,7 +656,7 @@ export default function StudentDashboard() {
 
             <div className="space-y-3">
               <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--muted-foreground))]">Mensagens</p>
-              {selectedThreadId ? (
+              {activeTab === 'inbox' && selectedThreadId ? (
                 messagesLoading ? (
                   <p className="text-sm text-[hsl(var(--muted-foreground))]">Carregando mensagens...</p>
                 ) : threadMessages.length === 0 ? (
@@ -634,17 +665,31 @@ export default function StudentDashboard() {
                   <div className="space-y-3">
                     {threadMessages.map((message) => {
                       const isOwn = message.sender_id === currentUserId;
+                      const senderRole = message.sender_role || 'student';
+                      const canDelete = senderRole !== 'admin';
+                      const bubbleClass = senderRole === 'admin'
+                        ? 'border-[hsl(38_90%_45%)] bg-[hsl(45_95%_92%)]'
+                        : senderRole === 'teacher'
+                          ? 'border-[hsl(210_70%_50%)] bg-[hsl(210_80%_95%)]'
+                          : 'border-[hsl(140_50%_45%)] bg-[hsl(140_60%_95%)]';
+                      const senderLabel = isOwn
+                        ? 'Você'
+                        : senderRole === 'admin'
+                          ? 'Equipe MAEXTRIA'
+                          : 'Professor';
                       return (
-                        <div key={message.id} className="rounded-[12px] border border-[hsl(var(--border))] p-3">
+                        <div key={message.id} className={`rounded-[12px] border p-3 ${bubbleClass}`}>
                           <div className="flex items-center justify-between">
-                            <p className="text-sm font-semibold">{isOwn ? 'Você' : 'Professor/Equipe'}</p>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteMessage(message.id)}
-                              className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))]"
-                            >
-                              <FaTrash />
-                            </button>
+                            <p className="text-sm font-semibold">{senderLabel}</p>
+                            {canDelete && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteMessage(message.id)}
+                                className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))]"
+                              >
+                                <FaTrash />
+                              </button>
+                            )}
                           </div>
                           <p className="text-sm mt-2 whitespace-pre-line">{message.body}</p>
                           <p className="text-xs text-[hsl(var(--muted-foreground))] mt-2">
@@ -660,18 +705,27 @@ export default function StudentDashboard() {
               )}
             </div>
 
-            {selectedThreadId && (
+            {activeTab === 'inbox' && selectedThreadId && (
               <div className="space-y-3">
-                <textarea
-                  value={replyBody}
-                  onChange={(event) => setReplyBody(event.target.value)}
-                  placeholder="Responder..."
-                  className="input-field min-h-[120px]"
-                  disabled={mailBlocked}
-                />
-                <button type="button" className="btn-accent" onClick={handleReply} disabled={sendingReply || mailBlocked}>
-                  {sendingReply ? 'Enviando...' : 'Enviar resposta'}
-                </button>
+                {selectedThread?.type === 'course_question' && (
+                  <button type="button" className="btn-outline" onClick={() => setShowReply((prev) => !prev)}>
+                    {showReply ? 'Fechar resposta' : 'Responder'}
+                  </button>
+                )}
+                {showReply && selectedThread?.type === 'course_question' && (
+                  <>
+                    <textarea
+                      value={replyBody}
+                      onChange={(event) => setReplyBody(event.target.value)}
+                      placeholder="Responder..."
+                      className="input-field min-h-[120px]"
+                      disabled={mailBlocked}
+                    />
+                    <button type="button" className="btn-accent" onClick={handleReply} disabled={sendingReply || mailBlocked}>
+                      {sendingReply ? 'Enviando...' : 'Enviar resposta'}
+                    </button>
+                  </>
+                )}
               </div>
             )}
           </div>
