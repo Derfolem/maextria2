@@ -23,6 +23,10 @@ export default function AdminSettings() {
     seoRobots: 'index,follow',
     seoCanonical: '',
     backlinks: '',
+    teacherBannerEnabled: false,
+    teacherBannerImageUrl: '',
+    teacherBannerLinkUrl: '',
+    teacherBannerAlt: 'Banner para professores',
   });
 
   useEffect(() => {
@@ -66,6 +70,10 @@ export default function AdminSettings() {
           'seo_meta_robots',
           'seo_canonical_url',
           'marketing_backlinks',
+          'teacher_banner_enabled',
+          'teacher_banner_image_url',
+          'teacher_banner_link_url',
+          'teacher_banner_alt',
         ]);
       if (error) throw error;
       const resolve = (key: string) => data?.find((item: any) => item.chave === key)?.valor ?? '';
@@ -82,6 +90,10 @@ export default function AdminSettings() {
         seoRobots: resolve('seo_meta_robots') || 'index,follow',
         seoCanonical: resolve('seo_canonical_url'),
         backlinks: resolve('marketing_backlinks'),
+        teacherBannerEnabled: resolve('teacher_banner_enabled') === '1',
+        teacherBannerImageUrl: resolve('teacher_banner_image_url'),
+        teacherBannerLinkUrl: resolve('teacher_banner_link_url'),
+        teacherBannerAlt: resolve('teacher_banner_alt') || 'Banner para professores',
       });
     } catch (error) {
       toast.error('Erro ao carregar marketing');
@@ -117,6 +129,10 @@ export default function AdminSettings() {
         { chave: 'seo_meta_robots', valor: marketing.seoRobots },
         { chave: 'seo_canonical_url', valor: marketing.seoCanonical },
         { chave: 'marketing_backlinks', valor: marketing.backlinks },
+        { chave: 'teacher_banner_enabled', valor: marketing.teacherBannerEnabled ? '1' : '0' },
+        { chave: 'teacher_banner_image_url', valor: marketing.teacherBannerImageUrl },
+        { chave: 'teacher_banner_link_url', valor: marketing.teacherBannerLinkUrl },
+        { chave: 'teacher_banner_alt', valor: marketing.teacherBannerAlt },
       ];
       const { error } = await supabase
         .from('configuracoes_site')
@@ -358,6 +374,71 @@ export default function AdminSettings() {
             </button>
           </form>
         )}
+      </div>
+
+      <div className="card mt-8">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="h-11 w-11 rounded-2xl bg-[hsl(var(--muted))] flex items-center justify-center text-[hsl(var(--primary))]">
+            <FaBullhorn />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold">Banner da landing de professores</h2>
+            <p className="text-sm text-[hsl(var(--muted-foreground))]">
+              Banner exclusivo para a pagina de captacao de professores.
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={handleMarketingSave} className="space-y-6">
+          <label className="flex items-center gap-3 text-sm">
+            <input
+              type="checkbox"
+              name="teacherBannerEnabled"
+              checked={marketing.teacherBannerEnabled}
+              onChange={handleMarketingChange}
+            />
+            Ativar banner da landing de professores
+          </label>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <input
+              name="teacherBannerImageUrl"
+              value={marketing.teacherBannerImageUrl}
+              onChange={handleMarketingChange}
+              placeholder="URL da imagem do banner"
+              className="input-field"
+              required={marketing.teacherBannerEnabled}
+            />
+            <input
+              name="teacherBannerLinkUrl"
+              value={marketing.teacherBannerLinkUrl}
+              onChange={handleMarketingChange}
+              placeholder="Link do banner (opcional)"
+              className="input-field"
+            />
+          </div>
+
+          <input
+            name="teacherBannerAlt"
+            value={marketing.teacherBannerAlt}
+            onChange={handleMarketingChange}
+            placeholder="Texto alternativo do banner"
+            className="input-field"
+          />
+
+          <div className="rounded-[12px] border border-[hsl(var(--border))] bg-[hsl(var(--muted))] p-4 text-sm text-[hsl(var(--muted-foreground))] space-y-2">
+            <p className="font-semibold text-[hsl(var(--foreground))]">Especificacoes da arte</p>
+            <p>Formato: PNG ou JPG.</p>
+            <p>Tamanho recomendado: 1536 x 289 px.</p>
+            <p>Tamanho minimo: 1200 x 226 px. Peso maximo: 300 KB.</p>
+            <p>Evite texto nas bordas. Use fundo transparente se possivel.</p>
+          </div>
+
+          <button type="submit" className="btn-accent inline-flex items-center gap-2" disabled={marketingSaving}>
+            <FaSave />
+            <span>{marketingSaving ? 'Salvando...' : 'Salvar banner professores'}</span>
+          </button>
+        </form>
       </div>
 
       <div className="card mt-8">

@@ -25,6 +25,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     canonical: '',
   });
   const bannerEnabled = banner.enabled && Boolean(banner.imageUrl);
+  const isMemberArea = location.pathname.startsWith('/admin') || location.pathname.startsWith('/teacher');
+  const showBanner = bannerEnabled && !isMemberArea;
 
   const pageViewKey = useMemo(() => {
     const base = location.pathname + location.search;
@@ -191,7 +193,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </nav>
 
       <main className="flex-grow page-fade pt-16">
-        {bannerEnabled && (
+        {showBanner && (
           <div className="w-full overflow-hidden">
             {banner.linkUrl ? (
               <a href={banner.linkUrl} className="block w-full" target="_blank" rel="noreferrer">

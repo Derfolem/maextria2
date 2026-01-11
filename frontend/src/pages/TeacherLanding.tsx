@@ -1,8 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaArrowRight, FaChartLine, FaHandshake, FaShieldAlt, FaStar } from 'react-icons/fa';
+import { supabase } from '../lib/supabase';
 
 export default function TeacherLanding() {
+  const [teacherBanner, setTeacherBanner] = useState({
+    enabled: false,
+    imageUrl: '',
+    linkUrl: '',
+    alt: 'Banner para professores',
+  });
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -30,6 +37,30 @@ export default function TeacherLanding() {
     const mailto = `mailto:melfredfred25@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.location.href = mailto;
   };
+
+  useEffect(() => {
+    const loadTeacherBanner = async () => {
+      const { data } = await supabase
+        .from('configuracoes_site')
+        .select('chave, valor')
+        .in('chave', [
+          'teacher_banner_enabled',
+          'teacher_banner_image_url',
+          'teacher_banner_link_url',
+          'teacher_banner_alt',
+        ]);
+      const resolve = (key: string) => data?.find((item: any) => item.chave === key)?.valor ?? '';
+      const enabled = resolve('teacher_banner_enabled') === '1';
+      setTeacherBanner({
+        enabled,
+        imageUrl: resolve('teacher_banner_image_url'),
+        linkUrl: resolve('teacher_banner_link_url'),
+        alt: resolve('teacher_banner_alt') || 'Banner para professores',
+      });
+    };
+
+    loadTeacherBanner();
+  }, []);
 
   return (
     <div>
@@ -74,6 +105,30 @@ export default function TeacherLanding() {
           </div>
         </div>
       </section>
+
+      {teacherBanner.enabled && teacherBanner.imageUrl && (
+        <section className="w-full">
+          {teacherBanner.linkUrl ? (
+            <a href={teacherBanner.linkUrl} target="_blank" rel="noreferrer" className="block w-full">
+              <div className="w-full aspect-[1536/289]">
+                <img
+                  src={teacherBanner.imageUrl}
+                  alt={teacherBanner.alt}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </a>
+          ) : (
+            <div className="w-full aspect-[1536/289]">
+              <img
+                src={teacherBanner.imageUrl}
+                alt={teacherBanner.alt}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
+        </section>
+      )}
 
       <section className="py-[clamp(80px,10vh,160px)]">
         <div className="max-w-7xl mx-auto px-[clamp(24px,5vw,80px)]">
