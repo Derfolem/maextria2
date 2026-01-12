@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
 import { getValidAccessToken, supabase } from '../lib/supabase';
 import { useAuthStore } from '../lib/store';
 
@@ -10,6 +12,69 @@ interface Certificado {
   codigo_validacao: string;
   emitido_em: string;
 }
+
+const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
+
+type StripePaymentFormProps = {
+  clientSecret: string;
+  onSuccess: (paymentIntentId: string) => Promise<void>;
+  processing: boolean;
+  setProcessing: (value: boolean) => void;
+};
+
+const StripePaymentForm = ({
+  clientSecret,
+  onSuccess,
+  processing,
+  setProcessing,
+}: StripePaymentFormProps) => {
+  const stripe = useStripe();
+  const elements = useElements();
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!stripe || !elements) {
+      toast.error('O Stripe ainda nao esta pronto. Tente novamente.');
+      return;
+    }
+
+    setProcessing(true);
+
+    const { error, paymentIntent } = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: window.location.href,
+      },
+      redirect: 'if_required',
+    });
+
+    if (error) {
+      toast.error(error.message || 'Nao foi possivel processar o pagamento.');
+      setProcessing(false);
+      return;
+    }
+
+    if (paymentIntent?.status === 'succeeded') {
+      await onSuccess(paymentIntent.id);
+      setProcessing(false);
+      return;
+    }
+
+    toast('Pagamento em processamento. Atualize a pagina em instantes.');
+    setProcessing(false);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <PaymentElement />
+      <button type="submit" className="btn-accent" disabled={!stripe || processing}>
+        {processing ? 'Processando...' : 'Pagar agora'}
+      </button>
+    </form>
+  );
+};
 
 export default function PagamentoCertificado() {
   const { cursoId } = useParams();
@@ -25,14 +90,8 @@ export default function PagamentoCertificado() {
   const [certificado, setCertificado] = useState<Certificado | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
-  const [processingMethod, setProcessingMethod] = useState<'stripe' | 'pix' | 'mercadopago' | null>(null);
-
-  const [pixData, setPixData] = useState<{
-    paymentId: string;
-    qrCode?: string;
-    qrCodeBase64?: string;
-    ticketUrl?: string;
-  } | null>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [stripeVerified, setStripeVerified] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -46,37 +105,18 @@ export default function PagamentoCertificado() {
   }, [user, cursoId, navigate]);
 
   useEffect(() => {
-    const paymentStatus = searchParams.get('payment');
-    const mpStatus = searchParams.get('mp');
-    const mpPaymentId =
-      searchParams.get('payment_id') ||
-      searchParams.get('collection_id') ||
-      searchParams.get('paymentId');
+    const paymentIntentFromUrl = searchParams.get('payment_intent');
+    const redirectStatus = searchParams.get('redirect_status');
 
-    if (paymentStatus === 'success' && user) {
-      handlePaymentSuccess();
-      return;
-    }
-
-    if (paymentStatus === 'canceled') {
-      toast.error('Pagamento cancelado. Você pode tentar novamente.');
-      return;
-    }
-
-    if (mpStatus === 'success' && mpPaymentId && user) {
-      handleMercadoPagoSuccess(mpPaymentId);
-      return;
-    }
-
-    if (mpStatus === 'pending') {
-      toast('Pagamento pendente. Aguarde a confirmação.');
-      return;
-    }
-
-    if (mpStatus === 'failure') {
+    if (redirectStatus === 'failed') {
       toast.error('Pagamento não aprovado. Tente novamente.');
     }
-  }, [searchParams, user]);
+
+    if (paymentIntentFromUrl && user && !stripeVerified) {
+      setStripeVerified(true);
+      handleStripePaymentSuccess(paymentIntentFromUrl);
+    }
+  }, [searchParams, user, stripeVerified]);
 
   const fetchData = async (userId: string | number, courseId: string) => {
     setLoading(true);
@@ -108,18 +148,11 @@ export default function PagamentoCertificado() {
     }
   };
 
-  const handlePaymentSuccess = async () => {
+  const handleStripePaymentSuccess = async (paymentIntentId: string) => {
     if (!user || !cursoId) return;
 
     try {
-      const sessionId = searchParams.get('session_id');
-      if (!sessionId) {
-        toast('Pagamento em processamento. Atualize a pagina em alguns instantes.');
-        return;
-      }
-
       setProcessing(true);
-      setProcessingMethod('stripe');
 
       const accessToken = await getValidAccessToken();
       if (!accessToken) {
@@ -127,7 +160,7 @@ export default function PagamentoCertificado() {
       }
 
       const { error } = await supabase.functions.invoke('verify-payment', {
-        body: { sessionId },
+        body: { paymentIntentId },
         headers: buildAuthHeaders(accessToken),
       });
 
@@ -139,43 +172,18 @@ export default function PagamentoCertificado() {
       toast.error(error?.message || 'Erro ao confirmar pagamento.');
     } finally {
       setProcessing(false);
-      setProcessingMethod(null);
     }
   };
 
-  const handleMercadoPagoSuccess = async (paymentId: string) => {
-    if (!user || !cursoId) return;
-
-    try {
-      setProcessing(true);
-      setProcessingMethod('mercadopago');
-
-      const accessToken = await getValidAccessToken();
-      if (!accessToken) {
-        throw new Error('Voce precisa estar logado para confirmar o pagamento.');
-      }
-
-      const { error } = await supabase.functions.invoke('verify-mercadopago-payment', {
-        body: { paymentId },
-        headers: buildAuthHeaders(accessToken),
-      });
-
-      if (error) throw error;
-
-      toast.success('Pagamento confirmado! Seu certificado foi emitido.');
-      fetchData(String(user.id), cursoId);
-    } catch (error: any) {
-      toast.error(error?.message || 'Erro ao confirmar pagamento.');
-    } finally {
-      setProcessing(false);
-      setProcessingMethod(null);
-    }
-  };
-
-  const handlePayment = async (metodo: 'stripe' | 'pix' | 'mercadopago') => {
+  const handleCreateStripePayment = async () => {
     if (!cursoId) return;
+
+    if (!stripePromise) {
+      toast.error('Stripe nao configurado. Defina VITE_STRIPE_PUBLISHABLE_KEY.');
+      return;
+    }
+
     setProcessing(true);
-    setProcessingMethod(metodo);
 
     try {
       const accessToken = await getValidAccessToken();
@@ -184,72 +192,22 @@ export default function PagamentoCertificado() {
       }
 
       const { data, error } = await supabase.functions.invoke('create-payment', {
-        body: { cursoId, metodo },
+        body: { cursoId, metodo: 'stripe' },
         headers: buildAuthHeaders(accessToken),
       });
 
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      if (metodo === 'pix') {
-        if (!data?.paymentId) throw new Error('Nao foi possivel gerar o Pix');
-        setPixData({
-          paymentId: data.paymentId,
-          qrCode: data.qrCode,
-          qrCodeBase64: data.qrCodeBase64,
-          ticketUrl: data.ticketUrl,
-        });
-      } else if (data?.url) {
-        window.location.href = data.url;
-      } else {
+      if (!data?.clientSecret) {
         throw new Error('Nao foi possivel iniciar o pagamento.');
       }
+
+      setClientSecret(data.clientSecret);
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao iniciar pagamento.');
     } finally {
       setProcessing(false);
-      setProcessingMethod(null);
-    }
-  };
-
-  const handleVerifyPixPayment = async () => {
-    if (!pixData?.paymentId) return;
-
-    setProcessing(true);
-    setProcessingMethod('pix');
-
-    try {
-      const accessToken = await getValidAccessToken();
-      if (!accessToken) {
-        throw new Error('Voce precisa estar logado para confirmar o pagamento.');
-      }
-
-      const { error } = await supabase.functions.invoke('verify-mercadopago-payment', {
-        body: { paymentId: pixData.paymentId },
-        headers: buildAuthHeaders(accessToken),
-      });
-
-      if (error) throw error;
-
-      toast.success('Pagamento confirmado! Seu certificado foi emitido.');
-      if (user && cursoId) {
-        fetchData(String(user.id), cursoId);
-      }
-    } catch (error: any) {
-      toast.error(error?.message || 'Pagamento ainda nao confirmado.');
-    } finally {
-      setProcessing(false);
-      setProcessingMethod(null);
-    }
-  };
-
-  const handleCopyPix = async () => {
-    if (!pixData?.qrCode) return;
-    try {
-      await navigator.clipboard.writeText(pixData.qrCode);
-      toast.success('Codigo Pix copiado.');
-    } catch (error: any) {
-      toast.error(error?.message || 'Nao foi possivel copiar o Pix.');
     }
   };
 
@@ -347,54 +305,34 @@ export default function PagamentoCertificado() {
           </div>
 
           <div className="grid gap-3">
-            <button type="button" className="btn-accent" onClick={() => handlePayment('stripe')} disabled={processing}>
-              {processingMethod === 'stripe' ? 'Processando...' : 'Pagar com Cartao (Stripe)'}
-            </button>
-            <button type="button" className="btn-secondary" onClick={() => handlePayment('pix')} disabled={processing}>
-              {processingMethod === 'pix' ? 'Gerando Pix...' : 'Pagar com Pix (Mercado Pago)'}
-            </button>
-            <button type="button" className="btn-outline" onClick={() => handlePayment('mercadopago')} disabled={processing}>
-              {processingMethod === 'mercadopago' ? 'Abrindo Mercado Pago...' : 'Pagar com Mercado Pago'}
-            </button>
+            {!clientSecret && (
+              <button type="button" className="btn-accent" onClick={handleCreateStripePayment} disabled={processing}>
+                {processing ? 'Iniciando...' : 'Continuar para pagamento com cartao'}
+              </button>
+            )}
+            {clientSecret && stripePromise && (
+              <div className="rounded-[12px] border border-[hsl(var(--border))] p-4">
+                <Elements
+                  key={clientSecret}
+                  stripe={stripePromise}
+                  options={{
+                    clientSecret,
+                    appearance: { theme: 'stripe' },
+                  }}
+                >
+                  <StripePaymentForm
+                    clientSecret={clientSecret}
+                    onSuccess={handleStripePaymentSuccess}
+                    processing={processing}
+                    setProcessing={setProcessing}
+                  />
+                </Elements>
+              </div>
+            )}
           </div>
 
-          {pixData && (
-            <div className="rounded-[12px] border border-[hsl(var(--border))] p-4 space-y-4">
-              <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                Escaneie o QR Code ou copie o codigo Pix para concluir o pagamento.
-              </p>
-              {pixData.qrCodeBase64 && (
-                <div className="flex justify-center">
-                  <img
-                    src={`data:image/png;base64,${pixData.qrCodeBase64}`}
-                    alt="QR Code Pix"
-                    className="h-40 w-40"
-                  />
-                </div>
-              )}
-              {pixData.qrCode && (
-                <div className="rounded-[10px] bg-[hsl(var(--muted))] p-3 text-xs break-all font-mono">
-                  {pixData.qrCode}
-                </div>
-              )}
-              <div className="grid gap-2">
-                <button type="button" className="btn-outline" onClick={handleCopyPix} disabled={!pixData.qrCode}>
-                  Copiar Pix
-                </button>
-                {pixData.ticketUrl && (
-                  <button type="button" className="btn-outline" onClick={() => window.open(pixData.ticketUrl, '_blank')}>
-                    Abrir boleto/QR no navegador
-                  </button>
-                )}
-                <button type="button" className="btn-accent" onClick={handleVerifyPixPayment} disabled={processing}>
-                  Ja paguei, verificar agora
-                </button>
-              </div>
-            </div>
-          )}
-
           <p className="text-xs text-[hsl(var(--muted-foreground))]">
-            Pagamento seguro processado via Stripe ou Mercado Pago.
+            Pagamento seguro processado via Stripe.
           </p>
         </div>
       )}
