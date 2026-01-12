@@ -41,45 +41,78 @@ serve(async (req) => {
       });
     }
 
-    const { sessionId } = await req.json();
-    if (!sessionId) {
-      return new Response(JSON.stringify({ error: "Session ID é obrigatório" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
-      });
+    const { sessionId, paymentIntentId } = await req.json();
+    if (!sessionId && !paymentIntentId) {
+      return new Response(
+        JSON.stringify({ error: "Session ID ou PaymentIntent ID é obrigatório" }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        }
+      );
     }
 
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    let cursoId: string | undefined;
+    let usuarioId: string | undefined;
+    let preco: string | undefined;
+    let stripePaymentIntentId: string | undefined;
+    let stripeSessionId: string | undefined;
 
-    if (!session) {
-      return new Response(JSON.stringify({ error: "Sessão de pagamento não encontrada" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 404,
-      });
+    if (paymentIntentId) {
+      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      if (!paymentIntent) {
+        return new Response(JSON.stringify({ error: "Pagamento não encontrado" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 404,
+        });
+      }
+
+      cursoId = paymentIntent.metadata?.curso_id;
+      usuarioId = paymentIntent.metadata?.usuario_id;
+      preco = paymentIntent.metadata?.preco;
+      stripePaymentIntentId = paymentIntent.id;
+
+      if (paymentIntent.status !== "succeeded") {
+        return new Response(JSON.stringify({ error: "Pagamento ainda não confirmado" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 409,
+        });
+      }
+    } else if (sessionId) {
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+      if (!session) {
+        return new Response(JSON.stringify({ error: "Sessão de pagamento não encontrada" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 404,
+        });
+      }
+
+      cursoId = session.metadata?.curso_id;
+      usuarioId = session.metadata?.usuario_id;
+      preco = session.metadata?.preco;
+      stripePaymentIntentId = session.payment_intent as string | undefined;
+      stripeSessionId = session.id;
+
+      if (session.payment_status !== "paid") {
+        return new Response(JSON.stringify({ error: "Pagamento ainda não confirmado" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 409,
+        });
+      }
     }
-
-    const cursoId = session.metadata?.curso_id;
-    const usuarioId = session.metadata?.usuario_id;
-    const preco = session.metadata?.preco;
 
     if (!cursoId || !usuarioId) {
-      return new Response(JSON.stringify({ error: "Sessão sem metadados obrigatórios" }), {
+      return new Response(JSON.stringify({ error: "Pagamento sem metadados obrigatórios" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
       });
     }
 
     if (usuarioId !== user.id) {
-      return new Response(JSON.stringify({ error: "Sessão não pertence ao usuário" }), {
+      return new Response(JSON.stringify({ error: "Pagamento não pertence ao usuário" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 403,
-      });
-    }
-
-    if (session.payment_status !== "paid") {
-      return new Response(JSON.stringify({ error: "Pagamento ainda não confirmado" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 409,
       });
     }
 
@@ -88,14 +121,21 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SERVICE_ROLE_KEY") ?? ""
     );
 
-    await supabaseAdmin
-      .from("transacoes_pagamento")
-      .update({
-        status: "completo",
-        stripe_payment_intent_id: session.payment_intent as string,
-        atualizado_em: new Date().toISOString(),
-      })
-      .eq("stripe_session_id", session.id);
+    if (stripePaymentIntentId || stripeSessionId) {
+      const updateQuery = supabaseAdmin
+        .from("transacoes_pagamento")
+        .update({
+          status: "completo",
+          stripe_payment_intent_id: stripePaymentIntentId,
+          atualizado_em: new Date().toISOString(),
+        });
+
+      if (stripePaymentIntentId) {
+        await updateQuery.eq("stripe_payment_intent_id", stripePaymentIntentId);
+      } else if (stripeSessionId) {
+        await updateQuery.eq("stripe_session_id", stripeSessionId);
+      }
+    }
 
     const { data: existingCert } = await supabaseAdmin
       .from("certificados")
