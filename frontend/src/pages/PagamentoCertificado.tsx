@@ -215,11 +215,17 @@ export default function PagamentoCertificado() {
     setProcessing(true);
 
     try {
+      const accessToken = await getValidAccessToken();
+      if (!accessToken) {
+        throw new Error('Voce precisa estar logado para gerar o certificado.');
+      }
+
       const { data, error } = await supabase.functions.invoke('generate-certificate', {
         body: {
           cursoId,
           certificadoId: certificado.id,
         },
+        headers: buildAuthHeaders(accessToken),
       });
 
       if (error) throw error;
