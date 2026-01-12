@@ -13,7 +13,7 @@ export default function AIChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [lastUserId, setLastUserId] = useState<string | null>(user?.id ?? null);
+  const [lastUserId, setLastUserId] = useState<string | null>(user?.id ? String(user.id) : null);
 
   const audience = useMemo(() => {
     if (user?.role === 'admin') return 'admin';
@@ -24,12 +24,13 @@ export default function AIChat() {
   }, [user?.role, location.pathname]);
 
   useEffect(() => {
-    if (lastUserId !== (user?.id ?? null)) {
+    const currentUserId = user?.id ? String(user.id) : null;
+    if (lastUserId !== currentUserId) {
       setMessages([]);
       setInput('');
-      setLastUserId(user?.id ?? null);
+      setLastUserId(currentUserId);
     }
-    if (!user?.id) {
+    if (!currentUserId) {
       setMessages([]);
       setInput('');
       setIsOpen(false);
