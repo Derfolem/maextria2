@@ -1,13 +1,13 @@
 project_id = "zcrwmdctwjqrvzbvfpuj"
 
 [functions.create-payment]
-verify_jwt = true
+verify_jwt = false
 
 [functions.generate-certificate]
 verify_jwt = true
 
 [functions.verify-payment]
-verify_jwt = true
+verify_jwt = false
 
 [functions.verify-mercadopago-payment]
 verify_jwt = true
@@ -25,10 +25,4 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.generate-course-image]
-verify_jwt = true
-
-[functions.ai-chat]
-verify_jwt = false
-
-[functions.ai-course-builder]
 verify_jwt = true
