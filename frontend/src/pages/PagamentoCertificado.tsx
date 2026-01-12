@@ -17,14 +17,12 @@ const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
 
 type StripePaymentFormProps = {
-  clientSecret: string;
   onSuccess: (paymentIntentId: string) => Promise<void>;
   processing: boolean;
   setProcessing: (value: boolean) => void;
 };
 
 const StripePaymentForm = ({
-  clientSecret,
   onSuccess,
   processing,
   setProcessing,
@@ -321,7 +319,6 @@ export default function PagamentoCertificado() {
                   }}
                 >
                   <StripePaymentForm
-                    clientSecret={clientSecret}
                     onSuccess={handleStripePaymentSuccess}
                     processing={processing}
                     setProcessing={setProcessing}
