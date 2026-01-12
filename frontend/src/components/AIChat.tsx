@@ -9,6 +9,7 @@ import { useLocation } from 'react-router-dom';
 export default function AIChat() {
   const { user } = useAuthStore();
   const location = useLocation();
+  const isHome = location.pathname === '/';
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -37,6 +38,25 @@ export default function AIChat() {
     }
   }, [user?.id, lastUserId]);
 
+  const cacheKey = useMemo(() => `maextria_ai_cache_${audience}`, [audience]);
+
+  const readCache = () => {
+    if (typeof window === 'undefined') return {} as Record<string, string>;
+    const raw = window.localStorage.getItem(cacheKey);
+    if (!raw) return {};
+    try {
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (error) {
+      return {};
+    }
+  };
+
+  const writeCache = (nextCache: Record<string, string>) => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(cacheKey, JSON.stringify(nextCache));
+  };
+
   const sendMessage = async () => {
     if (!input.trim()) return;
 
@@ -46,6 +66,14 @@ export default function AIChat() {
     setLoading(true);
 
     try {
+      const normalizedQuestion = userMessage.content.trim().toLowerCase();
+      const cached = readCache()[normalizedQuestion];
+      if (cached) {
+        setMessages((prev) => [...prev, { role: 'assistant', content: cached }]);
+        setLoading(false);
+        return;
+      }
+
       const history = [...messages, userMessage].slice(-8);
       const { data, error } = await supabase.functions.invoke('ai-chat', {
         body: {
@@ -60,6 +88,9 @@ export default function AIChat() {
       }
 
       const reply = data?.content || 'Nao consegui responder agora.';
+      const cache = readCache();
+      cache[normalizedQuestion] = reply;
+      writeCache(cache);
       setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
     } catch (error: any) {
       toast.error(error?.message || 'Nao foi possivel responder agora.');
@@ -71,6 +102,10 @@ export default function AIChat() {
       setLoading(false);
     }
   };
+
+  if (!isHome || user?.role) {
+    return null;
+  }
 
   return (
     <>

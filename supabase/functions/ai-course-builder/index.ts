@@ -82,6 +82,34 @@ serve(async (req) => {
       );
     }
 
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SERVICE_ROLE_KEY") ?? ""
+    );
+
+    const { data: roles } = await admin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", authData.user.id);
+    const isAdmin = (roles || []).some((role) => role.role === "admin");
+
+    if (!isAdmin) {
+      const { data: access } = await admin
+        .from("ai_course_access")
+        .select("granted_until, granted_by_admin")
+        .eq("usuario_id", authData.user.id)
+        .maybeSingle();
+      const now = new Date();
+      const hasAccess = access?.granted_by_admin
+        || (access?.granted_until && new Date(access.granted_until) > now);
+      if (!hasAccess) {
+        return new Response(
+          JSON.stringify({ error: "Acesso IA bloqueado. Ative o plano para continuar." }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 403 }
+        );
+      }
+    }
+
     const { files, prompt } = await req.json();
     const list: UploadedFile[] = Array.isArray(files) ? files : [];
     if (list.length === 0) {
@@ -90,11 +118,6 @@ serve(async (req) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
       );
     }
-
-    const admin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SERVICE_ROLE_KEY") ?? ""
-    );
 
     const bucket = "ai-ingest";
     const texts: string[] = [];

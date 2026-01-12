@@ -28,7 +28,10 @@ export default function CourseEditor() {
   const [aiFiles, setAiFiles] = useState<File[]>([]);
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
+  const [aiAccess, setAiAccess] = useState<{ granted_until: string | null; granted_by_admin: boolean } | null>(null);
+  const [aiAccessLoading, setAiAccessLoading] = useState(false);
   const user = useAuthStore((state) => state.user);
+  const isAdmin = user?.role === 'admin';
 
   useEffect(() => {
     if (isEditing) {
@@ -41,6 +44,40 @@ export default function CourseEditor() {
       setTeacherName(user.name);
     }
   }, [isEditing, user?.name, teacherName]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    if (isAdmin) {
+      setAiAccess({ granted_until: null, granted_by_admin: true });
+      return;
+    }
+    loadAiAccess();
+  }, [user?.id, isAdmin]);
+
+  const loadAiAccess = async () => {
+    if (!user?.id) return;
+    setAiAccessLoading(true);
+    try {
+      const { data } = await supabase
+        .from('ai_course_access')
+        .select('granted_until, granted_by_admin')
+        .eq('usuario_id', String(user.id))
+        .maybeSingle();
+      setAiAccess(data ?? null);
+    } catch (error) {
+      setAiAccess(null);
+    } finally {
+      setAiAccessLoading(false);
+    }
+  };
+
+  const hasAiAccess = () => {
+    if (isAdmin) return true;
+    if (!aiAccess) return false;
+    if (aiAccess.granted_by_admin) return true;
+    if (!aiAccess.granted_until) return false;
+    return new Date(aiAccess.granted_until) > new Date();
+  };
 
   const slugify = (value: string) =>
     value
@@ -477,6 +514,10 @@ export default function CourseEditor() {
       toast.error('Usuário não autenticado.');
       return;
     }
+    if (!hasAiAccess()) {
+      toast.error('Ative o acesso IA para liberar o gerador de cursos.');
+      return;
+    }
     if (aiFiles.length === 0) {
       toast.error('Envie pelo menos um arquivo PDF ou HTML.');
       return;
@@ -688,33 +729,56 @@ export default function CourseEditor() {
               Fechar
             </button>
           </div>
-          <div className="space-y-4">
-            <p className="text-sm text-[hsl(var(--muted-foreground))]">
-              Envie PDF ou HTML (um arquivo por modulo ou um curso completo). O arquivo sera removido
-              apos o processamento.
-            </p>
-            <input
-              type="file"
-              accept=".pdf,.html,.htm,application/pdf,text/html"
-              multiple
-              onChange={handleAiFileChange}
-              className="input-field"
-            />
-            <textarea
-              value={aiPrompt}
-              onChange={(event) => setAiPrompt(event.target.value)}
-              placeholder="Prompt opcional para complementar a geracao..."
-              className="input-field min-h-[120px]"
-            />
-            <div className="rounded-[12px] border border-[hsl(var(--border))] bg-[hsl(var(--muted))] p-4 text-sm text-[hsl(var(--muted-foreground))] space-y-2">
-              <p className="font-semibold text-[hsl(var(--foreground))]">Regras de upload</p>
-              <p>Apenas PDF ou HTML. Tamanho maximo: 5MB por arquivo.</p>
-              <p>Arquivos sao processados e apagados automaticamente.</p>
+          {!hasAiAccess() ? (
+            <div className="space-y-4">
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                Para liberar o gerador de cursos com IA e necessario um pagamento unico de R$ 25,00,
+                valido por 30 dias. Assim voce acelera a criacao do curso e foca no conteudo que importa.
+              </p>
+              <div className="rounded-[12px] border border-[hsl(var(--border))] bg-[hsl(var(--muted))] p-4 text-sm text-[hsl(var(--muted-foreground))] space-y-2">
+                <p className="font-semibold text-[hsl(var(--foreground))]">Vantagens</p>
+                <p>• Converta PDFs/HTML em modulos e aulas prontos em minutos.</p>
+                <p>• Estrutura consistente para publicar mais rapido.</p>
+                <p>• Questionarios e provas gerados automaticamente.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate('/teacher/ai-access')}
+                className="btn-accent"
+                disabled={aiAccessLoading}
+              >
+                {aiAccessLoading ? 'Verificando acesso...' : 'Ativar IA por R$ 25,00'}
+              </button>
             </div>
-            <button type="button" onClick={handleAiCreate} className="btn-accent" disabled={aiLoading}>
-              {aiLoading ? 'Gerando curso...' : 'Gerar curso com IA'}
-            </button>
-          </div>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                Envie PDF ou HTML (um arquivo por modulo ou um curso completo). O arquivo sera removido
+                apos o processamento.
+              </p>
+              <input
+                type="file"
+                accept=".pdf,.html,.htm,application/pdf,text/html"
+                multiple
+                onChange={handleAiFileChange}
+                className="input-field"
+              />
+              <textarea
+                value={aiPrompt}
+                onChange={(event) => setAiPrompt(event.target.value)}
+                placeholder="Prompt opcional para complementar a geracao..."
+                className="input-field min-h-[120px]"
+              />
+              <div className="rounded-[12px] border border-[hsl(var(--border))] bg-[hsl(var(--muted))] p-4 text-sm text-[hsl(var(--muted-foreground))] space-y-2">
+                <p className="font-semibold text-[hsl(var(--foreground))]">Regras de upload</p>
+                <p>Apenas PDF ou HTML. Tamanho maximo: 5MB por arquivo.</p>
+                <p>Arquivos sao processados e apagados automaticamente.</p>
+              </div>
+              <button type="button" onClick={handleAiCreate} className="btn-accent" disabled={aiLoading}>
+                {aiLoading ? 'Gerando curso...' : 'Gerar curso com IA'}
+              </button>
+            </div>
+          )}
         </div>
       )}
 

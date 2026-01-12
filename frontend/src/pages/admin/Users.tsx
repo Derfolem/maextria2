@@ -3,12 +3,16 @@ import { User } from '../../types';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { FaTrash, FaSearch, FaUserShield, FaUserGraduate, FaChalkboardTeacher } from 'react-icons/fa';
+import { useAuthStore } from '../../lib/store';
 
 export default function AdminUsers() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [aiAccessMap, setAiAccessMap] = useState<Record<string, { granted_until: string | null; granted_by_admin: boolean }>>({});
+  const [aiUpdating, setAiUpdating] = useState<Record<string, boolean>>({});
+  const adminUser = useAuthStore((state) => state.user);
 
   useEffect(() => {
     loadUsers();
@@ -34,6 +38,19 @@ export default function AdminUsers() {
             acc[key].push(row.role);
             return acc;
           }, {});
+
+      const { data: aiAccessData } = await supabase
+        .from('ai_course_access')
+        .select('usuario_id, granted_until, granted_by_admin');
+
+      const aiAccessLookup = (aiAccessData || []).reduce((acc: Record<string, { granted_until: string | null; granted_by_admin: boolean }>, row: any) => {
+        acc[String(row.usuario_id)] = {
+          granted_until: row.granted_until,
+          granted_by_admin: Boolean(row.granted_by_admin),
+        };
+        return acc;
+      }, {});
+      setAiAccessMap(aiAccessLookup);
 
       const mapped: User[] = (usersData || []).map((user) => {
         const roleList = rolesMap[String(user.id)] || [];
@@ -87,6 +104,53 @@ export default function AdminUsers() {
       loadUsers();
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao alterar tipo');
+    }
+  };
+
+  const isAiAccessActive = (userId: string | number) => {
+    const access = aiAccessMap[String(userId)];
+    if (!access) return false;
+    if (access.granted_by_admin) return true;
+    if (!access.granted_until) return false;
+    return new Date(access.granted_until) > new Date();
+  };
+
+  const grantAiAccess = async (userId: string | number) => {
+    setAiUpdating((prev) => ({ ...prev, [String(userId)]: true }));
+    try {
+      const { error } = await supabase
+        .from('ai_course_access')
+        .upsert({
+          usuario_id: String(userId),
+          granted_until: null,
+          granted_by_admin: true,
+          granted_by: adminUser?.id ?? null,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'usuario_id' });
+      if (error) throw error;
+      toast.success('Acesso IA liberado.');
+      await loadUsers();
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao liberar IA.');
+    } finally {
+      setAiUpdating((prev) => ({ ...prev, [String(userId)]: false }));
+    }
+  };
+
+  const revokeAiAccess = async (userId: string | number) => {
+    setAiUpdating((prev) => ({ ...prev, [String(userId)]: true }));
+    try {
+      const { error } = await supabase
+        .from('ai_course_access')
+        .delete()
+        .eq('usuario_id', String(userId));
+      if (error) throw error;
+      toast.success('Acesso IA revogado.');
+      await loadUsers();
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao revogar IA.');
+    } finally {
+      setAiUpdating((prev) => ({ ...prev, [String(userId)]: false }));
     }
   };
 
@@ -167,6 +231,7 @@ export default function AdminUsers() {
                 <th className="px-6 py-3">Nome</th>
                 <th className="px-6 py-3">Email</th>
                 <th className="px-6 py-3">Tipo</th>
+                <th className="px-6 py-3">IA Cursos</th>
                 <th className="px-6 py-3">Cadastro</th>
                 <th className="px-6 py-3">Acoes</th>
               </tr>
@@ -192,6 +257,38 @@ export default function AdminUsers() {
                       <option value="teacher">Professor</option>
                       <option value="admin">Admin</option>
                     </select>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    {user.role === 'teacher' ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[hsl(var(--muted-foreground))]">
+                          {isAiAccessActive(user.id)
+                            ? 'Ativo'
+                            : 'Bloqueado'}
+                        </span>
+                        {isAiAccessActive(user.id) ? (
+                          <button
+                            type="button"
+                            onClick={() => revokeAiAccess(user.id)}
+                            className="btn-outline text-xs"
+                            disabled={aiUpdating[String(user.id)]}
+                          >
+                            Revogar
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => grantAiAccess(user.id)}
+                            className="btn-accent text-xs"
+                            disabled={aiUpdating[String(user.id)]}
+                          >
+                            Liberar
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-[hsl(var(--muted-foreground))]">-</span>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-[hsl(var(--muted-foreground))]">
                     {new Date(user.created_at).toLocaleDateString('pt-BR')}

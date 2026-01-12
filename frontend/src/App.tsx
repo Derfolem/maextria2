@@ -17,6 +17,7 @@ import CoursePlayer from './pages/student/CoursePlayer';
 import TeacherDashboard from './pages/teacher/Dashboard';
 import TeacherMyCourses from './pages/teacher/MyCourses';
 import CourseEditor from './pages/teacher/CourseEditor';
+import AiAccessPayment from './pages/teacher/AiAccessPayment';
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminUsers from './pages/admin/Users';
 import AdminCourses from './pages/admin/Courses';
@@ -106,6 +107,11 @@ function App() {
         <Route path="/teacher/course/new" element={
           <ProtectedRoute roles={['teacher', 'admin']}>
             <CourseEditor />
+          </ProtectedRoute>
+        } />
+        <Route path="/teacher/ai-access" element={
+          <ProtectedRoute roles={['teacher', 'admin']}>
+            <AiAccessPayment />
           </ProtectedRoute>
         } />
         <Route path="/teacher/course/:id/edit" element={
