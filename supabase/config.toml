@@ -26,3 +26,6 @@ verify_jwt = true
 
 [functions.generate-course-image]
 verify_jwt = true
+
+[functions.ai-chat]
+verify_jwt = false

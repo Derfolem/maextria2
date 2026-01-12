@@ -1,30 +1,60 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { FaRobot, FaTimes, FaPaperPlane } from 'react-icons/fa';
 import { ChatMessage } from '../types';
 import toast from 'react-hot-toast';
+import { supabase } from '../lib/supabase';
+import { useAuthStore } from '../lib/store';
+import { useLocation } from 'react-router-dom';
 
 export default function AIChat() {
+  const { user } = useAuthStore();
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const audience = useMemo(() => {
+    if (user?.role === 'admin') return 'admin';
+    if (user?.role === 'teacher') return 'teacher';
+    if (user?.role === 'student') return 'student';
+    if (location.pathname.startsWith('/sou-professor')) return 'prospect_teacher';
+    return 'prospect_student';
+  }, [user?.role, location.pathname]);
+
   const sendMessage = async () => {
     if (!input.trim()) return;
 
     const userMessage: ChatMessage = { role: 'user', content: input };
-    setMessages([...messages, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setLoading(true);
 
-    setTimeout(() => {
-      toast('Assistente em breve.');
+    try {
+      const history = [...messages, userMessage].slice(-8);
+      const { data, error } = await supabase.functions.invoke('ai-chat', {
+        body: {
+          message: userMessage.content,
+          history,
+          audience,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      const reply = data?.content || 'Nao consegui responder agora.';
+      setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
+    } catch (error: any) {
+      toast.error('Nao foi possivel responder agora.');
       setMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: 'Assistente indisponível no momento.' },
+        { role: 'assistant', content: 'Houve um problema ao responder. Tente novamente.' },
       ]);
+    } finally {
       setLoading(false);
-    }, 400);
+    }
   };
 
   return (
@@ -32,10 +62,9 @@ export default function AIChat() {
       {!isOpen && (
         <button
           type="button"
-          disabled
-          aria-disabled="true"
-          title="Em breve"
-          className="fixed bottom-6 right-6 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] p-4 rounded-full shadow-lg opacity-60 cursor-not-allowed z-50"
+          title="Abrir assistente"
+          onClick={() => setIsOpen(true)}
+          className="fixed bottom-6 right-6 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] p-4 rounded-full shadow-lg z-50"
         >
           <FaRobot className="text-2xl" />
         </button>
