@@ -310,7 +310,19 @@ export default function CoursePlayer() {
   }
 
   const totalLessons = course.modules?.reduce((acc, mod) => acc + (mod.lessons?.length || 0), 0) || 0;
-  const completedLessons = progress.filter((p) => p.completed).length;
+  const lessonList = course.modules?.flatMap((module) =>
+    (module.lessons || []).map((lesson) => ({
+      ...lesson,
+      moduleTitle: module.title,
+    }))
+  ) || [];
+  const lessonIdSet = new Set(lessonList.map((lesson) => String(lesson.id)));
+  const completedLessonIds = new Set(
+    progress
+      .filter((item) => item.completed && lessonIdSet.has(String(item.lesson_id)))
+      .map((item) => String(item.lesson_id))
+  );
+  const completedLessons = completedLessonIds.size;
   const totalQuizzes = Object.keys(moduleQuizzes).length + (finalQuiz ? 1 : 0);
   const completedQuizzes = Object.values(moduleQuizzes).filter((quiz: any) => quizResponses[String(quiz.id)]).length
     + (finalQuiz && quizResponses[String(finalQuiz.id)] ? 1 : 0);
@@ -319,13 +331,6 @@ export default function CoursePlayer() {
   const progressPercentage = totalProgressItems > 0
     ? Math.round((completedProgressItems / totalProgressItems) * 100)
     : 0;
-
-  const lessonList = course.modules?.flatMap((module) =>
-    (module.lessons || []).map((lesson) => ({
-      ...lesson,
-      moduleTitle: module.title,
-    }))
-  ) || [];
   const selectedIndex = selectedLesson
     ? lessonList.findIndex((lesson) => String(lesson.id) === String(selectedLesson.id))
     : -1;
