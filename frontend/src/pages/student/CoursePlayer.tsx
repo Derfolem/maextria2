@@ -438,6 +438,24 @@ export default function CoursePlayer() {
           aprovado,
         }, { onConflict: 'questionario_id,usuario_id' });
       if (error) throw error;
+
+      if (selectedQuiz.tipo === 'final') {
+        const cursoId = selectedQuiz.curso_id || course?.id;
+        if (!cursoId) {
+          throw new Error('Curso nao encontrado para salvar resultado final.');
+        }
+        const { error: provaError } = await supabase
+          .from('prova_resultado')
+          .upsert({
+            usuario_id: user.id,
+            curso_id: cursoId,
+            total_questoes: total,
+            acertos: correct,
+            percentual,
+            aprovado,
+          }, { onConflict: 'usuario_id,curso_id' });
+        if (provaError) throw provaError;
+      }
       setQuizResult({ percentual, aprovado });
       setQuizResponses((prev) => ({ ...prev, [String(selectedQuiz.id)]: aprovado }));
       toast.success(aprovado ? 'Prova aprovada!' : `Nota abaixo do mínimo (${minScore}%).`);
