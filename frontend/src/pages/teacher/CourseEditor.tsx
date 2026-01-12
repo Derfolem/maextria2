@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Module, Lesson } from '../../types';
 import toast from 'react-hot-toast';
-import { FaPlus, FaTrash, FaSave } from 'react-icons/fa';
+import { FaPlus, FaTrash, FaSave, FaRobot } from 'react-icons/fa';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
 
@@ -24,6 +24,10 @@ export default function CourseEditor() {
   const [questionDrafts, setQuestionDrafts] = useState<Record<string, any>>({});
   const [modules, setModules] = useState<Module[]>([]);
   const [loading, setLoading] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiFiles, setAiFiles] = useState<File[]>([]);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
   const user = useAuthStore((state) => state.user);
 
   useEffect(() => {
@@ -450,17 +454,269 @@ export default function CourseEditor() {
     }));
   };
 
+  const handleAiFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    setAiFiles(files);
+  };
+
+  const isAllowedFile = (file: File) => {
+    const name = file.name.toLowerCase();
+    return file.type === 'application/pdf'
+      || file.type === 'text/html'
+      || name.endsWith('.pdf')
+      || name.endsWith('.html')
+      || name.endsWith('.htm');
+  };
+
+  const handleAiCreate = async () => {
+    if (isEditing) {
+      toast.error('Use a IA apenas para criar um novo curso.');
+      return;
+    }
+    if (!user?.id) {
+      toast.error('Usuário não autenticado.');
+      return;
+    }
+    if (aiFiles.length === 0) {
+      toast.error('Envie pelo menos um arquivo PDF ou HTML.');
+      return;
+    }
+
+    const maxSize = 5 * 1024 * 1024;
+    const invalid = aiFiles.find((file) => !isAllowedFile(file));
+    if (invalid) {
+      toast.error('Apenas PDF ou HTML são aceitos.');
+      return;
+    }
+    const tooLarge = aiFiles.find((file) => file.size > maxSize);
+    if (tooLarge) {
+      toast.error('Arquivos devem ter até 5MB.');
+      return;
+    }
+
+    setAiLoading(true);
+    try {
+      const bucket = 'ai-ingest';
+      const uploaded: Array<{ path: string; name: string; type: string }> = [];
+
+      for (const file of aiFiles) {
+        const path = `${user.id}/${Date.now()}-${file.name}`;
+        const { error } = await supabase.storage.from(bucket).upload(path, file, {
+          contentType: file.type || 'application/octet-stream',
+        });
+        if (error) {
+          throw error;
+        }
+        uploaded.push({ path, name: file.name, type: file.type });
+      }
+
+      const { data, error } = await supabase.functions.invoke('ai-course-builder', {
+        body: {
+          files: uploaded,
+          prompt: aiPrompt.trim() || undefined,
+        },
+      });
+      if (error) {
+        throw error;
+      }
+
+      const aiData = data?.data || {};
+      const course = aiData.course || {};
+      const courseTitle = course.title || 'Novo curso';
+
+      const { data: newCourse, error: courseError } = await supabase
+        .from('cursos')
+        .insert({
+          titulo: courseTitle,
+          descricao: course.description || '',
+          preco_certificado: Number(course.price || 39),
+          categoria: course.category || null,
+          nivel: course.level || null,
+          imagem_capa_url: course.thumbnail || null,
+          slug: course.slug || slugify(courseTitle),
+          professor_nome: course.teacherName || user.name || null,
+          professor_id: user.id,
+          ativo: false,
+        })
+        .select('id')
+        .single();
+      if (courseError || !newCourse?.id) {
+        throw courseError;
+      }
+
+      const createdModules: Module[] = [];
+      for (const [index, module] of (aiData.modules || []).entries()) {
+        const { data: newModule, error: moduleError } = await supabase
+          .from('modulos')
+          .insert({
+            curso_id: newCourse.id,
+            titulo_modulo: module.title || `Modulo ${index + 1}`,
+            conteudo_texto_html: module.description || '',
+            ordem: index + 1,
+          })
+          .select('id')
+          .single();
+        if (moduleError || !newModule?.id) throw moduleError;
+
+        const createdLessons: Lesson[] = [];
+        for (const [lessonIndex, lesson] of (module.lessons || []).entries()) {
+          const { data: newLesson, error: lessonError } = await supabase
+            .from('aulas')
+            .insert({
+              modulo_id: newModule.id,
+              titulo: lesson.title || `Aula ${lessonIndex + 1}`,
+              conteudo_html: lesson.content || '',
+              video_url: '',
+              ordem: lessonIndex + 1,
+            })
+            .select('id')
+            .single();
+          if (lessonError || !newLesson?.id) throw lessonError;
+          createdLessons.push({
+            id: newLesson.id,
+            module_id: newModule.id,
+            title: lesson.title || `Aula ${lessonIndex + 1}`,
+            content: lesson.content || '',
+            video_url: '',
+            order_index: lessonIndex + 1,
+          });
+        }
+
+        createdModules.push({
+          id: newModule.id,
+          course_id: newCourse.id,
+          title: module.title || `Modulo ${index + 1}`,
+          description: module.description || '',
+          order_index: index + 1,
+          lessons: createdLessons,
+        });
+
+        if (module.quiz?.questions?.length) {
+          const { data: quiz, error: quizError } = await supabase
+            .from('questionarios')
+            .insert({
+              curso_id: newCourse.id,
+              modulo_id: newModule.id,
+              titulo: module.quiz.title || `Questionario do modulo ${index + 1}`,
+              tipo: 'modulo',
+            })
+            .select('id')
+            .single();
+          if (quizError || !quiz?.id) throw quizError;
+
+          for (const q of module.quiz.questions || []) {
+            const options = Array.isArray(q.options) ? q.options : [];
+            if (options.length < 4) continue;
+            await supabase.from('questoes').insert({
+              questionario_id: quiz.id,
+              enunciado: q.question || '',
+              alternativa_a: options[0],
+              alternativa_b: options[1],
+              alternativa_c: options[2],
+              alternativa_d: options[3],
+              correta: String(q.correct || 'a').toLowerCase(),
+            });
+          }
+        }
+      }
+
+      if (aiData.finalQuiz?.questions?.length) {
+        const { data: finalQ, error: finalError } = await supabase
+          .from('questionarios')
+          .insert({
+            curso_id: newCourse.id,
+            titulo: aiData.finalQuiz.title || 'Prova final',
+            tipo: 'final',
+          })
+          .select('id')
+          .single();
+        if (finalError || !finalQ?.id) throw finalError;
+
+        for (const q of aiData.finalQuiz.questions || []) {
+          const options = Array.isArray(q.options) ? q.options : [];
+          if (options.length < 4) continue;
+          await supabase.from('questoes').insert({
+            questionario_id: finalQ.id,
+            enunciado: q.question || '',
+            alternativa_a: options[0],
+            alternativa_b: options[1],
+            alternativa_c: options[2],
+            alternativa_d: options[3],
+            correta: String(q.correct || 'a').toLowerCase(),
+          });
+        }
+      }
+
+      toast.success('Curso criado com IA!');
+      navigate(`/teacher/course/${newCourse.id}/edit`);
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao criar curso com IA.');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
         <h1 className="text-3xl font-bold gradient-text">
           {isEditing ? 'Editar Curso' : 'Criar Novo Curso'}
         </h1>
-        <button onClick={handleSave} disabled={loading} className="btn-primary flex items-center space-x-2">
-          <FaSave />
-          <span>{loading ? 'Salvando...' : 'Salvar Curso'}</span>
-        </button>
+        <div className="flex flex-wrap gap-3">
+          {!isEditing && (
+            <button
+              type="button"
+              onClick={() => setAiOpen(true)}
+              className="btn-outline flex items-center space-x-2"
+            >
+              <FaRobot />
+              <span>Criar via IA</span>
+            </button>
+          )}
+          <button onClick={handleSave} disabled={loading} className="btn-primary flex items-center space-x-2">
+            <FaSave />
+            <span>{loading ? 'Salvando...' : 'Salvar Curso'}</span>
+          </button>
+        </div>
       </div>
+
+      {aiOpen && (
+        <div className="card mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Criar curso via IA</h2>
+            <button type="button" className="btn-outline" onClick={() => setAiOpen(false)}>
+              Fechar
+            </button>
+          </div>
+          <div className="space-y-4">
+            <p className="text-sm text-[hsl(var(--muted-foreground))]">
+              Envie PDF ou HTML (um arquivo por modulo ou um curso completo). O arquivo sera removido
+              apos o processamento.
+            </p>
+            <input
+              type="file"
+              accept=".pdf,.html,.htm,application/pdf,text/html"
+              multiple
+              onChange={handleAiFileChange}
+              className="input-field"
+            />
+            <textarea
+              value={aiPrompt}
+              onChange={(event) => setAiPrompt(event.target.value)}
+              placeholder="Prompt opcional para complementar a geracao..."
+              className="input-field min-h-[120px]"
+            />
+            <div className="rounded-[12px] border border-[hsl(var(--border))] bg-[hsl(var(--muted))] p-4 text-sm text-[hsl(var(--muted-foreground))] space-y-2">
+              <p className="font-semibold text-[hsl(var(--foreground))]">Regras de upload</p>
+              <p>Apenas PDF ou HTML. Tamanho maximo: 5MB por arquivo.</p>
+              <p>Arquivos sao processados e apagados automaticamente.</p>
+            </div>
+            <button type="button" onClick={handleAiCreate} className="btn-accent" disabled={aiLoading}>
+              {aiLoading ? 'Gerando curso...' : 'Gerar curso com IA'}
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-8">
         <div className="card">

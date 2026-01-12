@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { FaRobot, FaTimes, FaPaperPlane } from 'react-icons/fa';
 import { ChatMessage } from '../types';
 import toast from 'react-hot-toast';
@@ -13,6 +13,7 @@ export default function AIChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [lastUserId, setLastUserId] = useState<string | null>(user?.id ?? null);
 
   const audience = useMemo(() => {
     if (user?.role === 'admin') return 'admin';
@@ -21,6 +22,19 @@ export default function AIChat() {
     if (location.pathname.startsWith('/sou-professor')) return 'prospect_teacher';
     return 'prospect_student';
   }, [user?.role, location.pathname]);
+
+  useEffect(() => {
+    if (lastUserId !== (user?.id ?? null)) {
+      setMessages([]);
+      setInput('');
+      setLastUserId(user?.id ?? null);
+    }
+    if (!user?.id) {
+      setMessages([]);
+      setInput('');
+      setIsOpen(false);
+    }
+  }, [user?.id, lastUserId]);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
@@ -47,7 +61,7 @@ export default function AIChat() {
       const reply = data?.content || 'Nao consegui responder agora.';
       setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
     } catch (error: any) {
-      toast.error('Nao foi possivel responder agora.');
+      toast.error(error?.message || 'Nao foi possivel responder agora.');
       setMessages((prev) => [
         ...prev,
         { role: 'assistant', content: 'Houve um problema ao responder. Tente novamente.' },
