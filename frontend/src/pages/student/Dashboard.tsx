@@ -705,7 +705,7 @@ export default function StudentDashboard() {
                       const isOwn = message.sender_id === currentUserId;
                       const senderRole = message.sender_role || 'student';
                       const canDelete = senderRole !== 'admin';
-                      const bubbleClass = 'border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))]';
+                      const bubbleClass = 'border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))]';
                       const senderLabel = isOwn
                         ? 'Você'
                         : senderRole === 'admin'
@@ -725,7 +725,7 @@ export default function StudentDashboard() {
                               </button>
                             )}
                           </div>
-                          <p className="text-sm mt-2 whitespace-pre-line">{message.body}</p>
+                          <p className="text-sm mt-2 whitespace-pre-line text-[hsl(var(--foreground))]">{message.body}</p>
                           <p className="text-xs text-[hsl(var(--muted-foreground))] mt-2">
                             {new Date(message.created_at).toLocaleString('pt-BR')}
                           </p>

@@ -423,12 +423,7 @@ export default function AdminDashboard() {
   };
 
   const selectedThread = threads.find((thread) => thread.id === selectedThreadId);
-  const canReplyToStudent = Boolean(
-    activeTab === 'inbox'
-      && selectedThreadId
-      && selectedThread?.type === 'course_question'
-      && (selectedThread?.created_by_role === 'student' || !selectedThread?.created_by_role)
-  );
+  const canReplyToThread = Boolean(activeTab === 'inbox' && selectedThreadId);
 
   const COLORS = [
     'hsl(var(--primary))',
@@ -710,7 +705,7 @@ export default function AdminDashboard() {
                     {threadMessages.map((message) => {
                       const isOwn = message.sender_id === currentUserId;
                       const senderRole = message.sender_role || 'teacher';
-                      const bubbleClass = 'border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))]';
+                      const bubbleClass = 'border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))]';
                       const senderLabel = isOwn ? 'Você' : senderRole === 'admin' ? 'Equipe MAEXTRIA' : 'Professor';
                       const canDeleteMessage = !(senderRole === 'admin' && selectedThread?.created_by === currentUserId);
                       return (
@@ -727,7 +722,7 @@ export default function AdminDashboard() {
                               </button>
                             )}
                           </div>
-                          <p className="text-sm mt-2 whitespace-pre-line">{message.body}</p>
+                          <p className="text-sm mt-2 whitespace-pre-line text-[hsl(var(--foreground))]">{message.body}</p>
                           <p className="text-xs text-[hsl(var(--muted-foreground))] mt-2">
                             {new Date(message.created_at).toLocaleString('pt-BR')}
                           </p>
@@ -741,7 +736,7 @@ export default function AdminDashboard() {
               )}
             </div>
 
-            {activeTab === 'inbox' && selectedThreadId && canReplyToStudent && (
+            {activeTab === 'inbox' && selectedThreadId && canReplyToThread && (
               <div className="space-y-3">
                 <button type="button" className="btn-outline" onClick={() => setShowReply((prev) => !prev)}>
                   {showReply ? 'Fechar resposta' : 'Responder'}
