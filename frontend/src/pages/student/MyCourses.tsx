@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Enrollment } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { FaPlay, FaCertificate } from 'react-icons/fa';
 import { normalizeEnrollment } from '../../lib/normalizeEnrollment';
 import { useAuthStore } from '../../lib/store';
-import toast from 'react-hot-toast';
 
 export default function MyCourses() {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'in-progress' | 'completed'>('all');
   const user = useAuthStore((state) => state.user);
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadEnrollments();
@@ -237,10 +237,10 @@ export default function MyCourses() {
                       <button
                         type="button"
                         className="btn-outline flex items-center space-x-2"
-                        onClick={() => toast('Certificado disponível. Em breve: compra/geração automática.')}
+                        onClick={() => navigate(`/pagamento-certificado/${enrollment.course_id}`)}
                       >
                         <FaCertificate />
-                        <span>Certificado disponível</span>
+                        <span>Obter certificado</span>
                       </button>
                     )
                   )}

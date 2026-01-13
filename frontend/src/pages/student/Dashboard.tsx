@@ -462,14 +462,12 @@ export default function StudentDashboard() {
                       {new Date(cert.issued_at).toLocaleDateString('pt-BR')}
                     </p>
                   </div>
-                  <a
-                    href={cert.certificate_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <Link
+                    to="/student/my-courses"
                     className="text-[hsl(var(--primary))] hover:text-[hsl(var(--accent))]"
                   >
                     <FaCertificate className="text-2xl" />
-                  </a>
+                  </Link>
                 </div>
               ))}
             </div>
