@@ -29,7 +29,6 @@ export default function StudentDashboard() {
   const [threadMessages, setThreadMessages] = useState<Array<any>>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'inbox' | 'new'>('inbox');
-  const [showReply, setShowReply] = useState(false);
   const [courses, setCourses] = useState<Array<{ id: string; title: string }>>([]);
   const [modules, setModules] = useState<Array<{ id: string; title: string }>>([]);
   const [lessons, setLessons] = useState<Array<{ id: string; title: string }>>([]);
@@ -41,23 +40,21 @@ export default function StudentDashboard() {
     body: '',
   });
   const [sendingQuestion, setSendingQuestion] = useState(false);
-  const [replyBody, setReplyBody] = useState('');
-  const [sendingReply, setSendingReply] = useState(false);
 
   useEffect(() => {
     loadDashboard();
     loadMessaging();
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     if (selectedThreadId) {
       loadThreadMessages(selectedThreadId);
-      setShowReply(false);
     }
   }, [selectedThreadId]);
 
   const loadDashboard = async () => {
     try {
+      const userId = user?.id;
       const [enrollmentsRes, certsRes] = await Promise.all([
         supabase
           .from('matriculas')
@@ -84,8 +81,85 @@ export default function StudentDashboard() {
         completed_courses: completed,
         certificates: completed,
       });
-      setAvgProgress(0);
-      setRecentCourses((enrollmentsRes.data || []).map(normalizeEnrollment).slice(0, 3));
+      const normalizedEnrollments = (enrollmentsRes.data || []).map(normalizeEnrollment);
+      const courseIds = normalizedEnrollments.map((item) => item.course_id).filter(Boolean);
+
+      let enrollmentsWithProgress = normalizedEnrollments;
+
+      if (userId && courseIds.length > 0) {
+        const [modulesRes, progressRes, quizzesRes, responsesRes] = await Promise.all([
+          supabase
+            .from('modulos')
+            .select('id, curso_id, aulas(id)')
+            .in('curso_id', courseIds),
+          supabase
+            .from('progresso_aula')
+            .select('concluido, aulas!inner(modulos!inner(curso_id))')
+            .eq('usuario_id', userId),
+          supabase
+            .from('questionarios')
+            .select('id, curso_id')
+            .in('curso_id', courseIds),
+          supabase
+            .from('respostas_questionario')
+            .select('questionario_id, aprovado')
+            .eq('usuario_id', userId),
+        ]);
+
+        if (!modulesRes.error && !progressRes.error && !quizzesRes.error && !responsesRes.error) {
+          const lessonsByCourse = (modulesRes.data || []).reduce((acc: Record<string, number>, mod: any) => {
+            const count = mod.aulas?.length || 0;
+            acc[String(mod.curso_id)] = (acc[String(mod.curso_id)] || 0) + count;
+            return acc;
+          }, {});
+
+          const completedLessonsByCourse = (progressRes.data || []).reduce((acc: Record<string, number>, item: any) => {
+            if (!item.concluido) return acc;
+            const courseId = item.aulas?.modulos?.curso_id;
+            if (!courseId) return acc;
+            acc[String(courseId)] = (acc[String(courseId)] || 0) + 1;
+            return acc;
+          }, {});
+
+          const quizIdToCourse: Record<string, string> = {};
+          const quizzesByCourse = (quizzesRes.data || []).reduce((acc: Record<string, number>, quiz: any) => {
+            const key = String(quiz.curso_id);
+            acc[key] = (acc[key] || 0) + 1;
+            quizIdToCourse[String(quiz.id)] = key;
+            return acc;
+          }, {});
+
+          const completedQuizzesByCourse = (responsesRes.data || []).reduce((acc: Record<string, number>, response: any) => {
+            if (!response.aprovado) return acc;
+            const courseId = quizIdToCourse[String(response.questionario_id)];
+            if (!courseId) return acc;
+            acc[courseId] = (acc[courseId] || 0) + 1;
+            return acc;
+          }, {});
+
+          enrollmentsWithProgress = normalizedEnrollments.map((enrollment) => {
+            const courseId = String(enrollment.course_id);
+            const totalLessons = lessonsByCourse[courseId] || 0;
+            const completedLessons = completedLessonsByCourse[courseId] || 0;
+            const totalQuizzes = quizzesByCourse[courseId] || 0;
+            const completedQuizzes = completedQuizzesByCourse[courseId] || 0;
+            const totalItems = totalLessons + totalQuizzes;
+            const completedItems = completedLessons + completedQuizzes;
+            const progress = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+            const completed = totalLessons > 0 && completedLessons === totalLessons && completedQuizzes === totalQuizzes;
+
+            return {
+              ...enrollment,
+              progress,
+              completed,
+            };
+          });
+        }
+      }
+
+      const totalProgress = enrollmentsWithProgress.reduce((sum, item) => sum + (item.progress || 0), 0);
+      setAvgProgress(enrollmentsWithProgress.length > 0 ? totalProgress / enrollmentsWithProgress.length : 0);
+      setRecentCourses(enrollmentsWithProgress.slice(0, 3));
       setCertificates(
         (certsRes.data || []).map((cert: any) => ({
           ...cert,
@@ -320,36 +394,6 @@ export default function StudentDashboard() {
     }
   };
 
-  const handleReply = async () => {
-    if (!selectedThreadId || !currentUserId) return;
-    if (mailBlocked) {
-      toast.error(mailBlockedMessage);
-      return;
-    }
-    const body = replyBody.trim();
-    if (!body) {
-      toast.error('Digite uma mensagem.');
-      return;
-    }
-    setSendingReply(true);
-    try {
-      const { error } = await supabase
-        .from('internal_messages')
-        .insert({
-          thread_id: selectedThreadId,
-          sender_id: currentUserId,
-          body,
-          sender_role: user?.role ?? 'student',
-        });
-      if (error) throw error;
-      setReplyBody('');
-      await loadThreadMessages(selectedThreadId);
-    } catch (error: any) {
-      toast.error(error?.message || 'Erro ao enviar mensagem.');
-    } finally {
-      setSendingReply(false);
-    }
-  };
 
   const handleDeleteMessage = async (messageId: string) => {
     if (!currentUserId) return;
@@ -566,11 +610,7 @@ export default function StudentDashboard() {
                 >
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm font-semibold">{thread.subject}</p>
-                    <span className={`text-[10px] uppercase tracking-[0.2em] px-2 py-1 rounded-full ${
-                      thread.type === 'broadcast'
-                        ? 'bg-[hsl(38_90%_88%)] text-[hsl(28_70%_35%)]'
-                        : 'bg-[hsl(210_80%_92%)] text-[hsl(210_70%_35%)]'
-                    }`}>
+                    <span className="text-[10px] uppercase tracking-[0.2em] px-2 py-1 rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--muted))] text-[hsl(var(--foreground))]">
                       {thread.type === 'broadcast' ? 'Comunicado' : 'Duvida'}
                     </span>
                   </div>
@@ -665,11 +705,7 @@ export default function StudentDashboard() {
                       const isOwn = message.sender_id === currentUserId;
                       const senderRole = message.sender_role || 'student';
                       const canDelete = senderRole !== 'admin';
-                      const bubbleClass = senderRole === 'admin'
-                        ? 'border-[hsl(38_90%_45%)] bg-[hsl(45_95%_92%)]'
-                        : senderRole === 'teacher'
-                          ? 'border-[hsl(210_70%_50%)] bg-[hsl(210_80%_95%)]'
-                          : 'border-[hsl(140_50%_45%)] bg-[hsl(140_60%_95%)]';
+                      const bubbleClass = 'border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))]';
                       const senderLabel = isOwn
                         ? 'Você'
                         : senderRole === 'admin'
@@ -702,30 +738,6 @@ export default function StudentDashboard() {
                 <p className="text-sm text-[hsl(var(--muted-foreground))]">Selecione uma conversa.</p>
               )}
             </div>
-
-            {activeTab === 'inbox' && selectedThreadId && (
-              <div className="space-y-3">
-                {selectedThread?.type === 'course_question' && (
-                  <button type="button" className="btn-outline" onClick={() => setShowReply((prev) => !prev)}>
-                    {showReply ? 'Fechar resposta' : 'Responder'}
-                  </button>
-                )}
-                {showReply && selectedThread?.type === 'course_question' && (
-                  <>
-                    <textarea
-                      value={replyBody}
-                      onChange={(event) => setReplyBody(event.target.value)}
-                      placeholder="Responder..."
-                      className="input-field min-h-[120px]"
-                      disabled={mailBlocked}
-                    />
-                    <button type="button" className="btn-accent" onClick={handleReply} disabled={sendingReply || mailBlocked}>
-                      {sendingReply ? 'Enviando...' : 'Enviar resposta'}
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
           </div>
         </div>
       </div>

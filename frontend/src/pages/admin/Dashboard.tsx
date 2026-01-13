@@ -423,6 +423,12 @@ export default function AdminDashboard() {
   };
 
   const selectedThread = threads.find((thread) => thread.id === selectedThreadId);
+  const canReplyToStudent = Boolean(
+    activeTab === 'inbox'
+      && selectedThreadId
+      && selectedThread?.type === 'course_question'
+      && (selectedThread?.created_by_role === 'student' || !selectedThread?.created_by_role)
+  );
 
   const COLORS = [
     'hsl(var(--primary))',
@@ -633,11 +639,7 @@ export default function AdminDashboard() {
                 >
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm font-semibold">{thread.subject}</p>
-                    <span className={`text-[10px] uppercase tracking-[0.2em] px-2 py-1 rounded-full ${
-                      thread.type === 'broadcast'
-                        ? 'bg-[hsl(38_90%_88%)] text-[hsl(28_70%_35%)]'
-                        : 'bg-[hsl(210_80%_92%)] text-[hsl(210_70%_35%)]'
-                    }`}>
+                    <span className="text-[10px] uppercase tracking-[0.2em] px-2 py-1 rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--muted))] text-[hsl(var(--foreground))]">
                       {thread.type === 'broadcast' ? 'Comunicado' : 'Conversa'}
                     </span>
                   </div>
@@ -708,11 +710,7 @@ export default function AdminDashboard() {
                     {threadMessages.map((message) => {
                       const isOwn = message.sender_id === currentUserId;
                       const senderRole = message.sender_role || 'teacher';
-                      const bubbleClass = senderRole === 'admin'
-                        ? 'border-[hsl(38_90%_45%)] bg-[hsl(45_95%_92%)]'
-                        : senderRole === 'teacher'
-                          ? 'border-[hsl(210_70%_50%)] bg-[hsl(210_80%_95%)]'
-                          : 'border-[hsl(140_50%_45%)] bg-[hsl(140_60%_95%)]';
+                      const bubbleClass = 'border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))]';
                       const senderLabel = isOwn ? 'Você' : senderRole === 'admin' ? 'Equipe MAEXTRIA' : 'Professor';
                       const canDeleteMessage = !(senderRole === 'admin' && selectedThread?.created_by === currentUserId);
                       return (
@@ -743,7 +741,7 @@ export default function AdminDashboard() {
               )}
             </div>
 
-            {activeTab === 'inbox' && selectedThreadId && selectedThread?.recipient_role === 'admin' && (
+            {activeTab === 'inbox' && selectedThreadId && canReplyToStudent && (
               <div className="space-y-3">
                 <button type="button" className="btn-outline" onClick={() => setShowReply((prev) => !prev)}>
                   {showReply ? 'Fechar resposta' : 'Responder'}
