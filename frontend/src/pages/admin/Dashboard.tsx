@@ -252,7 +252,18 @@ export default function AdminDashboard() {
         .select('id, body, created_at, sender_id, sender_role')
         .eq('thread_id', threadId)
         .order('created_at', { ascending: true });
-      setThreadMessages(data || []);
+      let messages = data || [];
+      if (currentUserId && messages.length > 0) {
+        const messageIds = messages.map((message) => message.id);
+        const { data: deletions } = await supabase
+          .from('internal_message_deletions')
+          .select('message_id')
+          .eq('user_id', currentUserId)
+          .in('message_id', messageIds);
+        const deletedSet = new Set((deletions || []).map((row: any) => row.message_id));
+        messages = messages.filter((message) => !deletedSet.has(message.id));
+      }
+      setThreadMessages(messages);
     } catch (error) {
       console.error('Error loading thread messages:', error);
     } finally {
@@ -350,9 +361,7 @@ export default function AdminDashboard() {
         .from('internal_message_deletions')
         .insert({ message_id: messageId, user_id: currentUserId });
       if (error) throw error;
-      if (selectedThreadId) {
-        await loadThreadMessages(selectedThreadId);
-      }
+      setThreadMessages((prev) => prev.filter((message) => message.id !== messageId));
       toast.success('Mensagem excluida.');
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao excluir mensagem.');
@@ -705,7 +714,7 @@ export default function AdminDashboard() {
                     {threadMessages.map((message) => {
                       const isOwn = message.sender_id === currentUserId;
                       const senderRole = message.sender_role || 'teacher';
-                      const bubbleClass = 'border-[hsl(var(--border))] bg-[hsl(var(--graphite))] text-[hsl(var(--foreground))]';
+                      const bubbleClass = 'border border-black bg-black text-white';
                       const senderLabel = isOwn ? 'Você' : senderRole === 'admin' ? 'Equipe MAEXTRIA' : 'Professor';
                       const canDeleteMessage = !(senderRole === 'admin' && selectedThread?.created_by === currentUserId);
                       return (
@@ -722,7 +731,7 @@ export default function AdminDashboard() {
                               </button>
                             )}
                           </div>
-                          <p className="text-sm mt-2 whitespace-pre-line text-[hsl(var(--foreground))]">{message.body}</p>
+                          <p className="text-sm mt-2 whitespace-pre-line text-white">{message.body}</p>
                           <p className="text-xs text-[hsl(var(--muted-foreground))] mt-2">
                             {new Date(message.created_at).toLocaleString('pt-BR')}
                           </p>
