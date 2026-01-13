@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Module, Lesson } from '../../types';
 import toast from 'react-hot-toast';
 import { FaPlus, FaTrash, FaSave, FaRobot } from 'react-icons/fa';
-import { supabase } from '../../lib/supabase';
+import { getValidAccessToken, supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
 
 export default function CourseEditor() {
@@ -551,10 +551,18 @@ export default function CourseEditor() {
         uploaded.push({ path, name: file.name, type: file.type });
       }
 
+      const accessToken = await getValidAccessToken();
+      if (!accessToken) {
+        throw new Error('Sessão expirada. Faça login novamente.');
+      }
+
       const { data, error } = await supabase.functions.invoke('ai-course-builder', {
         body: {
           files: uploaded,
           prompt: aiPrompt.trim() || undefined,
+        },
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
         },
       });
       if (error) {

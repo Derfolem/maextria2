@@ -1,11 +1,24 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
-import pdf from "https://esm.sh/pdf-parse@1.1.1";
+import { getDocument, GlobalWorkerOptions } from "https://esm.sh/pdfjs-dist@4.7.76/build/pdf.mjs";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+const allowedOrigins = new Set([
+  "https://www.maextria.com.br",
+  "https://maextria.com.br",
+  "http://localhost:5173",
+]);
+
+GlobalWorkerOptions.workerSrc =
+  "https://unpkg.com/pdfjs-dist@4.7.76/build/pdf.worker.min.mjs";
+
+const buildCorsHeaders = (origin: string | null) => ({
+  "Access-Control-Allow-Origin": origin && allowedOrigins.has(origin)
+    ? origin
+    : "https://www.maextria.com.br",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+  "Vary": "Origin",
+});
 
 type UploadedFile = {
   path: string;
@@ -23,8 +36,20 @@ const stripHtml = (html: string) =>
 
 const extractText = async (buffer: ArrayBuffer, type: string) => {
   if (type.includes("pdf")) {
-    const data = await pdf(new Uint8Array(buffer));
-    return data.text || "";
+    const loadingTask = getDocument({ data: new Uint8Array(buffer), disableWorker: true });
+    const doc = await loadingTask.promise;
+    const pages = Array.from({ length: doc.numPages }, (_, index) => index + 1);
+    const chunks: string[] = [];
+    for (const pageNumber of pages) {
+      const page = await doc.getPage(pageNumber);
+      const content = await page.getTextContent();
+      const text = content.items
+        .map((item) => ("str" in item ? String(item.str) : ""))
+        .filter(Boolean)
+        .join(" ");
+      chunks.push(text);
+    }
+    return chunks.join("\n").trim();
   }
   const text = new TextDecoder().decode(buffer);
   return stripHtml(text);
@@ -61,6 +86,7 @@ const safeJsonParse = (text: string) => {
 };
 
 serve(async (req) => {
+  const corsHeaders = buildCorsHeaders(req.headers.get("Origin"));
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -185,8 +211,10 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   } catch (error) {
+    console.error("ai-course-builder error:", error);
+    const message = error instanceof Error ? error.message : "Erro desconhecido";
     return new Response(
-      JSON.stringify({ error: "Erro ao gerar curso com IA." }),
+      JSON.stringify({ error: "Erro ao gerar curso com IA.", detail: message }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }

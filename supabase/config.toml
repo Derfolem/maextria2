@@ -3,10 +3,16 @@ project_id = "zcrwmdctwjqrvzbvfpuj"
 [functions.create-payment]
 verify_jwt = false
 
+[functions.create-ai-access-payment]
+verify_jwt = false
+
 [functions.generate-certificate]
 verify_jwt = false
 
 [functions.verify-payment]
+verify_jwt = false
+
+[functions.verify-ai-access-payment]
 verify_jwt = false
 
 [functions.verify-mercadopago-payment]
@@ -26,3 +32,6 @@ verify_jwt = true
 
 [functions.generate-course-image]
 verify_jwt = true
+
+[functions.ai-course-builder]
+verify_jwt = false
