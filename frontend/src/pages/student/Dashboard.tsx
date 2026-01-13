@@ -610,7 +610,7 @@ export default function StudentDashboard() {
                 >
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm font-semibold">{thread.subject}</p>
-                    <span className="text-[10px] uppercase tracking-[0.2em] px-2 py-1 rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--muted))] text-[hsl(var(--foreground))]">
+                    <span className="text-[10px] uppercase tracking-[0.2em] px-2 py-1 rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))]">
                       {thread.type === 'broadcast' ? 'Comunicado' : 'Duvida'}
                     </span>
                   </div>
@@ -705,7 +705,7 @@ export default function StudentDashboard() {
                       const isOwn = message.sender_id === currentUserId;
                       const senderRole = message.sender_role || 'student';
                       const canDelete = senderRole !== 'admin';
-                      const bubbleClass = 'border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))]';
+                      const bubbleClass = 'border-[hsl(var(--border))] bg-[hsl(var(--graphite))] text-[hsl(var(--foreground))]';
                       const senderLabel = isOwn
                         ? 'Você'
                         : senderRole === 'admin'
