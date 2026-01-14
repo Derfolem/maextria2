@@ -243,9 +243,14 @@ export default function AiCreator() {
             </p>
             <h1 className="text-2xl font-semibold">Imagens e textos para aulas</h1>
           </div>
-          <button type="button" className="btn-outline" onClick={resetCreation}>
-            Nova criacao
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="btn-outline" onClick={() => navigate('/teacher/course/new')}>
+              Voltar para criar curso
+            </button>
+            <button type="button" className="btn-outline" onClick={resetCreation}>
+              Nova criacao
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-3">
