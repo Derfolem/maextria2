@@ -14,10 +14,13 @@ import VerificarCertificado from './pages/VerificarCertificado';
 import StudentDashboard from './pages/student/Dashboard';
 import StudentMyCourses from './pages/student/MyCourses';
 import CoursePlayer from './pages/student/CoursePlayer';
+import StudentNotifications from './pages/student/Notifications';
 import TeacherDashboard from './pages/teacher/Dashboard';
 import TeacherMyCourses from './pages/teacher/MyCourses';
 import CourseEditor from './pages/teacher/CourseEditor';
 import AiAccessPayment from './pages/teacher/AiAccessPayment';
+import AiCreator from './pages/teacher/AiCreator';
+import TeacherNotifications from './pages/teacher/Notifications';
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminUsers from './pages/admin/Users';
 import AdminCourses from './pages/admin/Courses';
@@ -93,6 +96,11 @@ function App() {
             <CoursePlayer />
           </ProtectedRoute>
         } />
+        <Route path="/student/notifications" element={
+          <ProtectedRoute roles={['student', 'teacher', 'admin']}>
+            <StudentNotifications />
+          </ProtectedRoute>
+        } />
 
         <Route path="/teacher/dashboard" element={
           <ProtectedRoute roles={['teacher', 'admin']}>
@@ -114,9 +122,19 @@ function App() {
             <AiAccessPayment />
           </ProtectedRoute>
         } />
+        <Route path="/teacher/ai-creator" element={
+          <ProtectedRoute roles={['teacher', 'admin']}>
+            <AiCreator />
+          </ProtectedRoute>
+        } />
         <Route path="/teacher/course/:id/edit" element={
           <ProtectedRoute roles={['teacher', 'admin']}>
             <CourseEditor />
+          </ProtectedRoute>
+        } />
+        <Route path="/teacher/notifications" element={
+          <ProtectedRoute roles={['teacher', 'admin']}>
+            <TeacherNotifications />
           </ProtectedRoute>
         } />
 

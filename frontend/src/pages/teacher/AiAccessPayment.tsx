@@ -198,28 +198,28 @@ export default function AiAccessPayment() {
         <p className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--primary))]">
           Acesso IA para professores
         </p>
-        <h1 className="headline-font text-4xl md:text-5xl">Gerador de cursos com IA</h1>
+        <h1 className="headline-font text-4xl md:text-5xl">Area de criacao com IA</h1>
         <p className="text-[hsl(var(--muted-foreground))]">
-          Libere o motor de IA por apenas R$ 25,00 e ganhe 30 dias para transformar PDFs e
-          HTML em cursos completos, com modulos, aulas e questionarios prontos.
+          Libere o motor de IA por apenas R$ 25,00 e ganhe 30 dias para criar imagens leves e textos
+          objetivos para suas aulas.
         </p>
         <div className="grid md:grid-cols-3 gap-4 text-sm">
           <div className="rounded-[12px] border border-[hsl(var(--border))] p-4">
             <p className="font-semibold">Mais velocidade</p>
             <p className="text-[hsl(var(--muted-foreground))]">
-              Monte o esqueleto do curso em minutos com base em materiais reais.
+              Gere imagens e textos curtos em segundos.
             </p>
           </div>
           <div className="rounded-[12px] border border-[hsl(var(--border))] p-4">
             <p className="font-semibold">Qualidade consistente</p>
             <p className="text-[hsl(var(--muted-foreground))]">
-              Estrutura alinhada, aulas organizadas e quizzes prontos para publicar.
+              Conteudo uniforme, pronto para colar nas aulas.
             </p>
           </div>
           <div className="rounded-[12px] border border-[hsl(var(--border))] p-4">
             <p className="font-semibold">Mais conversao</p>
             <p className="text-[hsl(var(--muted-foreground))]">
-              Lance cursos mais rapido e teste novos temas sem travar sua agenda.
+              Publique aulas mais rapido e valide novas ideias.
             </p>
           </div>
         </div>
@@ -236,8 +236,8 @@ export default function AiAccessPayment() {
               ? 'Seu acesso foi liberado pelo admin.'
               : `Valido ate ${new Date(accessInfo?.granted_until ?? '').toLocaleDateString('pt-BR')}.`}
           </p>
-          <button type="button" onClick={() => navigate('/teacher/course/new')} className="btn-accent">
-            Criar curso com IA
+          <button type="button" onClick={() => navigate('/teacher/ai-creator')} className="btn-accent">
+            Area de criacao com IA
           </button>
         </div>
       ) : (

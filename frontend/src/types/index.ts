@@ -39,6 +39,7 @@ export interface Lesson {
   title: string;
   content?: string;
   video_url?: string;
+  image_urls?: string[];
   order_index: number;
   duration?: number;
   materials?: Material[];

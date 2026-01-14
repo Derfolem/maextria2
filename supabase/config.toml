@@ -33,5 +33,5 @@ verify_jwt = true
 [functions.generate-course-image]
 verify_jwt = true
 
-[functions.ai-course-builder]
-verify_jwt = false
+[functions.generate-lesson-text]
+verify_jwt = true

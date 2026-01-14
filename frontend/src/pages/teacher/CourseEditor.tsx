@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Module, Lesson } from '../../types';
 import toast from 'react-hot-toast';
 import { FaPlus, FaTrash, FaSave, FaRobot } from 'react-icons/fa';
-import { getValidAccessToken, supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
 
 export default function CourseEditor() {
@@ -24,10 +24,6 @@ export default function CourseEditor() {
   const [questionDrafts, setQuestionDrafts] = useState<Record<string, any>>({});
   const [modules, setModules] = useState<Module[]>([]);
   const [loading, setLoading] = useState(false);
-  const [aiOpen, setAiOpen] = useState(false);
-  const [aiFiles, setAiFiles] = useState<File[]>([]);
-  const [aiPrompt, setAiPrompt] = useState('');
-  const [aiLoading, setAiLoading] = useState(false);
   const [aiAccess, setAiAccess] = useState<{ granted_until: string | null; granted_by_admin: boolean } | null>(null);
   const [aiAccessLoading, setAiAccessLoading] = useState(false);
   const user = useAuthStore((state) => state.user);
@@ -79,6 +75,8 @@ export default function CourseEditor() {
     return new Date(aiAccess.granted_until) > new Date();
   };
 
+  const emptyLessonImages = () => ['', '', ''];
+
   const slugify = (value: string) =>
     value
       .toLowerCase()
@@ -124,7 +122,36 @@ export default function CourseEditor() {
             })),
         }));
 
-      setModules(mappedModules);
+      const lessonIds = mappedModules.flatMap((module: Module) =>
+        module.lessons?.map((lesson: Lesson) => lesson.id) || []
+      );
+      const imagesByLesson: Record<string, string[]> = {};
+
+      if (lessonIds.length > 0) {
+        const { data: imagesData } = await supabase
+          .from('aula_imagens')
+          .select('aula_id, url, ordem')
+          .in('aula_id', lessonIds);
+
+        (imagesData || []).forEach((row: any) => {
+          const key = String(row.aula_id);
+          if (!imagesByLesson[key]) imagesByLesson[key] = emptyLessonImages();
+          const index = Number(row.ordem) - 1;
+          if (index >= 0 && index < 3) {
+            imagesByLesson[key][index] = row.url;
+          }
+        });
+      }
+
+      setModules(
+        mappedModules.map((module: Module) => ({
+          ...module,
+          lessons: module.lessons?.map((lesson: Lesson) => ({
+            ...lesson,
+            image_urls: imagesByLesson[String(lesson.id)] || emptyLessonImages(),
+          })),
+        }))
+      );
 
       const { data: quizzesData } = await supabase
         .from('questionarios')
@@ -162,16 +189,18 @@ export default function CourseEditor() {
 
     setLoading(true);
     try {
-      const payload = {
+      const payload: Record<string, any> = {
         titulo: title,
         descricao: description,
         preco_certificado: parseFloat(price),
         categoria: category.trim() || null,
         nivel: level || null,
-        imagem_capa_url: thumbnail.trim() || null,
         slug: slug || slugify(title),
         professor_nome: teacherName.trim() || user.name || null,
       };
+      if (isAdmin) {
+        payload.imagem_capa_url = thumbnail.trim() || null;
+      }
 
       if (isEditing) {
         const { error } = await supabase
@@ -308,6 +337,7 @@ export default function CourseEditor() {
                     title: 'Nova Aula',
                     content: '',
                     video_url: '',
+                    image_urls: emptyLessonImages(),
                     order_index: (module?.lessons?.length || 0) + 1,
                   },
                 ],
@@ -330,6 +360,20 @@ export default function CourseEditor() {
     );
   };
 
+  const updateLessonImageState = (lessonId: string | number, index: number, value: string) => {
+    setModules((prev) =>
+      prev.map((m) => ({
+        ...m,
+        lessons: m.lessons?.map((l) => {
+          if (l.id !== lessonId) return l;
+          const nextImages = [...(l.image_urls || emptyLessonImages())];
+          nextImages[index] = value;
+          return { ...l, image_urls: nextImages };
+        }),
+      }))
+    );
+  };
+
   const updateLesson = async (lessonId: string | number, data: Partial<Lesson>) => {
     try {
       const payload: Record<string, any> = {};
@@ -345,6 +389,40 @@ export default function CourseEditor() {
     } catch (error) {
       toast.error('Erro ao atualizar aula');
     }
+  };
+
+  const updateLessonImage = async (lessonId: string | number, index: number, value: string) => {
+    const ordem = index + 1;
+    try {
+      if (!value.trim()) {
+        const { error } = await supabase
+          .from('aula_imagens')
+          .delete()
+          .eq('aula_id', lessonId)
+          .eq('ordem', ordem);
+        if (error) throw error;
+        return;
+      }
+
+      const { error } = await supabase
+        .from('aula_imagens')
+        .upsert(
+          { aula_id: lessonId, ordem, url: value.trim() },
+          { onConflict: 'aula_id,ordem' }
+        );
+      if (error) throw error;
+    } catch (error) {
+      toast.error('Erro ao atualizar imagens da aula');
+    }
+  };
+
+  const handleAiArea = () => {
+    if (aiAccessLoading) return;
+    if (hasAiAccess()) {
+      navigate('/teacher/ai-creator');
+      return;
+    }
+    navigate('/teacher/ai-access');
   };
 
   const deleteLesson = async (moduleId: string | number, lessonId: string | number) => {
@@ -491,220 +569,6 @@ export default function CourseEditor() {
     }));
   };
 
-  const handleAiFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    setAiFiles(files);
-  };
-
-  const isAllowedFile = (file: File) => {
-    const name = file.name.toLowerCase();
-    return file.type === 'application/pdf'
-      || file.type === 'text/html'
-      || name.endsWith('.pdf')
-      || name.endsWith('.html')
-      || name.endsWith('.htm');
-  };
-
-  const handleAiCreate = async () => {
-    if (isEditing) {
-      toast.error('Use a IA apenas para criar um novo curso.');
-      return;
-    }
-    if (!user?.id) {
-      toast.error('Usuário não autenticado.');
-      return;
-    }
-    if (!hasAiAccess()) {
-      toast.error('Ative o acesso IA para liberar o gerador de cursos.');
-      return;
-    }
-    if (aiFiles.length === 0) {
-      toast.error('Envie pelo menos um arquivo PDF ou HTML.');
-      return;
-    }
-
-    const maxSize = 5 * 1024 * 1024;
-    const invalid = aiFiles.find((file) => !isAllowedFile(file));
-    if (invalid) {
-      toast.error('Apenas PDF ou HTML são aceitos.');
-      return;
-    }
-    const tooLarge = aiFiles.find((file) => file.size > maxSize);
-    if (tooLarge) {
-      toast.error('Arquivos devem ter até 5MB.');
-      return;
-    }
-
-    setAiLoading(true);
-    try {
-      const bucket = 'ai-ingest';
-      const uploaded: Array<{ path: string; name: string; type: string }> = [];
-
-      for (const file of aiFiles) {
-        const path = `${user.id}/${Date.now()}-${file.name}`;
-        const { error } = await supabase.storage.from(bucket).upload(path, file, {
-          contentType: file.type || 'application/octet-stream',
-        });
-        if (error) {
-          throw error;
-        }
-        uploaded.push({ path, name: file.name, type: file.type });
-      }
-
-      const accessToken = await getValidAccessToken();
-      if (!accessToken) {
-        throw new Error('Sessão expirada. Faça login novamente.');
-      }
-
-      const { data, error } = await supabase.functions.invoke('ai-course-builder', {
-        body: {
-          files: uploaded,
-          prompt: aiPrompt.trim() || undefined,
-        },
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-      if (error) {
-        throw error;
-      }
-
-      const aiData = data?.data || {};
-      const course = aiData.course || {};
-      const courseTitle = course.title || 'Novo curso';
-
-      const { data: newCourse, error: courseError } = await supabase
-        .from('cursos')
-        .insert({
-          titulo: courseTitle,
-          descricao: course.description || '',
-          preco_certificado: Number(course.price || 39),
-          categoria: course.category || null,
-          nivel: course.level || null,
-          imagem_capa_url: course.thumbnail || null,
-          slug: course.slug || slugify(courseTitle),
-          professor_nome: course.teacherName || user.name || null,
-          professor_id: user.id,
-          ativo: false,
-        })
-        .select('id')
-        .single();
-      if (courseError || !newCourse?.id) {
-        throw courseError;
-      }
-
-      const createdModules: Module[] = [];
-      for (const [index, module] of (aiData.modules || []).entries()) {
-        const { data: newModule, error: moduleError } = await supabase
-          .from('modulos')
-          .insert({
-            curso_id: newCourse.id,
-            titulo_modulo: module.title || `Modulo ${index + 1}`,
-            conteudo_texto_html: module.description || '',
-            ordem: index + 1,
-          })
-          .select('id')
-          .single();
-        if (moduleError || !newModule?.id) throw moduleError;
-
-        const createdLessons: Lesson[] = [];
-        for (const [lessonIndex, lesson] of (module.lessons || []).entries()) {
-          const { data: newLesson, error: lessonError } = await supabase
-            .from('aulas')
-            .insert({
-              modulo_id: newModule.id,
-              titulo: lesson.title || `Aula ${lessonIndex + 1}`,
-              conteudo_html: lesson.content || '',
-              video_url: '',
-              ordem: lessonIndex + 1,
-            })
-            .select('id')
-            .single();
-          if (lessonError || !newLesson?.id) throw lessonError;
-          createdLessons.push({
-            id: newLesson.id,
-            module_id: newModule.id,
-            title: lesson.title || `Aula ${lessonIndex + 1}`,
-            content: lesson.content || '',
-            video_url: '',
-            order_index: lessonIndex + 1,
-          });
-        }
-
-        createdModules.push({
-          id: newModule.id,
-          course_id: newCourse.id,
-          title: module.title || `Modulo ${index + 1}`,
-          description: module.description || '',
-          order_index: index + 1,
-          lessons: createdLessons,
-        });
-
-        if (module.quiz?.questions?.length) {
-          const { data: quiz, error: quizError } = await supabase
-            .from('questionarios')
-            .insert({
-              curso_id: newCourse.id,
-              modulo_id: newModule.id,
-              titulo: module.quiz.title || `Questionario do modulo ${index + 1}`,
-              tipo: 'modulo',
-            })
-            .select('id')
-            .single();
-          if (quizError || !quiz?.id) throw quizError;
-
-          for (const q of module.quiz.questions || []) {
-            const options = Array.isArray(q.options) ? q.options : [];
-            if (options.length < 4) continue;
-            await supabase.from('questoes').insert({
-              questionario_id: quiz.id,
-              enunciado: q.question || '',
-              alternativa_a: options[0],
-              alternativa_b: options[1],
-              alternativa_c: options[2],
-              alternativa_d: options[3],
-              correta: String(q.correct || 'a').toLowerCase(),
-            });
-          }
-        }
-      }
-
-      if (aiData.finalQuiz?.questions?.length) {
-        const { data: finalQ, error: finalError } = await supabase
-          .from('questionarios')
-          .insert({
-            curso_id: newCourse.id,
-            titulo: aiData.finalQuiz.title || 'Prova final',
-            tipo: 'final',
-          })
-          .select('id')
-          .single();
-        if (finalError || !finalQ?.id) throw finalError;
-
-        for (const q of aiData.finalQuiz.questions || []) {
-          const options = Array.isArray(q.options) ? q.options : [];
-          if (options.length < 4) continue;
-          await supabase.from('questoes').insert({
-            questionario_id: finalQ.id,
-            enunciado: q.question || '',
-            alternativa_a: options[0],
-            alternativa_b: options[1],
-            alternativa_c: options[2],
-            alternativa_d: options[3],
-            correta: String(q.correct || 'a').toLowerCase(),
-          });
-        }
-      }
-
-      toast.success('Curso criado com IA!');
-      navigate(`/teacher/course/${newCourse.id}/edit`);
-    } catch (error: any) {
-      toast.error(error?.message || 'Erro ao criar curso com IA.');
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
       <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
@@ -715,11 +579,12 @@ export default function CourseEditor() {
           {!isEditing && (
             <button
               type="button"
-              onClick={() => setAiOpen(true)}
+              onClick={handleAiArea}
               className="btn-outline flex items-center space-x-2"
+              disabled={aiAccessLoading}
             >
               <FaRobot />
-              <span>Criar via IA</span>
+              <span>Area de criação com ia</span>
             </button>
           )}
           <button onClick={handleSave} disabled={loading} className="btn-primary flex items-center space-x-2">
@@ -728,67 +593,6 @@ export default function CourseEditor() {
           </button>
         </div>
       </div>
-
-      {aiOpen && (
-        <div className="card mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Criar curso via IA</h2>
-            <button type="button" className="btn-outline" onClick={() => setAiOpen(false)}>
-              Fechar
-            </button>
-          </div>
-          {!hasAiAccess() ? (
-            <div className="space-y-4">
-              <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                Para liberar o gerador de cursos com IA e necessario um pagamento unico de R$ 25,00,
-                valido por 30 dias. Assim voce acelera a criacao do curso e foca no conteudo que importa.
-              </p>
-              <div className="rounded-[12px] border border-[hsl(var(--border))] bg-[hsl(var(--muted))] p-4 text-sm text-[hsl(var(--muted-foreground))] space-y-2">
-                <p className="font-semibold text-[hsl(var(--foreground))]">Vantagens</p>
-                <p>• Converta PDFs/HTML em modulos e aulas prontos em minutos.</p>
-                <p>• Estrutura consistente para publicar mais rapido.</p>
-                <p>• Questionarios e provas gerados automaticamente.</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => navigate('/teacher/ai-access')}
-                className="btn-accent"
-                disabled={aiAccessLoading}
-              >
-                {aiAccessLoading ? 'Verificando acesso...' : 'Ativar IA por R$ 25,00'}
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                Envie PDF ou HTML (um arquivo por modulo ou um curso completo). O arquivo sera removido
-                apos o processamento.
-              </p>
-              <input
-                type="file"
-                accept=".pdf,.html,.htm,application/pdf,text/html"
-                multiple
-                onChange={handleAiFileChange}
-                className="input-field"
-              />
-              <textarea
-                value={aiPrompt}
-                onChange={(event) => setAiPrompt(event.target.value)}
-                placeholder="Prompt opcional para complementar a geracao..."
-                className="input-field min-h-[120px]"
-              />
-              <div className="rounded-[12px] border border-[hsl(var(--border))] bg-[hsl(var(--muted))] p-4 text-sm text-[hsl(var(--muted-foreground))] space-y-2">
-                <p className="font-semibold text-[hsl(var(--foreground))]">Regras de upload</p>
-                <p>Apenas PDF ou HTML. Tamanho maximo: 5MB por arquivo.</p>
-                <p>Arquivos sao processados e apagados automaticamente.</p>
-              </div>
-              <button type="button" onClick={handleAiCreate} className="btn-accent" disabled={aiLoading}>
-                {aiLoading ? 'Gerando curso...' : 'Gerar curso com IA'}
-              </button>
-            </div>
-          )}
-        </div>
-      )}
 
       <div className="space-y-8">
         <div className="card">
@@ -856,7 +660,13 @@ export default function CourseEditor() {
                 onChange={(e) => setThumbnail(e.target.value)}
                 className="input-field"
                 placeholder="https://..."
+                disabled={!isAdmin}
               />
+              {!isAdmin && (
+                <p className="text-xs text-[hsl(var(--muted-foreground))] mt-2">
+                  Apenas o admin pode editar a URL da imagem.
+                </p>
+              )}
             </div>
 
             <div className="md:col-span-2">
@@ -1052,6 +862,20 @@ export default function CourseEditor() {
                               className="input-field mb-2"
                               placeholder="URL do vídeo (YouTube, Vimeo, etc.)"
                             />
+
+                            <div className="grid md:grid-cols-3 gap-2 mb-2">
+                              {Array.from({ length: 3 }, (_, index) => (
+                                <input
+                                  key={`${lesson.id}-image-${index + 1}`}
+                                  type="text"
+                                  value={lesson.image_urls?.[index] || ''}
+                                  onChange={(e) => updateLessonImageState(lesson.id, index, e.target.value)}
+                                  onBlur={(e) => updateLessonImage(lesson.id, index, e.target.value)}
+                                  className="input-field"
+                                  placeholder={`URL da imagem ${index + 1}`}
+                                />
+                              ))}
+                            </div>
 
                             <textarea
                               value={lesson.content || ''}
