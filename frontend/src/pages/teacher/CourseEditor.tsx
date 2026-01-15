@@ -576,17 +576,15 @@ export default function CourseEditor() {
           {isEditing ? 'Editar Curso' : 'Criar Novo Curso'}
         </h1>
         <div className="flex flex-wrap gap-3">
-          {!isEditing && (
-            <button
-              type="button"
-              onClick={handleAiArea}
-              className="btn-outline flex items-center space-x-2"
-              disabled={aiAccessLoading}
-            >
-              <FaRobot />
-              <span>Area de criação com ia</span>
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={handleAiArea}
+            className="btn-outline flex items-center space-x-2"
+            disabled={aiAccessLoading}
+          >
+            <FaRobot />
+            <span>Area de criação com ia</span>
+          </button>
           <button onClick={handleSave} disabled={loading} className="btn-primary flex items-center space-x-2">
             <FaSave />
             <span>{loading ? 'Salvando...' : 'Salvar Curso'}</span>
