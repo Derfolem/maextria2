@@ -10,6 +10,18 @@ export default function AdminSettings() {
   const [saving, setSaving] = useState(false);
   const [marketingLoading, setMarketingLoading] = useState(true);
   const [marketingSaving, setMarketingSaving] = useState(false);
+  const [aiDefaultLimit, setAiDefaultLimit] = useState('');
+  const [aiDefaultSaving, setAiDefaultSaving] = useState(false);
+  const [aiUsageLoading, setAiUsageLoading] = useState(false);
+  const [aiUsageRows, setAiUsageRows] = useState<Array<{
+    userId: string;
+    name: string;
+    email: string;
+    totalUsd: number;
+    limitUsd: number;
+  }>>([]);
+  const [aiLimitEdits, setAiLimitEdits] = useState<Record<string, string>>({});
+  const [aiLimitSaving, setAiLimitSaving] = useState<Record<string, boolean>>({});
   const [marketing, setMarketing] = useState({
     bannerEnabled: false,
     bannerImageUrl: '',
@@ -39,12 +51,14 @@ export default function AdminSettings() {
       const { data, error } = await supabase
         .from('configuracoes_site')
         .select('chave, valor')
-        .in('chave', ['admin_profit_share', 'nota_minima_prova']);
+        .in('chave', ['admin_profit_share', 'nota_minima_prova', 'ai_monthly_limit_usd']);
       if (error) throw error;
       const adminShare = Number(data?.find((item: any) => item.chave === 'admin_profit_share')?.valor ?? 30);
       const notaMinima = Number(data?.find((item: any) => item.chave === 'nota_minima_prova')?.valor ?? 60);
+      const defaultLimit = data?.find((item: any) => item.chave === 'ai_monthly_limit_usd')?.valor ?? '5';
       setProfitShare((100 - adminShare).toString());
       setMinScore(notaMinima.toString());
+      setAiDefaultLimit(defaultLimit);
     } catch (error) {
       toast.error('Erro ao carregar configurações');
     } finally {
@@ -110,6 +124,104 @@ export default function AdminSettings() {
       ...prev,
       [name]: isCheckbox ? target.checked : value,
     }));
+  };
+
+  const handleSaveAiDefaultLimit = async () => {
+    setAiDefaultSaving(true);
+    try {
+      const payload = [
+        { chave: 'ai_monthly_limit_usd', valor: aiDefaultLimit || '5' },
+      ];
+      const { error } = await supabase
+        .from('configuracoes_site')
+        .upsert(payload, { onConflict: 'chave' });
+      if (error) throw error;
+      toast.success('Limite mensal atualizado!');
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao salvar limite mensal.');
+    } finally {
+      setAiDefaultSaving(false);
+    }
+  };
+
+  const loadAiUsage = async () => {
+    setAiUsageLoading(true);
+    try {
+      const now = new Date();
+      const month = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
+
+      const [{ data: usageData }, { data: usersData }, { data: rolesData }, { data: limitsData }] = await Promise.all([
+        supabase.from('ai_usage_monthly').select('usuario_id, total_usd').eq('month', month),
+        supabase.from('usuarios').select('id, nome_completo, email'),
+        supabase.from('user_roles').select('user_id, role'),
+        supabase.from('ai_usage_limits').select('usuario_id, limit_usd'),
+      ]);
+
+      const rolesMap = (rolesData || []).reduce((acc: Record<string, string[]>, row: any) => {
+        const key = String(row.user_id);
+        acc[key] = acc[key] || [];
+        acc[key].push(row.role);
+        return acc;
+      }, {});
+
+      const usageMap = (usageData || []).reduce((acc: Record<string, number>, row: any) => {
+        acc[String(row.usuario_id)] = Number(row.total_usd || 0);
+        return acc;
+      }, {});
+
+      const limitMap = (limitsData || []).reduce((acc: Record<string, number>, row: any) => {
+        acc[String(row.usuario_id)] = Number(row.limit_usd || 0);
+        return acc;
+      }, {});
+
+      const defaultLimit = Number(aiDefaultLimit || 5);
+      const teacherRows = (usersData || [])
+        .filter((user: any) => (rolesMap[String(user.id)] || []).includes('teacher'))
+        .map((user: any) => ({
+          userId: String(user.id),
+          name: user.nome_completo || 'Sem nome',
+          email: user.email || '',
+          totalUsd: usageMap[String(user.id)] || 0,
+          limitUsd: limitMap[String(user.id)] || defaultLimit,
+        }))
+        .sort((a, b) => b.totalUsd - a.totalUsd);
+
+      setAiUsageRows(teacherRows);
+      setAiLimitEdits(
+        teacherRows.reduce((acc, row) => {
+          acc[row.userId] = row.limitUsd.toString();
+          return acc;
+        }, {} as Record<string, string>)
+      );
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao carregar consumo de IA.');
+    } finally {
+      setAiUsageLoading(false);
+    }
+  };
+
+  const handleSaveUserLimit = async (userId: string) => {
+    const value = aiLimitEdits[userId];
+    const limitUsd = Number(value);
+    if (isNaN(limitUsd) || limitUsd <= 0) {
+      toast.error('Limite invalido.');
+      return;
+    }
+    setAiLimitSaving((prev) => ({ ...prev, [userId]: true }));
+    try {
+      const { error } = await supabase
+        .from('ai_usage_limits')
+        .upsert({ usuario_id: userId, limit_usd: limitUsd }, { onConflict: 'usuario_id' });
+      if (error) throw error;
+      toast.success('Limite atualizado!');
+      setAiUsageRows((prev) =>
+        prev.map((row) => (row.userId === userId ? { ...row, limitUsd } : row))
+      );
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao salvar limite.');
+    } finally {
+      setAiLimitSaving((prev) => ({ ...prev, [userId]: false }));
+    }
   };
 
 
@@ -302,6 +414,87 @@ export default function AdminSettings() {
           >
             Abrir painel OpenAI
           </button>
+        </div>
+      </div>
+
+      <div className="card mt-8">
+        <h2 className="text-xl font-semibold mb-4">Consumo IA por professor</h2>
+        <div className="space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                Limite mensal padrao (US$)
+              </label>
+              <input
+                type="text"
+                value={aiDefaultLimit}
+                onChange={(event) => setAiDefaultLimit(event.target.value)}
+                className="input-field"
+                placeholder="Ex: 5"
+              />
+            </div>
+            <div className="flex items-end gap-2">
+              <button
+                type="button"
+                className="btn-outline"
+                onClick={handleSaveAiDefaultLimit}
+                disabled={aiDefaultSaving}
+              >
+                {aiDefaultSaving ? 'Salvando...' : 'Salvar limite padrao'}
+              </button>
+              <button
+                type="button"
+                className="btn-accent"
+                onClick={loadAiUsage}
+                disabled={aiUsageLoading}
+              >
+                {aiUsageLoading ? 'Atualizando...' : 'Atualizar consumo'}
+              </button>
+            </div>
+          </div>
+
+          {aiUsageRows.length === 0 ? (
+            <p className="text-sm text-[hsl(var(--muted-foreground))]">
+              Clique em "Atualizar consumo" para carregar os dados.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {aiUsageRows.map((row) => (
+                <div key={row.userId} className="border border-[hsl(var(--border))] rounded-[12px] p-4">
+                  <div className="flex flex-wrap justify-between gap-3">
+                    <div>
+                      <p className="font-semibold">{row.name}</p>
+                      <p className="text-sm text-[hsl(var(--muted-foreground))]">{row.email}</p>
+                      <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                        Consumo atual: US$ {row.totalUsd.toFixed(4)}
+                      </p>
+                    </div>
+                    <div className="min-w-[220px] space-y-2">
+                      <label className="block text-sm font-medium text-[hsl(var(--foreground))]">
+                        Limite mensal (US$)
+                      </label>
+                      <input
+                        type="text"
+                        value={aiLimitEdits[row.userId] ?? row.limitUsd.toString()}
+                        onChange={(event) =>
+                          setAiLimitEdits((prev) => ({ ...prev, [row.userId]: event.target.value }))
+                        }
+                        className="input-field"
+                      />
+                      <button
+                        type="button"
+                        className="btn-outline"
+                        onClick={() => handleSaveUserLimit(row.userId)}
+                        disabled={aiLimitSaving[row.userId]}
+                      >
+                        {aiLimitSaving[row.userId] ? 'Salvando...' : 'Salvar limite'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
