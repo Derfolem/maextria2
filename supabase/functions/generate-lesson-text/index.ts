@@ -57,23 +57,61 @@ serve(async (req) => {
     ].join(" ");
 
     const now = new Date();
-    const month = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
-    const defaultLimit = Number(Deno.env.get("AI_MONTHLY_LIMIT_USD") || "5");
-    const { data: limitRow } = await supabase
+    let access = await supabase
+      .from("ai_plan_access")
+      .select("limit_usd, expires_at, status")
+      .eq("usuario_id", userId)
+      .maybeSingle();
+
+    if (!access.data?.expires_at || access.data?.status !== "active") {
+      const legacy = await supabase
+        .from("ai_course_access")
+        .select("granted_until")
+        .eq("usuario_id", userId)
+        .maybeSingle();
+      if (!legacy.data?.granted_until) {
+        return new Response(
+          JSON.stringify({ error: "Plano IA nao ativo." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      access = {
+        data: {
+          limit_usd: Number(Deno.env.get("AI_MONTHLY_LIMIT_USD") || "5"),
+          expires_at: legacy.data.granted_until,
+          status: "active",
+        },
+        error: null,
+      };
+    }
+
+    const expiresAt = new Date(access.data.expires_at);
+    if (expiresAt <= now) {
+      await supabase
+        .from("ai_plan_access")
+        .update({ status: "expired", updated_at: new Date().toISOString() })
+        .eq("usuario_id", userId);
+      return new Response(
+        JSON.stringify({ error: "Plano IA expirado." }),
+        { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { data: limitOverride } = await supabase
       .from("ai_usage_limits")
       .select("limit_usd")
       .eq("usuario_id", userId)
       .maybeSingle();
-    const limitUsd = Number(limitRow?.limit_usd ?? defaultLimit);
-
+    const limitUsd = Number(limitOverride?.limit_usd ?? access.data.limit_usd ?? 0);
     const { data: usageRow } = await supabase
-      .from("ai_usage_monthly")
-      .select("total_usd")
+      .from("ai_usage_periods")
+      .select("id, total_usd, period_start")
       .eq("usuario_id", userId)
-      .eq("month", month)
+      .order("period_start", { ascending: false })
+      .limit(1)
       .maybeSingle();
     const currentTotal = Number(usageRow?.total_usd ?? 0);
-    if (currentTotal >= limitUsd) {
+    if (limitUsd > 0 && currentTotal >= limitUsd) {
       return new Response(
         JSON.stringify({ error: "Limite mensal atingido." }),
         { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -128,16 +166,20 @@ serve(async (req) => {
     const costUsd = ((promptTokens * inputCostPer1M) + (completionTokens * outputCostPer1M)) / 1_000_000;
 
     const newTotal = currentTotal + costUsd;
-    if (usageRow) {
+    if (usageRow?.id) {
       await supabase
-        .from("ai_usage_monthly")
-        .update({ total_usd: newTotal, atualizado_em: new Date().toISOString() })
-        .eq("usuario_id", userId)
-        .eq("month", month);
+        .from("ai_usage_periods")
+        .update({ total_usd: newTotal, updated_at: new Date().toISOString() })
+        .eq("id", usageRow.id);
     } else {
       await supabase
-        .from("ai_usage_monthly")
-        .insert({ usuario_id: userId, month, total_usd: newTotal });
+        .from("ai_usage_periods")
+        .insert({
+          usuario_id: userId,
+          period_start: now.toISOString(),
+          period_end: expiresAt.toISOString(),
+          total_usd: newTotal,
+        });
     }
 
     return new Response(

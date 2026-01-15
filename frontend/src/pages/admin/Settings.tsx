@@ -150,11 +150,15 @@ export default function AdminSettings() {
       const now = new Date();
       const month = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
 
-      const [{ data: usageData }, { data: usersData }, { data: rolesData }, { data: limitsData }] = await Promise.all([
-        supabase.from('ai_usage_monthly').select('usuario_id, total_usd').eq('month', month),
+      const [{ data: usageData }, { data: usersData }, { data: rolesData }, { data: limitsData }, { data: planAccess }] = await Promise.all([
+        supabase
+          .from('ai_usage_periods')
+          .select('usuario_id, total_usd, period_end')
+          .gte('period_end', new Date().toISOString()),
         supabase.from('usuarios').select('id, nome_completo, email'),
         supabase.from('user_roles').select('user_id, role'),
         supabase.from('ai_usage_limits').select('usuario_id, limit_usd'),
+        supabase.from('ai_plan_access').select('usuario_id, limit_usd'),
       ]);
 
       const rolesMap = (rolesData || []).reduce((acc: Record<string, string[]>, row: any) => {
@@ -165,7 +169,13 @@ export default function AdminSettings() {
       }, {});
 
       const usageMap = (usageData || []).reduce((acc: Record<string, number>, row: any) => {
-        acc[String(row.usuario_id)] = Number(row.total_usd || 0);
+        const key = String(row.usuario_id);
+        acc[key] = Math.max(acc[key] || 0, Number(row.total_usd || 0));
+        return acc;
+      }, {});
+
+      const planLimitMap = (planAccess || []).reduce((acc: Record<string, number>, row: any) => {
+        acc[String(row.usuario_id)] = Number(row.limit_usd || 0);
         return acc;
       }, {});
 
@@ -182,7 +192,7 @@ export default function AdminSettings() {
           name: user.nome_completo || 'Sem nome',
           email: user.email || '',
           totalUsd: usageMap[String(user.id)] || 0,
-          limitUsd: limitMap[String(user.id)] || defaultLimit,
+          limitUsd: limitMap[String(user.id)] || planLimitMap[String(user.id)] || defaultLimit,
         }))
         .sort((a, b) => b.totalUsd - a.totalUsd);
 
@@ -413,6 +423,13 @@ export default function AdminSettings() {
             onClick={() => window.open('https://platform.openai.com/usage', '_blank', 'noopener')}
           >
             Abrir painel OpenAI
+          </button>
+          <button
+            type="button"
+            className="btn-outline"
+            onClick={() => window.location.assign('/admin/payments')}
+          >
+            Abrir painel de pagamentos
           </button>
         </div>
       </div>

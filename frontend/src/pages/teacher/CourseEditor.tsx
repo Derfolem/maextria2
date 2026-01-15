@@ -24,7 +24,7 @@ export default function CourseEditor() {
   const [questionDrafts, setQuestionDrafts] = useState<Record<string, any>>({});
   const [modules, setModules] = useState<Module[]>([]);
   const [loading, setLoading] = useState(false);
-  const [aiAccess, setAiAccess] = useState<{ granted_until: string | null; granted_by_admin: boolean } | null>(null);
+  const [aiAccess, setAiAccess] = useState<{ expires_at: string | null } | null>(null);
   const [aiAccessLoading, setAiAccessLoading] = useState(false);
   const user = useAuthStore((state) => state.user);
   const isAdmin = user?.role === 'admin';
@@ -55,11 +55,26 @@ export default function CourseEditor() {
     setAiAccessLoading(true);
     try {
       const { data } = await supabase
-        .from('ai_course_access')
-        .select('granted_until, granted_by_admin')
+        .from('ai_plan_access')
+        .select('expires_at')
         .eq('usuario_id', String(user.id))
         .maybeSingle();
-      setAiAccess(data ?? null);
+      if (data?.expires_at) {
+        setAiAccess(data);
+        return;
+      }
+
+      const { data: legacyAccess } = await supabase
+        .from('ai_course_access')
+        .select('granted_until')
+        .eq('usuario_id', String(user.id))
+        .maybeSingle();
+      if (legacyAccess?.granted_until) {
+        setAiAccess({ expires_at: legacyAccess.granted_until });
+        return;
+      }
+
+      setAiAccess(null);
     } catch (error) {
       setAiAccess(null);
     } finally {
@@ -70,9 +85,8 @@ export default function CourseEditor() {
   const hasAiAccess = () => {
     if (isAdmin) return true;
     if (!aiAccess) return false;
-    if (aiAccess.granted_by_admin) return true;
-    if (!aiAccess.granted_until) return false;
-    return new Date(aiAccess.granted_until) > new Date();
+    if (!aiAccess.expires_at) return false;
+    return new Date(aiAccess.expires_at) > new Date();
   };
 
   const emptyLessonImages = () => ['', '', ''];

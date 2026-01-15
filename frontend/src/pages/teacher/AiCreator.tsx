@@ -72,8 +72,13 @@ export default function AiCreator() {
     ...(supabaseAnonKey ? { apikey: supabaseAnonKey } : {}),
   });
 
-  const [accessInfo, setAccessInfo] = useState<{ granted_until: string | null; granted_by_admin: boolean } | null>(null);
+  const [accessInfo, setAccessInfo] = useState<{ plan_code: string; expires_at: string; limit_usd: number } | null>(null);
   const [accessLoading, setAccessLoading] = useState(true);
+  const [usageTotal, setUsageTotal] = useState(0);
+  const [usageLimit, setUsageLimit] = useState(0);
+  const [usagePercent, setUsagePercent] = useState(0);
+  const [usageLoading, setUsageLoading] = useState(false);
+  const [usageWarningShown, setUsageWarningShown] = useState(false);
   const [mode, setMode] = useState<'image' | 'text'>('image');
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
@@ -92,6 +97,21 @@ export default function AiCreator() {
     }
     loadAccess();
   }, [user, navigate]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    loadUsage();
+  }, [user?.id, accessInfo?.expires_at, accessInfo?.limit_usd]);
+
+  useEffect(() => {
+    if (usageLimit > 0 && usagePercent >= 80 && !usageWarningShown) {
+      toast('Voce ja consumiu 80% do limite mensal.');
+      setUsageWarningShown(true);
+    }
+    if (usagePercent < 80 && usageWarningShown) {
+      setUsageWarningShown(false);
+    }
+  }, [usagePercent, usageLimit, usageWarningShown]);
 
   useEffect(() => {
     if (!user?.id || typeof window === 'undefined') return;
@@ -150,15 +170,30 @@ export default function AiCreator() {
     setAccessLoading(true);
     try {
       if (isAdmin) {
-        setAccessInfo({ granted_until: null, granted_by_admin: true });
+        setAccessInfo({ plan_code: 'admin', expires_at: new Date().toISOString(), limit_usd: 0 });
         return;
       }
       const { data } = await supabase
-        .from('ai_course_access')
-        .select('granted_until, granted_by_admin')
+        .from('ai_plan_access')
+        .select('plan_code, expires_at, limit_usd')
         .eq('usuario_id', String(user.id))
         .maybeSingle();
-      setAccessInfo(data ?? null);
+      if (data) {
+        setAccessInfo(data);
+        return;
+      }
+
+      const { data: legacyAccess } = await supabase
+        .from('ai_course_access')
+        .select('granted_until')
+        .eq('usuario_id', String(user.id))
+        .maybeSingle();
+      if (legacyAccess?.granted_until) {
+        setAccessInfo({ plan_code: 'legacy', expires_at: legacyAccess.granted_until, limit_usd: 5 });
+        return;
+      }
+
+      setAccessInfo(null);
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao carregar acesso.');
     } finally {
@@ -166,12 +201,62 @@ export default function AiCreator() {
     }
   };
 
+  const loadUsage = async () => {
+    if (!user?.id || isAdmin) {
+      setUsageTotal(0);
+      setUsageLimit(0);
+      setUsagePercent(0);
+      return;
+    }
+    setUsageLoading(true);
+    try {
+      if (!accessInfo?.expires_at) {
+        setUsageTotal(0);
+        setUsageLimit(0);
+        setUsagePercent(0);
+        return;
+      }
+      const expiresAt = new Date(accessInfo.expires_at);
+      const now = new Date();
+      const { data: limitOverride } = await supabase
+        .from('ai_usage_limits')
+        .select('limit_usd')
+        .eq('usuario_id', String(user.id))
+        .maybeSingle();
+      const limitUsd = Number(limitOverride?.limit_usd ?? accessInfo.limit_usd ?? 0);
+      setUsageLimit(limitUsd);
+
+      if (expiresAt <= now) {
+        setUsageTotal(0);
+        setUsagePercent(0);
+        return;
+      }
+
+      const { data } = await supabase
+        .from('ai_usage_periods')
+        .select('total_usd, period_end')
+        .eq('usuario_id', String(user.id))
+        .gte('period_end', now.toISOString())
+        .order('period_end', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const totalUsd = Number(data?.total_usd ?? 0);
+      const percent = limitUsd > 0 ? Math.min(100, (totalUsd / limitUsd) * 100) : 0;
+      setUsageTotal(totalUsd);
+      setUsagePercent(percent);
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao carregar consumo.');
+    } finally {
+      setUsageLoading(false);
+    }
+  };
+
   const hasAiAccess = useMemo(() => {
     if (isAdmin) return true;
     if (!accessInfo) return false;
-    if (accessInfo.granted_by_admin) return true;
-    if (!accessInfo.granted_until) return false;
-    return new Date(accessInfo.granted_until) > new Date();
+    if (!accessInfo.expires_at) return false;
+    return new Date(accessInfo.expires_at) > new Date();
   }, [accessInfo, isAdmin]);
 
   const promptTokens = useMemo(() => countTokens(prompt), [prompt]);
@@ -192,6 +277,10 @@ export default function AiCreator() {
       toast.error('Digite um prompt.');
       return;
     }
+    if (!hasAiAccess) {
+      toast.error('Seu plano IA nao esta ativo.');
+      return;
+    }
     const accessToken = await getValidAccessToken();
     if (!accessToken) {
       toast.error('Sessao expirada. Faça login novamente.');
@@ -207,6 +296,7 @@ export default function AiCreator() {
       if (!data?.text) throw new Error('Nenhum texto retornado.');
       setGeneratedText(data.text);
       setGeneratedImageUrl('');
+      await loadUsage();
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao gerar texto.');
     } finally {
@@ -217,6 +307,10 @@ export default function AiCreator() {
   const handleGenerateImage = async () => {
     if (!prompt.trim()) {
       toast.error('Digite um prompt.');
+      return;
+    }
+    if (!hasAiAccess) {
+      toast.error('Seu plano IA nao esta ativo.');
       return;
     }
     if (!user?.id) {
@@ -270,6 +364,7 @@ export default function AiCreator() {
       setImageInfo({ sizeKb: Math.round(blob.size / 1024), size });
       setImageFeedback(null);
       setImageDeleted(false);
+      await loadUsage();
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao gerar imagem.');
     } finally {
@@ -335,8 +430,7 @@ export default function AiCreator() {
           </p>
           <h1 className="text-3xl font-bold">Area de criacao com IA</h1>
           <p className="text-sm text-[hsl(var(--muted-foreground))]">
-            Para liberar a area de criacao com IA e necessario um pagamento unico de R$ 25,00,
-            valido por 30 dias. Assim voce acelera a criacao das suas aulas.
+            Para liberar a area de criacao com IA e necessario ativar um plano mensal.
           </p>
           <div className="rounded-[12px] border border-[hsl(var(--border))] bg-[hsl(var(--muted))] p-4 text-sm text-[hsl(var(--muted-foreground))] space-y-2">
             <p className="font-semibold text-[hsl(var(--foreground))]">Vantagens</p>
@@ -349,7 +443,7 @@ export default function AiCreator() {
             onClick={() => navigate('/teacher/ai-access')}
             className="btn-accent"
           >
-            Ativar IA por R$ 25,00
+            Ver planos de IA
           </button>
         </div>
       </div>
@@ -391,6 +485,35 @@ export default function AiCreator() {
           >
             Texto
           </button>
+        </div>
+
+        <div className="rounded-[12px] border border-[hsl(var(--border))] bg-[hsl(var(--muted))] p-4 space-y-2">
+          <div className="flex items-center justify-between text-xs text-[hsl(var(--muted-foreground))]">
+            <span>0%</span>
+            <span>100%</span>
+          </div>
+          <div className="h-2 w-full rounded-full bg-white/80">
+            <div
+              className="h-2 rounded-full bg-[hsl(var(--accent))]"
+              style={{ width: `${Math.min(100, Math.max(0, usagePercent))}%` }}
+            />
+          </div>
+          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+            {usageLoading ? 'Carregando consumo...' : `${usagePercent.toFixed(0)}% usado do limite mensal.`}
+          </p>
+          {accessInfo?.expires_at && (
+            <p className="text-xs text-[hsl(var(--muted-foreground))]">
+              Valido ate {new Date(accessInfo.expires_at).toLocaleDateString('pt-BR')}.
+            </p>
+          )}
+          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+            Seu limite e renovado por mes. O bloqueio acontece ao atingir o consumo ou completar 1 mes.
+          </p>
+          {usageLimit > 0 && usagePercent >= 100 && (
+            <p className="text-xs text-[hsl(var(--muted-foreground))]">
+              Limite mensal atingido. Renove o plano para continuar.
+            </p>
+          )}
         </div>
 
         <div>

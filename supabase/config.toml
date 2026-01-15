@@ -38,3 +38,9 @@ verify_jwt = false
 
 [functions.openai-usage]
 verify_jwt = false
+
+[functions.create-ai-plan-payment]
+verify_jwt = false
+
+[functions.verify-ai-plan-payment]
+verify_jwt = false
