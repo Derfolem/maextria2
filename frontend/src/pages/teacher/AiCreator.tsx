@@ -87,9 +87,6 @@ export default function AiCreator() {
 
   useEffect(() => {
     if (!user) {
-      if (typeof window !== 'undefined') {
-        localStorage.clear();
-      }
       navigate('/login');
       return;
     }

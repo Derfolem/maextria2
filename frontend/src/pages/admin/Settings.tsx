@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getValidAccessToken, supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { FaSave, FaPercent, FaBullhorn, FaCode, FaSearch, FaChartLine } from 'react-icons/fa';
 
@@ -10,14 +10,9 @@ export default function AdminSettings() {
   const [saving, setSaving] = useState(false);
   const [marketingLoading, setMarketingLoading] = useState(true);
   const [marketingSaving, setMarketingSaving] = useState(false);
-  const [openAiUsage, setOpenAiUsage] = useState<{
-    total_granted: number;
-    total_used: number;
-    total_available: number;
-    expires_at: number | null;
-  } | null>(null);
-  const [openAiLoading, setOpenAiLoading] = useState(false);
-  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? '';
+  const [openAiBalance, setOpenAiBalance] = useState('');
+  const [openAiCheckedAt, setOpenAiCheckedAt] = useState('');
+  const [openAiSaving, setOpenAiSaving] = useState(false);
   const [marketing, setMarketing] = useState({
     bannerEnabled: false,
     bannerImageUrl: '',
@@ -47,12 +42,14 @@ export default function AdminSettings() {
       const { data, error } = await supabase
         .from('configuracoes_site')
         .select('chave, valor')
-        .in('chave', ['admin_profit_share', 'nota_minima_prova']);
+        .in('chave', ['admin_profit_share', 'nota_minima_prova', 'openai_credit_balance', 'openai_credit_checked_at']);
       if (error) throw error;
       const adminShare = Number(data?.find((item: any) => item.chave === 'admin_profit_share')?.valor ?? 30);
       const notaMinima = Number(data?.find((item: any) => item.chave === 'nota_minima_prova')?.valor ?? 60);
       setProfitShare((100 - adminShare).toString());
       setMinScore(notaMinima.toString());
+      setOpenAiBalance(data?.find((item: any) => item.chave === 'openai_credit_balance')?.valor ?? '');
+      setOpenAiCheckedAt(data?.find((item: any) => item.chave === 'openai_credit_checked_at')?.valor ?? '');
     } catch (error) {
       toast.error('Erro ao carregar configurações');
     } finally {
@@ -120,26 +117,22 @@ export default function AdminSettings() {
     }));
   };
 
-  const handleLoadOpenAiUsage = async () => {
-    setOpenAiLoading(true);
+  const handleSaveOpenAiCredits = async () => {
+    setOpenAiSaving(true);
     try {
-      const accessToken = await getValidAccessToken();
-      if (!accessToken) {
-        throw new Error('Sessao expirada. Faça login novamente.');
-      }
-      const { data, error } = await supabase.functions.invoke('openai-usage', {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          ...(supabaseAnonKey ? { apikey: supabaseAnonKey } : {}),
-        },
-      });
+      const payload = [
+        { chave: 'openai_credit_balance', valor: openAiBalance },
+        { chave: 'openai_credit_checked_at', valor: openAiCheckedAt },
+      ];
+      const { error } = await supabase
+        .from('configuracoes_site')
+        .upsert(payload, { onConflict: 'chave' });
       if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      setOpenAiUsage(data ?? null);
+      toast.success('Creditos OpenAI atualizados!');
     } catch (error: any) {
-      toast.error(error?.message || 'Erro ao carregar creditos da OpenAI.');
+      toast.error(error?.message || 'Erro ao salvar creditos da OpenAI.');
     } finally {
-      setOpenAiLoading(false);
+      setOpenAiSaving(false);
     }
   };
 
@@ -325,44 +318,51 @@ export default function AdminSettings() {
         </div>
 
         <div className="space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                Saldo informado (US$)
+              </label>
+              <input
+                type="text"
+                value={openAiBalance}
+                onChange={(event) => setOpenAiBalance(event.target.value)}
+                className="input-field"
+                placeholder="Ex: 25.40"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+                Ultima atualizacao
+              </label>
+              <input
+                type="datetime-local"
+                value={openAiCheckedAt}
+                onChange={(event) => setOpenAiCheckedAt(event.target.value)}
+                className="input-field"
+              />
+            </div>
+          </div>
+
           <button
             type="button"
             className="btn-outline"
-            onClick={handleLoadOpenAiUsage}
-            disabled={openAiLoading}
+            onClick={handleSaveOpenAiCredits}
+            disabled={openAiSaving}
           >
-            {openAiLoading ? 'Carregando...' : 'Atualizar creditos'}
+            {openAiSaving ? 'Salvando...' : 'Salvar creditos'}
           </button>
 
-          {openAiUsage ? (
-            <div className="grid md:grid-cols-3 gap-4 text-sm">
-              <div className="rounded-[12px] border border-[hsl(var(--border))] p-4">
-                <p className="font-semibold">Total concedido</p>
-                <p className="text-[hsl(var(--muted-foreground))]">
-                  US$ {openAiUsage.total_granted.toFixed(2)}
-                </p>
-              </div>
-              <div className="rounded-[12px] border border-[hsl(var(--border))] p-4">
-                <p className="font-semibold">Total usado</p>
-                <p className="text-[hsl(var(--muted-foreground))]">
-                  US$ {openAiUsage.total_used.toFixed(2)}
-                </p>
-              </div>
-              <div className="rounded-[12px] border border-[hsl(var(--border))] p-4">
-                <p className="font-semibold">Saldo disponivel</p>
-                <p className="text-[hsl(var(--muted-foreground))]">
-                  US$ {openAiUsage.total_available.toFixed(2)}
-                </p>
-              </div>
-            </div>
-          ) : (
-            <p className="text-sm text-[hsl(var(--muted-foreground))]">
-              Clique em "Atualizar creditos" para consultar o saldo atual.
-            </p>
-          )}
+          <button
+            type="button"
+            className="btn-accent"
+            onClick={() => window.open('https://platform.openai.com/usage', '_blank', 'noopener')}
+          >
+            Abrir painel OpenAI
+          </button>
 
           <div className="rounded-[12px] border border-[hsl(var(--border))] bg-[hsl(var(--muted))] p-4 text-sm text-[hsl(var(--muted-foreground))]">
-            Caso o valor nao apareca, verifique em platform.openai.com/usage.
+            A API da OpenAI nao permite ler saldo com chave secreta. Use o painel e preencha o valor manualmente.
           </div>
         </div>
       </div>
