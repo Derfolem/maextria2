@@ -35,7 +35,6 @@ serve(async (req) => {
         model: "gpt-image-1",
         prompt,
         size: "1024x1024",
-        response_format: "b64_json",
       }),
     });
 
@@ -58,12 +57,14 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const base64 = data?.data?.[0]?.b64_json;
-    if (!base64) {
+    const first = data?.data?.[0];
+    const base64 = first?.b64_json;
+    const url = first?.url;
+    if (!base64 && !url) {
       throw new Error("Nenhuma imagem foi gerada.");
     }
 
-    const imageUrl = `data:image/png;base64,${base64}`;
+    const imageUrl = base64 ? `data:image/png;base64,${base64}` : url;
 
     return new Response(
       JSON.stringify({ imageUrl }),
