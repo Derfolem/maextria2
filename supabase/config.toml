@@ -31,7 +31,7 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.generate-course-image]
-verify_jwt = true
+verify_jwt = false
 
 [functions.generate-lesson-text]
-verify_jwt = true
+verify_jwt = false
