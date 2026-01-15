@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { FaThumbsDown, FaThumbsUp } from 'react-icons/fa';
 import { getValidAccessToken, supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
 
@@ -77,8 +78,11 @@ export default function AiCreator() {
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [generatedImageUrl, setGeneratedImageUrl] = useState('');
+  const [generatedImagePath, setGeneratedImagePath] = useState('');
+  const [generatedImageId, setGeneratedImageId] = useState<string | null>(null);
   const [generatedText, setGeneratedText] = useState('');
   const [imageInfo, setImageInfo] = useState<{ sizeKb: number; size: number } | null>(null);
+  const [imageFeedback, setImageFeedback] = useState<'liked' | 'disliked' | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -122,8 +126,11 @@ export default function AiCreator() {
   const resetCreation = () => {
     setPrompt('');
     setGeneratedImageUrl('');
+    setGeneratedImagePath('');
+    setGeneratedImageId(null);
     setGeneratedText('');
     setImageInfo(null);
+    setImageFeedback(null);
   };
 
   const handleGenerateText = async () => {
@@ -190,14 +197,56 @@ export default function AiCreator() {
       const publicUrl = publicData?.publicUrl;
       if (!publicUrl) throw new Error('Nao foi possivel obter a URL publica.');
 
+      const { data: savedImage, error: saveError } = await supabase
+        .from('ai_generated_assets')
+        .insert({
+          usuario_id: String(user.id),
+          tipo: 'image',
+          url: publicUrl,
+          storage_path: filename,
+        })
+        .select('id')
+        .single();
+      if (saveError) throw saveError;
+
       setGeneratedImageUrl(publicUrl);
+      setGeneratedImagePath(filename);
+      setGeneratedImageId(savedImage?.id ?? null);
       setGeneratedText('');
       setImageInfo({ sizeKb: Math.round(blob.size / 1024), size });
+      setImageFeedback(null);
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao gerar imagem.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleImageFeedback = async (value: 'liked' | 'disliked') => {
+    setImageFeedback(value);
+    if (value !== 'disliked') return;
+    if (!generatedImagePath) {
+      setGeneratedImageUrl('');
+      setGeneratedImageId(null);
+      setImageInfo(null);
+      return;
+    }
+    if (generatedImageId) {
+      await supabase
+        .from('ai_generated_assets')
+        .delete()
+        .eq('id', generatedImageId);
+    }
+    const { error } = await supabase.storage.from('ai-assets').remove([generatedImagePath]);
+    if (error) {
+      toast.error('Nao foi possivel excluir a imagem.');
+      return;
+    }
+    setGeneratedImageUrl('');
+    setGeneratedImagePath('');
+    setGeneratedImageId(null);
+    setImageInfo(null);
+    toast('Imagem excluida.');
   };
 
   const handleCopy = async (value: string, message: string) => {
@@ -319,20 +368,45 @@ export default function AiCreator() {
                   </p>
                 )}
                 <div className="flex flex-wrap gap-2 items-center">
-                  <input
-                    type="text"
-                    value={generatedImageUrl}
-                    readOnly
-                    className="input-field flex-1"
-                  />
                   <button
                     type="button"
-                    className="btn-outline"
-                    onClick={() => handleCopy(generatedImageUrl, 'URL copiada!')}
+                    className={`btn-outline ${imageFeedback === 'liked' ? 'btn-primary' : ''}`}
+                    onClick={() => handleImageFeedback('liked')}
                   >
-                    Copiar URL
+                    <FaThumbsUp className="mr-2" />
+                    Gostei
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn-outline ${imageFeedback === 'disliked' ? 'btn-primary' : ''}`}
+                    onClick={() => handleImageFeedback('disliked')}
+                  >
+                    <FaThumbsDown className="mr-2" />
+                    Nao gostei
                   </button>
                 </div>
+                {imageFeedback === 'liked' && (
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <input
+                      type="text"
+                      value={generatedImageUrl}
+                      readOnly
+                      className="input-field flex-1"
+                    />
+                    <button
+                      type="button"
+                      className="btn-outline"
+                      onClick={() => handleCopy(generatedImageUrl, 'URL copiada!')}
+                    >
+                      Copiar URL
+                    </button>
+                  </div>
+                )}
+                {imageFeedback === 'disliked' && (
+                  <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                    Essa imagem sera excluida.
+                  </p>
+                )}
               </div>
             )}
           </div>

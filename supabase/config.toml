@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.generate-lesson-text]
 verify_jwt = false
+
+[functions.openai-usage]
+verify_jwt = true

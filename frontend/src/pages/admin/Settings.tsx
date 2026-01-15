@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { getValidAccessToken, supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
-import { FaSave, FaPercent, FaBullhorn, FaCode, FaSearch } from 'react-icons/fa';
+import { FaSave, FaPercent, FaBullhorn, FaCode, FaSearch, FaChartLine } from 'react-icons/fa';
 
 export default function AdminSettings() {
   const [profitShare, setProfitShare] = useState('');
@@ -10,6 +10,14 @@ export default function AdminSettings() {
   const [saving, setSaving] = useState(false);
   const [marketingLoading, setMarketingLoading] = useState(true);
   const [marketingSaving, setMarketingSaving] = useState(false);
+  const [openAiUsage, setOpenAiUsage] = useState<{
+    total_granted: number;
+    total_used: number;
+    total_available: number;
+    expires_at: number | null;
+  } | null>(null);
+  const [openAiLoading, setOpenAiLoading] = useState(false);
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? '';
   const [marketing, setMarketing] = useState({
     bannerEnabled: false,
     bannerImageUrl: '',
@@ -110,6 +118,29 @@ export default function AdminSettings() {
       ...prev,
       [name]: isCheckbox ? target.checked : value,
     }));
+  };
+
+  const handleLoadOpenAiUsage = async () => {
+    setOpenAiLoading(true);
+    try {
+      const accessToken = await getValidAccessToken();
+      if (!accessToken) {
+        throw new Error('Sessao expirada. Faça login novamente.');
+      }
+      const { data, error } = await supabase.functions.invoke('openai-usage', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          ...(supabaseAnonKey ? { apikey: supabaseAnonKey } : {}),
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setOpenAiUsage(data ?? null);
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao carregar creditos da OpenAI.');
+    } finally {
+      setOpenAiLoading(false);
+    }
   };
 
   const handleMarketingSave = async (event: React.FormEvent) => {
@@ -278,6 +309,62 @@ export default function AdminSettings() {
             <span>{saving ? 'Salvando...' : 'Salvar Configurações'}</span>
           </button>
         </form>
+      </div>
+
+      <div className="card mt-8">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="h-11 w-11 rounded-2xl bg-[hsl(var(--muted))] flex items-center justify-center text-[hsl(var(--primary))]">
+            <FaChartLine />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold">Creditos OpenAI</h2>
+            <p className="text-sm text-[hsl(var(--muted-foreground))]">
+              Acompanhe o saldo e o uso da chave API da OpenAI.
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <button
+            type="button"
+            className="btn-outline"
+            onClick={handleLoadOpenAiUsage}
+            disabled={openAiLoading}
+          >
+            {openAiLoading ? 'Carregando...' : 'Atualizar creditos'}
+          </button>
+
+          {openAiUsage ? (
+            <div className="grid md:grid-cols-3 gap-4 text-sm">
+              <div className="rounded-[12px] border border-[hsl(var(--border))] p-4">
+                <p className="font-semibold">Total concedido</p>
+                <p className="text-[hsl(var(--muted-foreground))]">
+                  US$ {openAiUsage.total_granted.toFixed(2)}
+                </p>
+              </div>
+              <div className="rounded-[12px] border border-[hsl(var(--border))] p-4">
+                <p className="font-semibold">Total usado</p>
+                <p className="text-[hsl(var(--muted-foreground))]">
+                  US$ {openAiUsage.total_used.toFixed(2)}
+                </p>
+              </div>
+              <div className="rounded-[12px] border border-[hsl(var(--border))] p-4">
+                <p className="font-semibold">Saldo disponivel</p>
+                <p className="text-[hsl(var(--muted-foreground))]">
+                  US$ {openAiUsage.total_available.toFixed(2)}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-[hsl(var(--muted-foreground))]">
+              Clique em "Atualizar creditos" para consultar o saldo atual.
+            </p>
+          )}
+
+          <div className="rounded-[12px] border border-[hsl(var(--border))] bg-[hsl(var(--muted))] p-4 text-sm text-[hsl(var(--muted-foreground))]">
+            Caso o valor nao apareca, verifique em platform.openai.com/usage.
+          </div>
+        </div>
       </div>
 
       <div className="card mt-8">
