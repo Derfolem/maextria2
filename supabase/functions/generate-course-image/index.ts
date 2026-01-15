@@ -25,7 +25,7 @@ serve(async (req) => {
       throw new Error("OPENAI_API_KEY nao configurada");
     }
 
-    const response = await fetch("https://api.openai.com/v1/images", {
+    const response = await fetch("https://api.openai.com/v1/images/generations", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${OPENAI_API_KEY}`,
@@ -41,6 +41,7 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error("Erro OpenAI:", response.status, errorText);
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "Limite de requisicoes excedido. Tente novamente." }),
