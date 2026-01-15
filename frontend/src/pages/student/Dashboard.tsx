@@ -133,7 +133,7 @@ export default function StudentDashboard() {
       const totalProgress = enrollmentsWithProgress.reduce((sum, item) => sum + (item.progress || 0), 0);
       setAvgProgress(enrollmentsWithProgress.length > 0 ? totalProgress / enrollmentsWithProgress.length : 0);
       setRecentCourses(enrollmentsWithProgress.slice(0, 3));
-      setCertificates(
+        setCertificates(
         (certsRes.data || []).map((cert: any) => ({
           ...cert,
           certificate_url:
@@ -145,6 +145,7 @@ export default function StudentDashboard() {
             price: cert.cursos?.preco_certificado ?? cert.price ?? 0,
             teacher_id: '',
             teacher_name: cert.teacher_name,
+            level: cert.cursos?.nivel ?? cert.level ?? cert.course_level ?? '',
             is_published: true,
             created_at: cert.emitido_em ?? cert.issued_at,
             updated_at: cert.emitido_em ?? cert.issued_at,
@@ -293,22 +294,28 @@ export default function StudentDashboard() {
             <p className="text-[hsl(var(--muted-foreground))]">Nenhum certificado ainda</p>
           ) : (
             <div className="space-y-3">
-              {certificates.slice(0, 3).map((cert) => (
-                <div key={cert.id} className="flex items-center justify-between p-3 border border-[hsl(var(--border))] rounded-[12px]">
-                  <div>
-                    <p className="font-semibold">{cert.course?.title}</p>
-                    <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                      {new Date(cert.issued_at).toLocaleDateString('pt-BR')}
-                    </p>
+              {certificates.slice(0, 3).map((cert) => {
+                const levelLabel = cert.course?.level ? String(cert.course.level) : 'Nao informado';
+                return (
+                  <div key={cert.id} className="flex items-center justify-between p-3 border border-[hsl(var(--border))] rounded-[12px]">
+                    <div className="space-y-1">
+                      <p className="font-semibold">{cert.course?.title}</p>
+                      <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                        Conclusao: 100% · Nivel: {levelLabel}
+                      </p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                        {new Date(cert.issued_at).toLocaleDateString('pt-BR')}
+                      </p>
+                    </div>
+                    <Link
+                      to="/student/my-courses"
+                      className="text-[hsl(var(--primary))] hover:text-[hsl(var(--accent))]"
+                    >
+                      <FaCertificate className="text-2xl" />
+                    </Link>
                   </div>
-                  <Link
-                    to="/student/my-courses"
-                    className="text-[hsl(var(--primary))] hover:text-[hsl(var(--accent))]"
-                  >
-                    <FaCertificate className="text-2xl" />
-                  </Link>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
