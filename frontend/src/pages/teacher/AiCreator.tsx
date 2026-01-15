@@ -407,6 +407,13 @@ export default function AiCreator() {
                     Essa imagem sera excluida.
                   </p>
                 )}
+                <button
+                  type="button"
+                  className="text-sm text-[hsl(var(--muted-foreground))] underline underline-offset-2"
+                  onClick={() => handleImageFeedback('disliked')}
+                >
+                  Excluir imagem
+                </button>
               </div>
             )}
           </div>
