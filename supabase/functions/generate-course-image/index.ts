@@ -65,7 +65,22 @@ serve(async (req) => {
       throw new Error("Nenhuma imagem foi gerada.");
     }
 
-    const imageUrl = base64 ? `data:image/png;base64,${base64}` : url;
+    let imageUrl = "";
+    if (base64) {
+      imageUrl = `data:image/png;base64,${base64}`;
+    } else if (url) {
+      const imageResponse = await fetch(url);
+      if (!imageResponse.ok) {
+        throw new Error("Falha ao baixar imagem gerada.");
+      }
+      const buffer = new Uint8Array(await imageResponse.arrayBuffer());
+      let binary = "";
+      for (const byte of buffer) {
+        binary += String.fromCharCode(byte);
+      }
+      const encoded = btoa(binary);
+      imageUrl = `data:image/png;base64,${encoded}`;
+    }
 
     return new Response(
       JSON.stringify({ imageUrl }),
