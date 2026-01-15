@@ -295,16 +295,20 @@ export default function StudentDashboard() {
           ) : (
             <div className="space-y-3">
               {certificates.slice(0, 3).map((cert) => {
-                const levelLabel = cert.course?.level ? String(cert.course.level) : 'Nao informado';
+                const title = cert.course?.title || 'Curso';
+                const issuedAt = cert.issued_at ? new Date(cert.issued_at) : null;
+                const issuedLabel = issuedAt && !Number.isNaN(issuedAt.getTime())
+                  ? issuedAt.toLocaleDateString('pt-BR')
+                  : '-';
                 return (
                   <div key={cert.id} className="flex items-center justify-between p-3 border border-[hsl(var(--border))] rounded-[12px]">
                     <div className="space-y-1">
-                      <p className="font-semibold">{cert.course?.title}</p>
+                      <p className="font-semibold">{title}</p>
                       <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                        Conclusao: 100% · Nivel: {levelLabel}
+                        Conclusao: 100%
                       </p>
                       <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                        {new Date(cert.issued_at).toLocaleDateString('pt-BR')}
+                        {issuedLabel}
                       </p>
                     </div>
                     <Link
