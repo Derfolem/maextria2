@@ -328,6 +328,23 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleDeleteNotification = async (threadId: string) => {
+    if (!currentUserId) return;
+    try {
+      const { error } = await supabase
+        .from('internal_threads')
+        .delete()
+        .eq('id', threadId)
+        .eq('created_by', currentUserId);
+      if (error) throw error;
+      toast.success('Notificacao excluida.');
+      setThreadMessages([]);
+      await loadMessaging();
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao excluir notificacao.');
+    }
+  };
+
   const COLORS = [
     'hsl(var(--primary))',
     'hsl(var(--secondary))',
@@ -625,6 +642,17 @@ export default function AdminDashboard() {
                 </p>
               )}
             </div>
+            {activeTab === 'sent' && selectedThreadId && (
+              <div>
+                <button
+                  type="button"
+                  className="btn-outline"
+                  onClick={() => handleDeleteNotification(selectedThreadId)}
+                >
+                  Excluir notificacao
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
