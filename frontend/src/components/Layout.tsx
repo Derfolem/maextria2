@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../lib/store';
-import { FaBook, FaBars, FaTimes, FaInstagram, FaLinkedinIn, FaYoutube } from 'react-icons/fa';
+import { FaBook, FaBars, FaTimes, FaInstagram, FaLinkedinIn, FaYoutube, FaBell } from 'react-icons/fa';
 import AIChat from './AIChat';
 import { supabase } from '../lib/supabase';
 
@@ -24,6 +24,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     robots: 'index,follow',
     canonical: '',
   });
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
   const bannerEnabled = banner.enabled && Boolean(banner.imageUrl);
   const isMemberArea = location.pathname.startsWith('/admin') || location.pathname.startsWith('/teacher');
   const showBanner = bannerEnabled && !isMemberArea;
@@ -155,6 +156,59 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     trackPageView();
   }, [location.pathname, location.search, pageViewKey]);
 
+  const loadNotificationBadge = async (userId: string, role: 'student' | 'teacher' | 'admin') => {
+    try {
+      const recipientRoles = role === 'teacher' ? ['teacher', 'all'] : ['student', 'all'];
+      const nowIso = new Date().toISOString();
+      const { data: threads } = await supabase
+        .from('internal_threads')
+        .select('id, internal_messages(id)')
+        .eq('type', 'broadcast')
+        .eq('created_by_role', 'admin')
+        .in('recipient_role', recipientRoles)
+        .or(`expires_at.is.null,expires_at.gte.${nowIso}`);
+
+      const messageIds = (threads || [])
+        .flatMap((thread: any) => (thread.internal_messages || []).map((message: any) => message.id));
+      const uniqueMessageIds = Array.from(new Set(messageIds));
+      if (uniqueMessageIds.length === 0) {
+        setUnreadNotifications(0);
+        return;
+      }
+
+      const { data: receipts } = await supabase
+        .from('internal_message_receipts')
+        .select('message_id')
+        .eq('user_id', userId)
+        .in('message_id', uniqueMessageIds);
+
+      const readSet = new Set((receipts || []).map((row: any) => row.message_id));
+      setUnreadNotifications(uniqueMessageIds.filter((id) => !readSet.has(id)).length);
+    } catch (error) {
+      console.error('Error loading notification badge:', error);
+      setUnreadNotifications(0);
+    }
+  };
+
+  useEffect(() => {
+    if (!user || !['student', 'teacher'].includes(user.role)) {
+      setUnreadNotifications(0);
+      return;
+    }
+    loadNotificationBadge(String(user.id), user.role);
+  }, [user?.id, user?.role, location.pathname]);
+
+  useEffect(() => {
+    const handler = () => {
+      if (!user || !['student', 'teacher'].includes(user.role)) return;
+      loadNotificationBadge(String(user.id), user.role);
+    };
+    window.addEventListener('maextria-notifications-read', handler);
+    return () => window.removeEventListener('maextria-notifications-read', handler);
+  }, [user?.id, user?.role]);
+
+  const notificationLink = user?.role === 'teacher' ? '/teacher/notifications' : '/student/notifications';
+
   return (
     <div className="min-h-screen flex flex-col">
       <nav className="fixed inset-x-0 top-0 z-50 bg-[hsl(var(--background))]/95 backdrop-blur border-b border-[hsl(var(--border))]">
@@ -180,14 +234,28 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               )}
             </div>
 
-            <button
-              type="button"
-              className="text-[hsl(var(--foreground))]"
-              onClick={() => setMobileOpen((prev) => !prev)}
-              aria-label="Abrir menu do usuario"
-            >
-              <FaBars className="text-xl" />
-            </button>
+            <div className="flex items-center gap-4">
+              {user && (user.role === 'student' || user.role === 'teacher') && (
+                <Link
+                  to={notificationLink}
+                  className="relative text-[hsl(var(--foreground))] hover:text-[hsl(var(--secondary))] transition"
+                  aria-label="Abrir notificacoes"
+                >
+                  <FaBell className="text-lg" />
+                  {unreadNotifications > 0 && (
+                    <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-red-500" />
+                  )}
+                </Link>
+              )}
+              <button
+                type="button"
+                className="text-[hsl(var(--foreground))]"
+                onClick={() => setMobileOpen((prev) => !prev)}
+                aria-label="Abrir menu do usuario"
+              >
+                <FaBars className="text-xl" />
+              </button>
+            </div>
           </div>
         </div>
       </nav>
@@ -255,6 +323,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     <Link to="/student/my-courses" className="nav-link" onClick={() => setMobileOpen(false)}>
                       {user?.role === 'student' ? 'Meus Cursos' : 'Cursos (Aluno)'}
                     </Link>
+                    {(user?.role === 'student' || user?.role === 'teacher') && (
+                      <Link to={notificationLink} className="nav-link" onClick={() => setMobileOpen(false)}>
+                        Notificacoes
+                      </Link>
+                    )}
                   </>
                 )}
                 {user?.role === 'teacher' && (

@@ -84,6 +84,7 @@ export default function NotificationCenter({ title, subtitle, role }: Notificati
     await supabase
       .from('internal_message_receipts')
       .upsert(receiptPayload, { onConflict: 'message_id,user_id' });
+    window.dispatchEvent(new Event('maextria-notifications-read'));
   };
 
   const relativeFormatter = useMemo(

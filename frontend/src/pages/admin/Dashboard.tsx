@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { DashboardStats } from '../../types';
 import { supabase } from '../../lib/supabase';
-import { FaUsers, FaBook, FaDollarSign, FaChartLine, FaInbox, FaTrash, FaBullhorn } from 'react-icons/fa';
+import { FaUsers, FaBook, FaDollarSign, FaChartLine, FaBullhorn } from 'react-icons/fa';
 import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -34,33 +34,24 @@ export default function AdminDashboard() {
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [threadMessages, setThreadMessages] = useState<Array<any>>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'inbox' | 'new'>('inbox');
-  const [showReply, setShowReply] = useState(false);
+  const [activeTab, setActiveTab] = useState<'sent' | 'new'>('sent');
   const [broadcastForm, setBroadcastForm] = useState({
     target: 'students',
     subject: '',
     body: '',
-    expiresAt: '',
   });
   const [sendingBroadcast, setSendingBroadcast] = useState(false);
-  const [mailBlocked, setMailBlocked] = useState(false);
-  const [mailBlockedMessage, setMailBlockedMessage] = useState('Correio interno temporariamente indisponivel.');
-  const [savingMailConfig, setSavingMailConfig] = useState(false);
-  const [replyBody, setReplyBody] = useState('');
-  const [sendingReply, setSendingReply] = useState(false);
 
   useEffect(() => {
     loadStats();
     loadNotifications();
     loadMessaging();
-    loadMailConfig();
     loadMarketingStats();
   }, []);
 
   useEffect(() => {
     if (selectedThreadId) {
       loadThreadMessages(selectedThreadId);
-      setShowReply(false);
     }
   }, [selectedThreadId]);
 
@@ -206,18 +197,6 @@ export default function AdminDashboard() {
     }
   };
 
-  const loadMailConfig = async () => {
-    const { data } = await supabase
-      .from('configuracoes_site')
-      .select('chave, valor')
-      .in('chave', ['correio_interno_bloqueado', 'correio_interno_mensagem']);
-    const blockedValue = data?.find((item) => item.chave === 'correio_interno_bloqueado')?.valor;
-    const blockedMessage = data?.find((item) => item.chave === 'correio_interno_mensagem')?.valor;
-    setMailBlocked(blockedValue === '1');
-    if (blockedMessage) {
-      setMailBlockedMessage(blockedMessage);
-    }
-  };
 
   const loadMessaging = async () => {
     setThreadsLoading(true);
@@ -228,7 +207,9 @@ export default function AdminDashboard() {
 
       const { data: threadsData } = await supabase
         .from('internal_threads')
-        .select('id, type, subject, course_id, created_at, expires_at, created_by, created_by_role, recipient_role')
+        .select('id, type, subject, created_at, expires_at, created_by, created_by_role, recipient_role, internal_messages!inner(id)')
+        .eq('type', 'broadcast')
+        .eq('created_by', userId)
         .order('created_at', { ascending: false });
 
       setThreads(threadsData || []);
@@ -252,18 +233,7 @@ export default function AdminDashboard() {
         .select('id, body, created_at, sender_id, sender_role')
         .eq('thread_id', threadId)
         .order('created_at', { ascending: true });
-      let messages = data || [];
-      if (currentUserId && messages.length > 0) {
-        const messageIds = messages.map((message) => message.id);
-        const { data: deletions } = await supabase
-          .from('internal_message_deletions')
-          .select('message_id')
-          .eq('user_id', currentUserId)
-          .in('message_id', messageIds);
-        const deletedSet = new Set((deletions || []).map((row: any) => row.message_id));
-        messages = messages.filter((message) => !deletedSet.has(message.id));
-      }
-      setThreadMessages(messages);
+      setThreadMessages(data || []);
     } catch (error) {
       console.error('Error loading thread messages:', error);
     } finally {
@@ -315,9 +285,12 @@ export default function AdminDashboard() {
       if (!subject || !body) {
         throw new Error('Preencha assunto e mensagem.');
       }
-      const expiresAt = broadcastForm.expiresAt
-        ? new Date(broadcastForm.expiresAt).toISOString()
-        : null;
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      const recipientRole = broadcastForm.target === 'teachers'
+        ? 'teacher'
+        : broadcastForm.target === 'all'
+          ? 'all'
+          : 'student';
 
       const { data: thread, error: threadError } = await supabase
         .from('internal_threads')
@@ -325,7 +298,7 @@ export default function AdminDashboard() {
           type: 'broadcast',
           subject,
           created_by: currentUserId,
-          recipient_role: broadcastForm.target === 'teachers' ? 'teacher' : 'student',
+          recipient_role: recipientRole,
           expires_at: expiresAt,
           created_by_role: 'admin',
         })
@@ -344,95 +317,16 @@ export default function AdminDashboard() {
       if (messageError) throw messageError;
 
       toast.success('Mensagem enviada.');
-      setBroadcastForm({ target: 'students', subject: '', body: '', expiresAt: '' });
+      setBroadcastForm({ target: 'students', subject: '', body: '' });
       await loadMessaging();
       setSelectedThreadId(thread.id);
+      setActiveTab('sent');
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao enviar mensagem.');
     } finally {
       setSendingBroadcast(false);
     }
   };
-
-  const handleDeleteMessage = async (messageId: string) => {
-    if (!currentUserId) return;
-    try {
-      const { error } = await supabase
-        .from('internal_message_deletions')
-        .insert({ message_id: messageId, user_id: currentUserId });
-      if (error) throw error;
-      setThreadMessages((prev) => prev.filter((message) => message.id !== messageId));
-      toast.success('Mensagem excluida.');
-    } catch (error: any) {
-      toast.error(error?.message || 'Erro ao excluir mensagem.');
-    }
-  };
-
-  const handleDeleteThread = async (threadId: string) => {
-    if (!currentUserId) return;
-    try {
-      const { error } = await supabase
-        .from('internal_threads')
-        .delete()
-        .eq('id', threadId)
-        .eq('created_by', currentUserId);
-      if (error) throw error;
-      toast.success('Comunicado removido para todos.');
-      await loadMessaging();
-    } catch (error: any) {
-      toast.error(error?.message || 'Erro ao remover comunicado.');
-    }
-  };
-
-  const handleReply = async () => {
-    if (!selectedThreadId || !currentUserId) return;
-    const body = replyBody.trim();
-    if (!body) {
-      toast.error('Digite uma resposta.');
-      return;
-    }
-    setSendingReply(true);
-    try {
-      const { error } = await supabase
-        .from('internal_messages')
-        .insert({
-          thread_id: selectedThreadId,
-          sender_id: currentUserId,
-          body,
-          sender_role: 'admin',
-        });
-      if (error) throw error;
-      setReplyBody('');
-      await loadThreadMessages(selectedThreadId);
-    } catch (error: any) {
-      toast.error(error?.message || 'Erro ao enviar resposta.');
-    } finally {
-      setSendingReply(false);
-    }
-  };
-
-  const handleMailConfigSave = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setSavingMailConfig(true);
-    try {
-      const payload = [
-        { chave: 'correio_interno_bloqueado', valor: mailBlocked ? '1' : '0' },
-        { chave: 'correio_interno_mensagem', valor: mailBlockedMessage },
-      ];
-      const { error } = await supabase
-        .from('configuracoes_site')
-        .upsert(payload, { onConflict: 'chave' });
-      if (error) throw error;
-      toast.success('Configuracao atualizada.');
-    } catch (error: any) {
-      toast.error(error?.message || 'Erro ao salvar configuracao.');
-    } finally {
-      setSavingMailConfig(false);
-    }
-  };
-
-  const selectedThread = threads.find((thread) => thread.id === selectedThreadId);
-  const canReplyToThread = Boolean(activeTab === 'inbox' && selectedThreadId);
 
   const COLORS = [
     'hsl(var(--primary))',
@@ -601,34 +495,34 @@ export default function AdminDashboard() {
       <div className="card mt-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold flex items-center gap-2">
-            <FaInbox />
-            Mensagens internas
+            <FaBullhorn />
+            Notificacoes
           </h2>
           <div className="flex items-center gap-2">
             <button
               type="button"
-              className={activeTab === 'inbox' ? 'btn-accent' : 'btn-outline'}
-              onClick={() => setActiveTab('inbox')}
+              className={activeTab === 'sent' ? 'btn-accent' : 'btn-outline'}
+              onClick={() => setActiveTab('sent')}
             >
-              Caixa de entrada
+              Enviadas
             </button>
             <button
               type="button"
               className={activeTab === 'new' ? 'btn-accent' : 'btn-outline'}
               onClick={() => setActiveTab('new')}
             >
-              Nova mensagem
+              Nova notificacao
             </button>
           </div>
         </div>
 
         <div className="grid lg:grid-cols-[280px_1fr] gap-6">
           <div className="space-y-3">
-            <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--muted-foreground))]">Conversas</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--muted-foreground))]">Notificacoes enviadas</p>
             {threadsLoading ? (
               <p className="text-sm text-[hsl(var(--muted-foreground))]">Carregando...</p>
             ) : threads.length === 0 ? (
-              <p className="text-sm text-[hsl(var(--muted-foreground))]">Nenhuma mensagem ainda.</p>
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">Nenhuma notificacao enviada.</p>
             ) : (
               threads.map((thread) => (
                 <button
@@ -644,11 +538,15 @@ export default function AdminDashboard() {
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm font-semibold">{thread.subject}</p>
                     <span className="text-[10px] uppercase tracking-[0.2em] px-2 py-1 rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))]">
-                      {thread.type === 'broadcast' ? 'Comunicado' : 'Conversa'}
+                      Notificacao
                     </span>
                   </div>
                   <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
-                    {thread.recipient_role === 'teacher' ? 'Professores' : thread.recipient_role === 'student' ? 'Alunos' : 'Equipe'}
+                    {thread.recipient_role === 'teacher'
+                      ? 'Professores'
+                      : thread.recipient_role === 'student'
+                        ? 'Alunos'
+                        : 'Todos'}
                   </p>
                 </button>
               ))
@@ -658,7 +556,7 @@ export default function AdminDashboard() {
           <div className="space-y-4">
             {activeTab === 'new' && (
               <form onSubmit={handleSendBroadcast} className="space-y-4">
-                <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--muted-foreground))]">Nova mensagem</p>
+                <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--muted-foreground))]">Nova notificacao</p>
                 <div className="grid md:grid-cols-2 gap-4">
                   <select
                     name="target"
@@ -666,22 +564,16 @@ export default function AdminDashboard() {
                     onChange={handleBroadcastChange}
                     className="input-field"
                   >
-                    <option value="students">Todos os alunos</option>
-                    <option value="teachers">Todos os professores</option>
+                    <option value="students">Alunos</option>
+                    <option value="teachers">Professores</option>
+                    <option value="all">Todos</option>
                   </select>
-                  <input
-                    type="datetime-local"
-                    name="expiresAt"
-                    value={broadcastForm.expiresAt}
-                    onChange={handleBroadcastChange}
-                    className="input-field"
-                  />
                 </div>
                 <input
                   name="subject"
                   value={broadcastForm.subject}
                   onChange={handleBroadcastChange}
-                  placeholder="Assunto da mensagem"
+                  placeholder="Assunto do comunicado"
                   className="input-field"
                   required
                 />
@@ -689,22 +581,22 @@ export default function AdminDashboard() {
                   name="body"
                   value={broadcastForm.body}
                   onChange={handleBroadcastChange}
-                  placeholder="Escreva a mensagem interna"
+                  placeholder="Escreva o comunicado"
                   className="input-field min-h-[140px]"
                   required
                 />
                 <button type="submit" className="btn-accent inline-flex items-center gap-2" disabled={sendingBroadcast}>
-                  {sendingBroadcast ? 'Enviando...' : 'Enviar mensagem'}
+                  {sendingBroadcast ? 'Enviando...' : 'Enviar notificacao'}
                 </button>
                 <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                  Selecione data e hora de expiracao para alunos/professores.
+                  Os comunicados expiram automaticamente em 30 dias.
                 </p>
               </form>
             )}
 
             <div className="space-y-3">
-              <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--muted-foreground))]">Mensagens</p>
-              {activeTab === 'inbox' && selectedThreadId ? (
+              <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--muted-foreground))]">Conteudo</p>
+              {activeTab === 'sent' && selectedThreadId ? (
                 messagesLoading ? (
                   <p className="text-sm text-[hsl(var(--muted-foreground))]">Carregando mensagens...</p>
                 ) : threadMessages.length === 0 ? (
@@ -712,24 +604,11 @@ export default function AdminDashboard() {
                 ) : (
                   <div className="space-y-3">
                     {threadMessages.map((message) => {
-                      const isOwn = message.sender_id === currentUserId;
-                      const senderRole = message.sender_role || 'teacher';
                       const bubbleClass = 'border border-black bg-black text-white';
-                      const senderLabel = isOwn ? 'Você' : senderRole === 'admin' ? 'Equipe MAEXTRIA' : 'Professor';
-                      const canDeleteMessage = !(senderRole === 'admin' && selectedThread?.created_by === currentUserId);
                       return (
                         <div key={message.id} className={`rounded-[12px] border p-3 ${bubbleClass}`}>
                           <div className="flex items-center justify-between">
-                            <p className="text-sm font-semibold">{senderLabel}</p>
-                            {canDeleteMessage && (
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteMessage(message.id)}
-                                className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))]"
-                              >
-                                <FaTrash />
-                              </button>
-                            )}
+                            <p className="text-sm font-semibold">Equipe MAEXTRIA</p>
                           </div>
                           <p className="text-sm mt-2 whitespace-pre-line text-white">{message.body}</p>
                           <p className="text-xs text-[hsl(var(--muted-foreground))] mt-2">
@@ -741,67 +620,13 @@ export default function AdminDashboard() {
                   </div>
                 )
               ) : (
-                <p className="text-sm text-[hsl(var(--muted-foreground))]">Selecione uma conversa.</p>
+                <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                  {activeTab === 'sent' ? 'Selecione uma notificacao ao lado.' : 'Crie um novo comunicado.'}
+                </p>
               )}
             </div>
-
-            {activeTab === 'inbox' && selectedThreadId && canReplyToThread && (
-              <div className="space-y-3">
-                <button type="button" className="btn-outline" onClick={() => setShowReply((prev) => !prev)}>
-                  {showReply ? 'Fechar resposta' : 'Responder'}
-                </button>
-                {showReply && (
-                  <>
-                    <textarea
-                      value={replyBody}
-                      onChange={(event) => setReplyBody(event.target.value)}
-                      placeholder="Responder..."
-                      className="input-field min-h-[120px]"
-                    />
-                    <button type="button" className="btn-accent" onClick={handleReply} disabled={sendingReply}>
-                      {sendingReply ? 'Enviando...' : 'Enviar resposta'}
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
-
-            {activeTab === 'inbox' && selectedThreadId && selectedThread?.type === 'broadcast' && selectedThread?.created_by === currentUserId && (
-              <div>
-                <button type="button" className="btn-outline" onClick={() => handleDeleteThread(selectedThreadId)}>
-                  Excluir comunicado para todos
-                </button>
-              </div>
-            )}
           </div>
         </div>
-      </div>
-
-      <div className="card mt-8">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">Bloqueio do correio interno</h2>
-          <span className="text-sm text-[hsl(var(--muted-foreground))]">Mensagem exibida para alunos e professores</span>
-        </div>
-        <form onSubmit={handleMailConfigSave} className="space-y-4">
-          <label className="flex items-center gap-3 text-sm">
-            <input
-              type="checkbox"
-              checked={mailBlocked}
-              onChange={(event) => setMailBlocked(event.target.checked)}
-            />
-            Bloquear envio e recebimento de mensagens
-          </label>
-          <textarea
-            value={mailBlockedMessage}
-            onChange={(event) => setMailBlockedMessage(event.target.value)}
-            placeholder="Mensagem exibida quando o correio interno estiver bloqueado"
-            className="input-field min-h-[120px]"
-            required
-          />
-          <button type="submit" className="btn-accent inline-flex items-center gap-2" disabled={savingMailConfig}>
-            {savingMailConfig ? 'Salvando...' : 'Salvar configuracao'}
-          </button>
-        </form>
       </div>
     </div>
   );
