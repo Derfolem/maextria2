@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { supabase } from '../../lib/supabase';
+import { getValidAccessToken, supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
 
 const MAX_PROMPT_TOKENS = 100;
@@ -65,6 +65,11 @@ export default function AiCreator() {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const isAdmin = user?.role === 'admin';
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? '';
+  const buildAuthHeaders = (accessToken: string) => ({
+    Authorization: `Bearer ${accessToken}`,
+    ...(supabaseAnonKey ? { apikey: supabaseAnonKey } : {}),
+  });
 
   const [accessInfo, setAccessInfo] = useState<{ granted_until: string | null; granted_by_admin: boolean } | null>(null);
   const [accessLoading, setAccessLoading] = useState(true);
@@ -126,10 +131,16 @@ export default function AiCreator() {
       toast.error('Digite um prompt.');
       return;
     }
+    const accessToken = await getValidAccessToken();
+    if (!accessToken) {
+      toast.error('Sessao expirada. Faça login novamente.');
+      return;
+    }
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-lesson-text', {
         body: { prompt: prompt.trim() },
+        headers: buildAuthHeaders(accessToken),
       });
       if (error) throw error;
       if (!data?.text) throw new Error('Nenhum texto retornado.');
@@ -151,10 +162,16 @@ export default function AiCreator() {
       toast.error('Usuario nao autenticado.');
       return;
     }
+    const accessToken = await getValidAccessToken();
+    if (!accessToken) {
+      toast.error('Sessao expirada. Faça login novamente.');
+      return;
+    }
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-course-image', {
         body: { prompt: prompt.trim() },
+        headers: buildAuthHeaders(accessToken),
       });
       if (error) throw error;
       const remoteImageUrl = data?.imageUrl;
