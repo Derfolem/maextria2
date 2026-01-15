@@ -13,6 +13,15 @@ export default function TeacherDashboard() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [revenueData, setRevenueData] = useState<Array<{ month: string; revenue: number }>>([]);
+  const [revenueByCourse, setRevenueByCourse] = useState<Array<{ name: string; revenue: number }>>([]);
+  const [recentPayments, setRecentPayments] = useState<Array<{ title: string; amount: number; date: string }>>([]);
+  const [financeSnapshot, setFinanceSnapshot] = useState({
+    totalRevenue: 0,
+    revenue30d: 0,
+    totalPayments: 0,
+    avgTicket: 0,
+    monthGrowth: null as number | null,
+  });
   const user = useAuthStore((state) => state.user);
   const [bankForm, setBankForm] = useState({
     holder: '',
@@ -74,6 +83,37 @@ export default function TeacherDashboard() {
 
       const uniqueStudents = new Set(enrollmentsData.map((row) => row.usuario_id)).size;
       const totalRevenue = paymentsData.reduce((sum, row) => sum + Number(row.valor || 0), 0);
+      const totalPayments = paymentsData.length;
+      const avgTicket = totalPayments > 0 ? totalRevenue / totalPayments : 0;
+
+      const now = new Date();
+      const start30d = new Date(now);
+      start30d.setDate(start30d.getDate() - 30);
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+
+      const revenue30d = paymentsData.reduce((sum, row) => {
+        const date = row.criado_em ? new Date(row.criado_em) : null;
+        if (!date || date < start30d) return sum;
+        return sum + Number(row.valor || 0);
+      }, 0);
+
+      const revenueThisMonth = paymentsData.reduce((sum, row) => {
+        const date = row.criado_em ? new Date(row.criado_em) : null;
+        if (!date || date < monthStart) return sum;
+        return sum + Number(row.valor || 0);
+      }, 0);
+
+      const revenuePrevMonth = paymentsData.reduce((sum, row) => {
+        const date = row.criado_em ? new Date(row.criado_em) : null;
+        if (!date || date < prevMonthStart || date > prevMonthEnd) return sum;
+        return sum + Number(row.valor || 0);
+      }, 0);
+
+      const monthGrowth = revenuePrevMonth > 0
+        ? ((revenueThisMonth - revenuePrevMonth) / revenuePrevMonth) * 100
+        : null;
 
       const revenueByMonth = paymentsData.reduce((acc: Record<string, { label: string; value: number }>, row) => {
         const date = row.criado_em ? new Date(row.criado_em) : null;
@@ -100,6 +140,44 @@ export default function TeacherDashboard() {
           revenue: revenueByMonth[month].value,
         }))
       );
+
+      const courseTitleById = filteredCourses.reduce((acc: Record<string, string>, course) => {
+        acc[String(course.id)] = course.title;
+        return acc;
+      }, {});
+
+      const revenueByCourseMap = paymentsData.reduce((acc: Record<string, number>, row) => {
+        const key = String(row.curso_id);
+        acc[key] = (acc[key] || 0) + Number(row.valor || 0);
+        return acc;
+      }, {});
+      const revenueByCourseRows = Object.entries(revenueByCourseMap)
+        .map(([courseId, revenue]) => ({
+          name: courseTitleById[courseId] || 'Curso',
+          revenue,
+        }))
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 5);
+      setRevenueByCourse(revenueByCourseRows);
+
+      const recent = [...paymentsData]
+        .filter((row) => row.criado_em)
+        .sort((a, b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime())
+        .slice(0, 6)
+        .map((row) => ({
+          title: courseTitleById[String(row.curso_id)] || 'Curso',
+          amount: Number(row.valor || 0),
+          date: row.criado_em,
+        }));
+      setRecentPayments(recent);
+
+      setFinanceSnapshot({
+        totalRevenue,
+        revenue30d,
+        totalPayments,
+        avgTicket,
+        monthGrowth,
+      });
 
       setCourses(
         filteredCourses.map((course) =>
@@ -192,7 +270,37 @@ export default function TeacherDashboard() {
         ))}
       </div>
 
-      <div className="grid md:grid-cols-2 gap-8 mb-12">
+      <div className="grid md:grid-cols-4 gap-6 mb-12">
+        {[
+          {
+            label: 'Receita 30 dias',
+            value: `R$ ${financeSnapshot.revenue30d.toFixed(2)}`,
+          },
+          {
+            label: 'Ticket medio',
+            value: `R$ ${financeSnapshot.avgTicket.toFixed(2)}`,
+          },
+          {
+            label: 'Pagamentos',
+            value: financeSnapshot.totalPayments,
+          },
+          {
+            label: 'Crescimento mensal',
+            value: financeSnapshot.monthGrowth === null
+              ? '—'
+              : `${financeSnapshot.monthGrowth.toFixed(1)}%`,
+          },
+        ].map((item) => (
+          <div key={item.label} className="card">
+            <div>
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">{item.label}</p>
+              <p className="text-3xl font-semibold mt-2">{item.value}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid md:grid-cols-3 gap-8 mb-12">
         <div className="card">
           <h2 className="text-xl font-semibold mb-4">Receita mensal</h2>
           <ResponsiveContainer width="100%" height={250}>
@@ -204,6 +312,23 @@ export default function TeacherDashboard() {
               <Bar dataKey="revenue" fill="hsl(var(--primary))" />
             </BarChart>
           </ResponsiveContainer>
+        </div>
+
+        <div className="card">
+          <h2 className="text-xl font-semibold mb-4">Receita por curso</h2>
+          {revenueByCourse.length === 0 ? (
+            <p className="text-sm text-[hsl(var(--muted-foreground))]">Sem dados financeiros.</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={revenueByCourse}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
+                <YAxis stroke="hsl(var(--muted-foreground))" />
+                <Tooltip />
+                <Bar dataKey="revenue" fill="hsl(var(--primary))" />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
         <div className="card">
@@ -229,7 +354,7 @@ export default function TeacherDashboard() {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-8 mb-12">
+      <div className="grid lg:grid-cols-3 gap-8 mb-12">
         <div className="card">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">Meus cursos</h2>
@@ -265,6 +390,34 @@ export default function TeacherDashboard() {
                       Editar
                     </Link>
                   </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="card">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Pagamentos recentes</h2>
+            <span className="text-sm text-[hsl(var(--muted-foreground))]">
+              Ultimos registros
+            </span>
+          </div>
+          {recentPayments.length === 0 ? (
+            <p className="text-sm text-[hsl(var(--muted-foreground))]">Sem pagamentos registrados.</p>
+          ) : (
+            <div className="space-y-3">
+              {recentPayments.map((item) => (
+                <div key={`${item.title}-${item.date}`} className="flex items-center justify-between p-3 border border-[hsl(var(--border))] rounded-[12px]">
+                  <div>
+                    <p className="font-semibold">{item.title}</p>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                      {new Date(item.date).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+                  <span className="text-sm font-semibold text-[hsl(var(--primary))]">
+                    R$ {item.amount.toFixed(2)}
+                  </span>
                 </div>
               ))}
             </div>
