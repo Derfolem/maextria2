@@ -315,53 +315,60 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             )}
             {isAuthenticated ? (
               <>
-                {(user?.role === 'student' || user?.role === 'teacher' || user?.role === 'admin') && (
+                {user?.role === 'student' && (
                   <>
-                    <Link to="/student/dashboard" className="nav-link" onClick={() => setMobileOpen(false)}>
-                      {user?.role === 'student' ? 'Dashboard' : 'Aprendizado'}
+                    <Link to="/student/notifications" className="nav-link" onClick={() => setMobileOpen(false)}>
+                      Notificacoes
+                    </Link>
+                    <Link to="/settings" className="nav-link" onClick={() => setMobileOpen(false)}>
+                      Perfil do usuario
                     </Link>
                     <Link to="/student/my-courses" className="nav-link" onClick={() => setMobileOpen(false)}>
-                      {user?.role === 'student' ? 'Meus Cursos' : 'Cursos (Aluno)'}
+                      Meus Cursos
                     </Link>
-                    {(user?.role === 'student' || user?.role === 'teacher') && (
-                      <Link to={notificationLink} className="nav-link" onClick={() => setMobileOpen(false)}>
-                        Notificacoes
-                      </Link>
-                    )}
+                    <Link to="/student/dashboard" className="nav-link" onClick={() => setMobileOpen(false)}>
+                      Painel geral
+                    </Link>
                   </>
                 )}
                 {user?.role === 'teacher' && (
                   <>
-                    <Link to="/teacher/dashboard" className="nav-link" onClick={() => setMobileOpen(false)}>
-                      Dashboard
+                    <Link to="/teacher/notifications" className="nav-link" onClick={() => setMobileOpen(false)}>
+                      Notificacoes
+                    </Link>
+                    <Link to="/settings" className="nav-link" onClick={() => setMobileOpen(false)}>
+                      Perfil do usuario
                     </Link>
                     <Link to="/teacher/my-courses" className="nav-link" onClick={() => setMobileOpen(false)}>
                       Meus Cursos
+                    </Link>
+                    <Link to="/teacher/dashboard" className="nav-link" onClick={() => setMobileOpen(false)}>
+                      Painel
                     </Link>
                   </>
                 )}
                 {user?.role === 'admin' && (
                   <>
-                    <Link to="/admin/dashboard" className="nav-link" onClick={() => setMobileOpen(false)}>
-                      Dashboard
-                    </Link>
-                    <Link to="/admin/users" className="nav-link" onClick={() => setMobileOpen(false)}>
-                      Usuarios
-                    </Link>
                     <Link to="/admin/notifications" className="nav-link" onClick={() => setMobileOpen(false)}>
                       Notificacoes
                     </Link>
-                    <Link to="/admin/courses" className="nav-link" onClick={() => setMobileOpen(false)}>
-                      Cursos
-                    </Link>
                     <Link to="/admin/settings" className="nav-link" onClick={() => setMobileOpen(false)}>
-                      Configuracoes
+                      Sistema
+                    </Link>
+                    <Link to="/settings" className="nav-link" onClick={() => setMobileOpen(false)}>
+                      Perfil do usuario
+                    </Link>
+                    <Link to="/admin/courses" className="nav-link" onClick={() => setMobileOpen(false)}>
+                      Aprovacoes
+                    </Link>
+                    <Link to="/admin/users" className="nav-link" onClick={() => setMobileOpen(false)}>
+                      Liberacoes
+                    </Link>
+                    <Link to="/admin/dashboard" className="nav-link" onClick={() => setMobileOpen(false)}>
+                      Painel
                     </Link>
                   </>
                 )}
-                <Link to="/settings" className="nav-link" onClick={() => setMobileOpen(false)}>
-                  Perfil
-                </Link>
                 <button type="button" className="btn-outline w-full" onClick={handleLogout}>
                   Sair
                 </button>

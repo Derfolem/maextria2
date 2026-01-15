@@ -82,22 +82,22 @@ function App() {
         } />
 
         <Route path="/student/dashboard" element={
-          <ProtectedRoute roles={['student', 'teacher', 'admin']}>
+          <ProtectedRoute roles={['student']}>
             <StudentDashboard />
           </ProtectedRoute>
         } />
         <Route path="/student/my-courses" element={
-          <ProtectedRoute roles={['student', 'teacher', 'admin']}>
+          <ProtectedRoute roles={['student']}>
             <StudentMyCourses />
           </ProtectedRoute>
         } />
         <Route path="/student/course/:id" element={
-          <ProtectedRoute roles={['student', 'teacher', 'admin']}>
+          <ProtectedRoute roles={['student']}>
             <CoursePlayer />
           </ProtectedRoute>
         } />
         <Route path="/student/notifications" element={
-          <ProtectedRoute roles={['student', 'teacher', 'admin']}>
+          <ProtectedRoute roles={['student']}>
             <StudentNotifications />
           </ProtectedRoute>
         } />
