@@ -10,9 +10,6 @@ export default function AdminSettings() {
   const [saving, setSaving] = useState(false);
   const [marketingLoading, setMarketingLoading] = useState(true);
   const [marketingSaving, setMarketingSaving] = useState(false);
-  const [openAiBalance, setOpenAiBalance] = useState('');
-  const [openAiCheckedAt, setOpenAiCheckedAt] = useState('');
-  const [openAiSaving, setOpenAiSaving] = useState(false);
   const [marketing, setMarketing] = useState({
     bannerEnabled: false,
     bannerImageUrl: '',
@@ -42,14 +39,12 @@ export default function AdminSettings() {
       const { data, error } = await supabase
         .from('configuracoes_site')
         .select('chave, valor')
-        .in('chave', ['admin_profit_share', 'nota_minima_prova', 'openai_credit_balance', 'openai_credit_checked_at']);
+        .in('chave', ['admin_profit_share', 'nota_minima_prova']);
       if (error) throw error;
       const adminShare = Number(data?.find((item: any) => item.chave === 'admin_profit_share')?.valor ?? 30);
       const notaMinima = Number(data?.find((item: any) => item.chave === 'nota_minima_prova')?.valor ?? 60);
       setProfitShare((100 - adminShare).toString());
       setMinScore(notaMinima.toString());
-      setOpenAiBalance(data?.find((item: any) => item.chave === 'openai_credit_balance')?.valor ?? '');
-      setOpenAiCheckedAt(data?.find((item: any) => item.chave === 'openai_credit_checked_at')?.valor ?? '');
     } catch (error) {
       toast.error('Erro ao carregar configurações');
     } finally {
@@ -117,24 +112,6 @@ export default function AdminSettings() {
     }));
   };
 
-  const handleSaveOpenAiCredits = async () => {
-    setOpenAiSaving(true);
-    try {
-      const payload = [
-        { chave: 'openai_credit_balance', valor: openAiBalance },
-        { chave: 'openai_credit_checked_at', valor: openAiCheckedAt },
-      ];
-      const { error } = await supabase
-        .from('configuracoes_site')
-        .upsert(payload, { onConflict: 'chave' });
-      if (error) throw error;
-      toast.success('Creditos OpenAI atualizados!');
-    } catch (error: any) {
-      toast.error(error?.message || 'Erro ao salvar creditos da OpenAI.');
-    } finally {
-      setOpenAiSaving(false);
-    }
-  };
 
   const handleMarketingSave = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -318,41 +295,6 @@ export default function AdminSettings() {
         </div>
 
         <div className="space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                Saldo informado (US$)
-              </label>
-              <input
-                type="text"
-                value={openAiBalance}
-                onChange={(event) => setOpenAiBalance(event.target.value)}
-                className="input-field"
-                placeholder="Ex: 25.40"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-                Ultima atualizacao
-              </label>
-              <input
-                type="datetime-local"
-                value={openAiCheckedAt}
-                onChange={(event) => setOpenAiCheckedAt(event.target.value)}
-                className="input-field"
-              />
-            </div>
-          </div>
-
-          <button
-            type="button"
-            className="btn-outline"
-            onClick={handleSaveOpenAiCredits}
-            disabled={openAiSaving}
-          >
-            {openAiSaving ? 'Salvando...' : 'Salvar creditos'}
-          </button>
-
           <button
             type="button"
             className="btn-accent"
@@ -360,10 +302,6 @@ export default function AdminSettings() {
           >
             Abrir painel OpenAI
           </button>
-
-          <div className="rounded-[12px] border border-[hsl(var(--border))] bg-[hsl(var(--muted))] p-4 text-sm text-[hsl(var(--muted-foreground))]">
-            A API da OpenAI nao permite ler saldo com chave secreta. Use o painel e preencha o valor manualmente.
-          </div>
         </div>
       </div>
 
