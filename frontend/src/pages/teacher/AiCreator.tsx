@@ -83,14 +83,70 @@ export default function AiCreator() {
   const [generatedText, setGeneratedText] = useState('');
   const [imageInfo, setImageInfo] = useState<{ sizeKb: number; size: number } | null>(null);
   const [imageFeedback, setImageFeedback] = useState<'liked' | 'disliked' | null>(null);
+  const [imageDeleted, setImageDeleted] = useState(false);
 
   useEffect(() => {
     if (!user) {
+      if (typeof window !== 'undefined') {
+        localStorage.clear();
+      }
       navigate('/login');
       return;
     }
     loadAccess();
   }, [user, navigate]);
+
+  useEffect(() => {
+    if (!user?.id || typeof window === 'undefined') return;
+    const prefix = `aiCreator:${user.id}:`;
+    const storedImageUrl = localStorage.getItem(`${prefix}imageUrl`) || '';
+    const storedImagePath = localStorage.getItem(`${prefix}imagePath`) || '';
+    const storedImageId = localStorage.getItem(`${prefix}imageId`);
+    const storedText = localStorage.getItem(`${prefix}text`) || '';
+    const storedInfo = localStorage.getItem(`${prefix}imageInfo`);
+    const storedFeedback = localStorage.getItem(`${prefix}imageFeedback`);
+    const storedDeleted = localStorage.getItem(`${prefix}imageDeleted`) === '1';
+
+    if (storedImageUrl) setGeneratedImageUrl(storedImageUrl);
+    if (storedImagePath) setGeneratedImagePath(storedImagePath);
+    if (storedImageId) setGeneratedImageId(storedImageId);
+    if (storedText) setGeneratedText(storedText);
+    if (storedInfo) {
+      try {
+        setImageInfo(JSON.parse(storedInfo));
+      } catch {
+        setImageInfo(null);
+      }
+    }
+    if (storedFeedback === 'liked' || storedFeedback === 'disliked') {
+      setImageFeedback(storedFeedback);
+    }
+    setImageDeleted(storedDeleted);
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id || typeof window === 'undefined') return;
+    const prefix = `aiCreator:${user.id}:`;
+    localStorage.setItem(`${prefix}imageUrl`, generatedImageUrl);
+    localStorage.setItem(`${prefix}imagePath`, generatedImagePath);
+    if (generatedImageId) {
+      localStorage.setItem(`${prefix}imageId`, generatedImageId);
+    } else {
+      localStorage.removeItem(`${prefix}imageId`);
+    }
+    localStorage.setItem(`${prefix}text`, generatedText);
+    if (imageInfo) {
+      localStorage.setItem(`${prefix}imageInfo`, JSON.stringify(imageInfo));
+    } else {
+      localStorage.removeItem(`${prefix}imageInfo`);
+    }
+    if (imageFeedback) {
+      localStorage.setItem(`${prefix}imageFeedback`, imageFeedback);
+    } else {
+      localStorage.removeItem(`${prefix}imageFeedback`);
+    }
+    localStorage.setItem(`${prefix}imageDeleted`, imageDeleted ? '1' : '0');
+  }, [user?.id, generatedImageUrl, generatedImagePath, generatedImageId, generatedText, imageInfo, imageFeedback, imageDeleted]);
 
   const loadAccess = async () => {
     if (!user?.id) return;
@@ -131,6 +187,7 @@ export default function AiCreator() {
     setGeneratedText('');
     setImageInfo(null);
     setImageFeedback(null);
+    setImageDeleted(false);
   };
 
   const handleGenerateText = async () => {
@@ -215,6 +272,7 @@ export default function AiCreator() {
       setGeneratedText('');
       setImageInfo({ sizeKb: Math.round(blob.size / 1024), size });
       setImageFeedback(null);
+      setImageDeleted(false);
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao gerar imagem.');
     } finally {
@@ -229,6 +287,7 @@ export default function AiCreator() {
       setGeneratedImageUrl('');
       setGeneratedImageId(null);
       setImageInfo(null);
+      setImageDeleted(true);
       return;
     }
     if (generatedImageId) {
@@ -246,6 +305,7 @@ export default function AiCreator() {
     setGeneratedImagePath('');
     setGeneratedImageId(null);
     setImageInfo(null);
+    setImageDeleted(true);
     toast('Imagem excluida.');
   };
 
@@ -415,6 +475,11 @@ export default function AiCreator() {
                   Excluir imagem
                 </button>
               </div>
+            )}
+            {!generatedImageUrl && imageDeleted && (
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                A imagem anterior foi excluida. Gere uma nova imagem.
+              </p>
             )}
           </div>
         ) : (
