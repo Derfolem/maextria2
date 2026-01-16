@@ -27,7 +27,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const bannerEnabled = banner.enabled && Boolean(banner.imageUrl);
   const isMemberArea = location.pathname.startsWith('/admin') || location.pathname.startsWith('/teacher');
-  const showBanner = bannerEnabled && !isMemberArea;
+  const isTeacherLanding = location.pathname === '/sou-professor';
+  const showBanner = bannerEnabled && !isMemberArea && !isTeacherLanding;
 
   const pageViewKey = useMemo(() => {
     const base = location.pathname + location.search;
