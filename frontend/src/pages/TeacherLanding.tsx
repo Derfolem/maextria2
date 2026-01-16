@@ -68,7 +68,7 @@ export default function TeacherLanding() {
         <section className="w-full py-6">
           {teacherBanner.linkUrl ? (
             <a href={teacherBanner.linkUrl} target="_blank" rel="noreferrer" className="block">
-              <div className="mx-auto h-[164px] w-[1408px] max-w-full">
+              <div className="mx-auto h-[279px] w-[2394px] max-w-full">
                 <img
                   src={teacherBanner.imageUrl}
                   alt={teacherBanner.alt}
@@ -77,7 +77,7 @@ export default function TeacherLanding() {
               </div>
             </a>
           ) : (
-            <div className="mx-auto h-[164px] w-[1408px] max-w-full">
+            <div className="mx-auto h-[279px] w-[2394px] max-w-full">
               <img
                 src={teacherBanner.imageUrl}
                 alt={teacherBanner.alt}
