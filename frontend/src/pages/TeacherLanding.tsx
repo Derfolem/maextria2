@@ -64,6 +64,30 @@ export default function TeacherLanding() {
 
   return (
     <div>
+      {teacherBanner.enabled && teacherBanner.imageUrl && (
+        <section className="w-full py-6">
+          {teacherBanner.linkUrl ? (
+            <a href={teacherBanner.linkUrl} target="_blank" rel="noreferrer" className="block">
+              <div className="mx-auto h-[82px] w-[704px] max-w-full">
+                <img
+                  src={teacherBanner.imageUrl}
+                  alt={teacherBanner.alt}
+                  className="h-full w-full object-contain"
+                />
+              </div>
+            </a>
+          ) : (
+            <div className="mx-auto h-[82px] w-[704px] max-w-full">
+              <img
+                src={teacherBanner.imageUrl}
+                alt={teacherBanner.alt}
+                className="h-full w-full object-contain"
+              />
+            </div>
+          )}
+        </section>
+      )}
+
       <section className="hero-gradient text-white">
         <div className="hero-grid">
           <div className="max-w-7xl mx-auto px-[clamp(24px,5vw,80px)] py-[clamp(80px,10vh,160px)]">
@@ -105,30 +129,6 @@ export default function TeacherLanding() {
           </div>
         </div>
       </section>
-
-      {teacherBanner.enabled && teacherBanner.imageUrl && (
-        <section className="w-full py-10">
-          {teacherBanner.linkUrl ? (
-            <a href={teacherBanner.linkUrl} target="_blank" rel="noreferrer" className="block">
-              <div className="mx-auto h-[82px] w-[704px] max-w-full">
-                <img
-                  src={teacherBanner.imageUrl}
-                  alt={teacherBanner.alt}
-                  className="h-full w-full object-contain"
-                />
-              </div>
-            </a>
-          ) : (
-            <div className="mx-auto h-[82px] w-[704px] max-w-full">
-              <img
-                src={teacherBanner.imageUrl}
-                alt={teacherBanner.alt}
-                className="h-full w-full object-contain"
-              />
-            </div>
-          )}
-        </section>
-      )}
 
       <section className="py-[clamp(80px,10vh,160px)]">
         <div className="max-w-7xl mx-auto px-[clamp(24px,5vw,80px)]">
