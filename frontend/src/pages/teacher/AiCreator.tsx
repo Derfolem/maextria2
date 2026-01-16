@@ -74,7 +74,6 @@ export default function AiCreator() {
 
   const [accessInfo, setAccessInfo] = useState<{ plan_code: string; expires_at: string; limit_usd: number } | null>(null);
   const [accessLoading, setAccessLoading] = useState(true);
-  const [usageTotal, setUsageTotal] = useState(0);
   const [usageLimit, setUsageLimit] = useState(0);
   const [usagePercent, setUsagePercent] = useState(0);
   const [usageLoading, setUsageLoading] = useState(false);
@@ -203,7 +202,6 @@ export default function AiCreator() {
 
   const loadUsage = async () => {
     if (!user?.id || isAdmin) {
-      setUsageTotal(0);
       setUsageLimit(0);
       setUsagePercent(0);
       return;
@@ -211,7 +209,6 @@ export default function AiCreator() {
     setUsageLoading(true);
     try {
       if (!accessInfo?.expires_at) {
-        setUsageTotal(0);
         setUsageLimit(0);
         setUsagePercent(0);
         return;
@@ -227,7 +224,6 @@ export default function AiCreator() {
       setUsageLimit(limitUsd);
 
       if (expiresAt <= now) {
-        setUsageTotal(0);
         setUsagePercent(0);
         return;
       }
@@ -243,7 +239,6 @@ export default function AiCreator() {
 
       const totalUsd = Number(data?.total_usd ?? 0);
       const percent = limitUsd > 0 ? Math.min(100, (totalUsd / limitUsd) * 100) : 0;
-      setUsageTotal(totalUsd);
       setUsagePercent(percent);
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao carregar consumo.');

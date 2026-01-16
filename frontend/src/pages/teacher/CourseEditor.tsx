@@ -44,7 +44,7 @@ export default function CourseEditor() {
   useEffect(() => {
     if (!user?.id) return;
     if (isAdmin) {
-      setAiAccess({ granted_until: null, granted_by_admin: true });
+      setAiAccess({ expires_at: null });
       return;
     }
     loadAiAccess();

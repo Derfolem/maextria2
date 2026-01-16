@@ -147,8 +147,6 @@ export default function AdminSettings() {
   const loadAiUsage = async () => {
     setAiUsageLoading(true);
     try {
-      const now = new Date();
-      const month = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
 
       const [{ data: usageData }, { data: usersData }, { data: rolesData }, { data: limitsData }, { data: planAccess }] = await Promise.all([
         supabase
