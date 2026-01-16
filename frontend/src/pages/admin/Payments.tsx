@@ -209,10 +209,20 @@ export default function AdminPayments() {
   const downloadPdf = () => {
     const html = `
       <html>
-        <head><title>Extrato usuarios</title></head>
+        <head>
+          <meta charset="utf-8" />
+          <title>Extrato usuarios</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 16px; }
+            h2 { margin-bottom: 12px; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #ccc; padding: 6px; font-size: 12px; text-align: left; }
+            th { background: #f2f2f2; }
+          </style>
+        </head>
         <body>
           <h2>Extrato geral</h2>
-          <table border="1" cellpadding="6" cellspacing="0">
+          <table>
             <thead>
               <tr>
                 <th>Usuario</th>
@@ -246,15 +256,31 @@ export default function AdminPayments() {
         </body>
       </html>
     `;
-    const win = window.open('', '_blank', 'noopener');
-    if (!win) {
-      toast.error('Nao foi possivel abrir a janela do PDF.');
+
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document;
+    if (!doc) {
+      toast.error('Nao foi possivel gerar o PDF.');
       return;
     }
-    win.document.write(html);
-    win.document.close();
-    win.focus();
-    win.print();
+
+    doc.open();
+    doc.write(html);
+    doc.close();
+
+    setTimeout(() => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      document.body.removeChild(iframe);
+    }, 200);
   };
 
   const handleDeleteUserData = async (userId: string) => {
