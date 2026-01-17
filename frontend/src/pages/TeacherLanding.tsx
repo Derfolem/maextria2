@@ -90,7 +90,7 @@ export default function TeacherLanding() {
 
       <section className="hero-gradient text-white">
         <div className="hero-grid">
-          <div className="max-w-7xl mx-auto px-[clamp(24px,5vw,80px)] py-[clamp(80px,10vh,160px)] lg:py-[clamp(120px,14vh,200px)]">
+          <div className="max-w-7xl mx-auto px-[clamp(24px,5vw,80px)] py-[clamp(56px,8vh,120px)] lg:py-[clamp(120px,14vh,200px)]">
             <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-14 items-center">
               <div className="space-y-6">
                 <p className="text-xs uppercase tracking-[0.35em] text-white/70">Sou professor</p>
