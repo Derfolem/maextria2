@@ -263,25 +263,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       <main className="flex-grow page-fade pt-16">
         {showBanner && (
-          <div className="w-full bg-transparent py-2">
+          <div className="w-full bg-transparent">
             {banner.linkUrl ? (
               <a href={banner.linkUrl} className="block" target="_blank" rel="noreferrer">
-                <div className="mx-auto w-full max-w-[2394px] px-4">
-                  <img
-                    src={banner.imageUrl}
-                    alt={banner.alt}
-                    className="block h-auto w-full"
-                  />
-                </div>
-              </a>
-            ) : (
-              <div className="mx-auto w-full max-w-[2394px] px-4">
                 <img
                   src={banner.imageUrl}
                   alt={banner.alt}
                   className="block h-auto w-full"
                 />
-              </div>
+              </a>
+            ) : (
+              <img
+                src={banner.imageUrl}
+                alt={banner.alt}
+                className="block h-auto w-full"
+              />
             )}
           </div>
         )}
