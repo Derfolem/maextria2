@@ -370,7 +370,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-[clamp(24px,5vw,80px)] py-[clamp(40px,6vh,80px)]">
+    <div className="max-w-7xl mx-auto px-[clamp(24px,5vw,80px)] py-[clamp(40px,6vh,80px)] overflow-x-hidden">
       <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-10">
         <div>
           <p className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--primary))]">Administracao</p>
@@ -495,12 +495,17 @@ export default function AdminDashboard() {
             <p className="text-sm text-[hsl(var(--muted-foreground))]">Sem atividades recentes.</p>
           ) : (
             recentNotifications.map((item) => (
-              <div key={item.id} className="flex items-center justify-between gap-6 p-3 border border-[hsl(var(--border))] rounded-[12px]">
-                <div>
-                  <p className="font-semibold">{item.titulo}</p>
-                  <p className="text-sm text-[hsl(var(--muted-foreground))]">{item.descricao}</p>
+              <div
+                key={item.id}
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 border border-[hsl(var(--border))] rounded-[12px]"
+              >
+                <div className="min-w-0">
+                  <p className="font-semibold break-words">{item.titulo}</p>
+                  <p className="text-sm text-[hsl(var(--muted-foreground))] break-words">
+                    {item.descricao}
+                  </p>
                 </div>
-                <span className="text-sm text-[hsl(var(--muted-foreground))] whitespace-nowrap">
+                <span className="text-sm text-[hsl(var(--muted-foreground))] sm:whitespace-nowrap">
                   {formatTimeAgo(item.criado_em)}
                 </span>
               </div>

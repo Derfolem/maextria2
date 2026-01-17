@@ -322,7 +322,7 @@ export default function AdminSettings() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-[clamp(24px,5vw,80px)] py-[clamp(40px,6vh,80px)]">
+    <div className="max-w-4xl mx-auto px-[clamp(24px,5vw,80px)] py-[clamp(40px,6vh,80px)] overflow-x-hidden">
       <div className="mb-8">
         <p className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--primary))]">Configuracoes</p>
         <h1 className="headline-font text-4xl md:text-5xl">Parametros do sistema</h1>
@@ -448,10 +448,10 @@ export default function AdminSettings() {
                 placeholder="Ex: 5"
               />
             </div>
-            <div className="flex items-end gap-2">
+            <div className="flex flex-wrap items-end gap-2">
               <button
                 type="button"
-                className="btn-outline"
+                className="btn-outline w-full sm:w-auto"
                 onClick={handleSaveAiDefaultLimit}
                 disabled={aiDefaultSaving}
               >
@@ -459,7 +459,7 @@ export default function AdminSettings() {
               </button>
               <button
                 type="button"
-                className="btn-accent"
+                className="btn-accent w-full sm:w-auto"
                 onClick={loadAiUsage}
                 disabled={aiUsageLoading}
               >
@@ -484,7 +484,7 @@ export default function AdminSettings() {
                         Consumo atual: US$ {row.totalUsd.toFixed(4)}
                       </p>
                     </div>
-                    <div className="min-w-[220px] space-y-2">
+                    <div className="w-full sm:min-w-[220px] sm:w-auto space-y-2">
                       <label className="block text-sm font-medium text-[hsl(var(--foreground))]">
                         Limite mensal (US$)
                       </label>
