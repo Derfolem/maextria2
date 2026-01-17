@@ -270,7 +270,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <img
                     src={banner.imageUrl}
                     alt={banner.alt}
-                    className="block h-auto w-[70%] max-w-full"
+                    className="block h-auto w-[50%] max-w-full"
                   />
                 </div>
               </a>
@@ -279,7 +279,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <img
                   src={banner.imageUrl}
                   alt={banner.alt}
-                  className="block h-auto w-[70%] max-w-full"
+                  className="block h-auto w-[50%] max-w-full"
                 />
               </div>
             )}
