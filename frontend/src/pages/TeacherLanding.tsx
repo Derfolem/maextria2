@@ -298,7 +298,10 @@ export default function TeacherLanding() {
               className="input-field min-h-[120px]"
               required
             />
-            <button type="submit" className="btn-accent">
+            <button
+              type="submit"
+              className="rounded-full bg-[#F59E0B] px-5 py-2 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(245,158,11,0.35)] transition hover:bg-[#E98B04]"
+            >
               Enviar candidatura
             </button>
             <p className="text-xs text-[hsl(var(--muted-foreground))]">
