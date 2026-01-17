@@ -65,25 +65,21 @@ export default function TeacherLanding() {
   return (
     <div>
       {teacherBanner.enabled && teacherBanner.imageUrl && (
-        <section className="w-full py-2">
+        <section className="w-full">
           {teacherBanner.linkUrl ? (
             <a href={teacherBanner.linkUrl} target="_blank" rel="noreferrer" className="block">
-              <div className="mx-auto w-full max-w-[2394px] px-4">
-                <img
-                  src={teacherBanner.imageUrl}
-                  alt={teacherBanner.alt}
-                  className="block h-auto w-full"
-                />
-              </div>
-            </a>
-          ) : (
-            <div className="mx-auto w-full max-w-[2394px] px-4">
               <img
                 src={teacherBanner.imageUrl}
                 alt={teacherBanner.alt}
                 className="block h-auto w-full"
               />
-            </div>
+            </a>
+          ) : (
+            <img
+              src={teacherBanner.imageUrl}
+              alt={teacherBanner.alt}
+              className="block h-auto w-full"
+            />
           )}
         </section>
       )}
