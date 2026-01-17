@@ -50,9 +50,9 @@ export default function Home() {
 
   return (
     <div>
-      <section className="hero-gradient text-white min-h-[520px] md:min-h-[640px] flex items-center">
+      <section className="hero-gradient text-white">
         <div className="hero-grid">
-          <div className="max-w-7xl mx-auto px-[clamp(24px,5vw,80px)] py-[clamp(96px,12vh,180px)] lg:py-[clamp(140px,16vh,220px)]">
+          <div className="max-w-7xl mx-auto px-[clamp(24px,5vw,80px)] py-[clamp(80px,10vh,160px)] lg:py-[clamp(120px,14vh,200px)]">
             <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-14 items-center">
               <motion.div
                 initial={{ opacity: 0, y: 24 }}
