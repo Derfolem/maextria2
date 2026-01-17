@@ -266,18 +266,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="w-full bg-transparent">
             {banner.linkUrl ? (
               <a href={banner.linkUrl} className="block" target="_blank" rel="noreferrer">
+                <div className="w-full flex items-center justify-center">
+                  <img
+                    src={banner.imageUrl}
+                    alt={banner.alt}
+                    className="block h-auto w-auto max-w-full"
+                  />
+                </div>
+              </a>
+            ) : (
+              <div className="w-full flex items-center justify-center">
                 <img
                   src={banner.imageUrl}
                   alt={banner.alt}
-                  className="block h-auto w-full"
+                  className="block h-auto w-auto max-w-full"
                 />
-              </a>
-            ) : (
-              <img
-                src={banner.imageUrl}
-                alt={banner.alt}
-                className="block h-auto w-full"
-              />
+              </div>
             )}
           </div>
         )}
