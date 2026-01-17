@@ -65,23 +65,23 @@ export default function TeacherLanding() {
   return (
     <div>
       {teacherBanner.enabled && teacherBanner.imageUrl && (
-        <section className="w-full py-6">
+        <section className="w-full py-2">
           {teacherBanner.linkUrl ? (
             <a href={teacherBanner.linkUrl} target="_blank" rel="noreferrer" className="block">
-              <div className="mx-auto h-[279px] w-[2394px] max-w-full">
+              <div className="mx-auto w-full max-w-[2394px] px-4">
                 <img
                   src={teacherBanner.imageUrl}
                   alt={teacherBanner.alt}
-                  className="h-full w-full object-contain"
+                  className="block h-auto w-full"
                 />
               </div>
             </a>
           ) : (
-            <div className="mx-auto h-[279px] w-[2394px] max-w-full">
+            <div className="mx-auto w-full max-w-[2394px] px-4">
               <img
                 src={teacherBanner.imageUrl}
                 alt={teacherBanner.alt}
-                className="h-full w-full object-contain"
+                className="block h-auto w-full"
               />
             </div>
           )}
@@ -90,7 +90,7 @@ export default function TeacherLanding() {
 
       <section className="hero-gradient text-white">
         <div className="hero-grid">
-          <div className="max-w-7xl mx-auto px-[clamp(24px,5vw,80px)] py-[clamp(56px,8vh,120px)] lg:py-[clamp(120px,14vh,200px)]">
+          <div className="max-w-7xl mx-auto px-[clamp(24px,5vw,80px)] py-[clamp(32px,6vh,96px)] lg:py-[clamp(120px,14vh,200px)]">
             <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-14 items-center">
               <div className="space-y-6">
                 <p className="text-xs uppercase tracking-[0.35em] text-white/70">Sou professor</p>
