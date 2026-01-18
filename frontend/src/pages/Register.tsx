@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../lib/store';
 import toast from 'react-hot-toast';
-import { FaUser, FaEnvelope, FaLock } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaLock, FaHourglassHalf } from 'react-icons/fa';
 import { supabase } from '../lib/supabase';
 
 export default function Register() {
@@ -12,6 +12,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [allowNewSignups, setAllowNewSignups] = useState(true);
   const [configLoading, setConfigLoading] = useState(true);
+  const [blockedPulse, setBlockedPulse] = useState(false);
   const register = useAuthStore((state) => state.register);
   const navigate = useNavigate();
 
@@ -38,7 +39,9 @@ export default function Register() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!allowNewSignups) {
-      toast.error('Novos cadastros estao temporariamente fechados.');
+      toast.error('Novos cadastros estão temporariamente fechados.');
+      setBlockedPulse(true);
+      window.setTimeout(() => setBlockedPulse(false), 800);
       return;
     }
     setLoading(true);
@@ -68,8 +71,15 @@ export default function Register() {
           <p className="text-[hsl(var(--muted-foreground))] mt-2">Comece sua jornada na MAEXTRIA</p>
         </div>
         {!allowNewSignups && !configLoading && (
-          <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] p-4 text-sm text-[hsl(var(--muted-foreground))] mb-6 flex items-center justify-between gap-4">
-            <span>No momento nao estamos aceitando novos cadastros.</span>
+          <div
+            className={`rounded-2xl border bg-[hsl(var(--muted))] p-4 text-sm text-[hsl(var(--muted-foreground))] mb-6 flex items-center justify-between gap-4 transition ${
+              blockedPulse ? 'border-[hsl(var(--accent))] shadow-[0_0_0_2px_hsl(var(--accent)/0.2)]' : 'border-[hsl(var(--border))]'
+            }`}
+          >
+            <span className="flex items-center gap-2">
+              <FaHourglassHalf className="text-[hsl(var(--accent))]" />
+              <span>No momento não estamos aceitando novos cadastros.</span>
+            </span>
             <div className="flex items-center gap-1 text-[hsl(var(--accent))]">
               <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
               <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" style={{ animationDelay: '0.2s' }} />

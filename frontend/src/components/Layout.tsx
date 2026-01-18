@@ -225,8 +225,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               No momento o site esta em manutencao.
             </h1>
             <p className="text-base md:text-lg text-white/80">
-              Estamos fazendo alguns ajustes para tonar o site ainda mais exponencial para voce.
-              Volte daqui a estantes e veja as novas mudancas.
+              No momento o site está em manutenção. Estamos fazendo alguns ajustes para tornar o
+              site ainda mais exponencial para você. Volte daqui a instantes e veja as novas
+              mudanças.
             </p>
           </div>
           <div className="hero-frame rounded-[28px] p-4 bg-white/5">
