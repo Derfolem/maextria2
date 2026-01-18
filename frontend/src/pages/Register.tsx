@@ -104,6 +104,7 @@ export default function Register() {
                 className="input-field pl-10"
                 placeholder="Seu nome"
                 required
+                disabled={!allowNewSignups || configLoading}
               />
             </div>
           </div>
@@ -121,6 +122,7 @@ export default function Register() {
                 className="input-field pl-10"
                 placeholder="seu@email.com"
                 required
+                disabled={!allowNewSignups || configLoading}
               />
             </div>
           </div>
@@ -139,6 +141,7 @@ export default function Register() {
                 placeholder="••••••••"
                 required
                 minLength={6}
+                disabled={!allowNewSignups || configLoading}
               />
             </div>
           </div>
