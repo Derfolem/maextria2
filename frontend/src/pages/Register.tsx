@@ -72,12 +72,14 @@ export default function Register() {
         </div>
         {!allowNewSignups && !configLoading && (
           <div
-            className={`rounded-2xl border bg-[hsl(var(--muted))] p-4 text-sm text-[hsl(var(--muted-foreground))] mb-6 flex items-center justify-between gap-4 transition ${
-              blockedPulse ? 'border-[hsl(var(--accent))] shadow-[0_0_0_2px_hsl(var(--accent)/0.2)]' : 'border-[hsl(var(--border))]'
+            className={`rounded-2xl border p-4 text-sm mb-6 flex items-center justify-between gap-4 transition ${
+              blockedPulse
+                ? 'bg-red-50 border-red-300 text-red-700 shadow-[0_0_0_3px_rgba(248,113,113,0.2)]'
+                : 'bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]'
             }`}
           >
             <span className="flex items-center gap-2">
-              <FaHourglassHalf className="text-[hsl(var(--accent))]" />
+              <FaHourglassHalf className="text-[hsl(var(--accent))] animate-spin" />
               <span>No momento não estamos aceitando novos cadastros.</span>
             </span>
             <div className="flex items-center gap-1 text-[hsl(var(--accent))]">
