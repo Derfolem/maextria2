@@ -90,7 +90,7 @@ export default function Courses() {
                 to={`/courses/${course.id}`}
                 className="card group p-6 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(0,0,0,0.12)] transition"
               >
-                <div className="w-full aspect-[16/10] rounded-[12px] mb-5 overflow-hidden bg-[hsl(var(--foreground))] text-white flex items-center justify-center text-4xl font-bold">
+                <div className="w-full aspect-[16/10] min-h-[220px] md:min-h-[240px] lg:min-h-[260px] rounded-[12px] mb-5 overflow-hidden bg-[hsl(var(--foreground))] text-white flex items-center justify-center text-4xl font-bold">
                   {course.thumbnail ? (
                     <img
                       src={course.thumbnail}
@@ -99,7 +99,7 @@ export default function Courses() {
                       decoding="async"
                       width={640}
                       height={400}
-                      className="w-full h-full object-cover transition duration-300 group-hover:scale-105"
+                      className="w-full h-full object-contain transition duration-300 group-hover:scale-105"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[hsl(var(--primary))] via-[hsl(var(--foreground))] to-[hsl(var(--accent))]">
