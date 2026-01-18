@@ -1,19 +1,46 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../lib/store';
 import toast from 'react-hot-toast';
 import { FaUser, FaEnvelope, FaLock } from 'react-icons/fa';
+import { supabase } from '../lib/supabase';
 
 export default function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [allowNewSignups, setAllowNewSignups] = useState(true);
+  const [configLoading, setConfigLoading] = useState(true);
   const register = useAuthStore((state) => state.register);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const { data } = await supabase
+          .from('configuracoes_site')
+          .select('chave, valor')
+          .eq('chave', 'allow_new_signups')
+          .maybeSingle();
+        if (data?.valor === '0') {
+          setAllowNewSignups(false);
+        }
+      } catch (error) {
+        setAllowNewSignups(true);
+      } finally {
+        setConfigLoading(false);
+      }
+    };
+    loadConfig();
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!allowNewSignups) {
+      toast.error('Novos cadastros estao temporariamente fechados.');
+      return;
+    }
     setLoading(true);
 
     try {
@@ -40,6 +67,11 @@ export default function Register() {
           <h2 className="headline-font text-3xl">Criar sua conta</h2>
           <p className="text-[hsl(var(--muted-foreground))] mt-2">Comece sua jornada na MAEXTRIA</p>
         </div>
+        {!allowNewSignups && !configLoading && (
+          <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] p-4 text-sm text-[hsl(var(--muted-foreground))] mb-6">
+            Novos cadastros estao temporariamente fechados. Tente novamente mais tarde.
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
@@ -96,7 +128,7 @@ export default function Register() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !allowNewSignups || configLoading}
             className="w-full btn-primary py-3"
           >
             {loading ? 'Criando conta...' : 'Criar Conta'}

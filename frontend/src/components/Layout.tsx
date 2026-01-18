@@ -24,6 +24,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     robots: 'index,follow',
     canonical: '',
   });
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [systemFlagsLoaded, setSystemFlagsLoaded] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const bannerEnabled = banner.enabled && Boolean(banner.imageUrl);
   const isMemberArea = location.pathname.startsWith('/admin') || location.pathname.startsWith('/teacher');
@@ -57,6 +59,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           'seo_meta_keywords',
           'seo_meta_robots',
           'seo_canonical_url',
+          'maintenance_mode',
         ]);
 
       const resolve = (key: string) => data?.find((item: any) => item.chave === key)?.valor ?? '';
@@ -74,6 +77,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         robots: resolve('seo_meta_robots') || 'index,follow',
         canonical: resolve('seo_canonical_url'),
       });
+      setMaintenanceMode(resolve('maintenance_mode') === '1');
+      setSystemFlagsLoaded(true);
 
       const headCode = resolve('marketing_pixel_head');
       const bodyCode = resolve('marketing_pixel_body');
@@ -209,6 +214,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }, [user?.id, user?.role]);
 
   const notificationLink = user?.role === 'teacher' ? '/teacher/notifications' : '/student/notifications';
+
+  if (systemFlagsLoaded && maintenanceMode && user?.role !== 'admin') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[hsl(var(--background))] px-6">
+        <div className="max-w-lg w-full text-center card p-8">
+          <p className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--accent))] mb-3">
+            Manutencao
+          </p>
+          <h1 className="headline-font text-3xl mb-4">Voltamos em instantes</h1>
+          <p className="text-[hsl(var(--muted-foreground))]">
+            A MAEXTRIA esta em manutencao. Tente novamente em alguns minutos.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">

@@ -13,6 +13,10 @@ export default function AdminSettings() {
   const [aiDefaultLimit, setAiDefaultLimit] = useState('');
   const [aiDefaultSaving, setAiDefaultSaving] = useState(false);
   const [aiUsageLoading, setAiUsageLoading] = useState(false);
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [maintenanceSaving, setMaintenanceSaving] = useState(false);
+  const [allowNewSignups, setAllowNewSignups] = useState(true);
+  const [signupsSaving, setSignupsSaving] = useState(false);
   const [aiUsageRows, setAiUsageRows] = useState<Array<{
     userId: string;
     name: string;
@@ -51,14 +55,24 @@ export default function AdminSettings() {
       const { data, error } = await supabase
         .from('configuracoes_site')
         .select('chave, valor')
-        .in('chave', ['admin_profit_share', 'nota_minima_prova', 'ai_monthly_limit_usd']);
+        .in('chave', [
+          'admin_profit_share',
+          'nota_minima_prova',
+          'ai_monthly_limit_usd',
+          'maintenance_mode',
+          'allow_new_signups',
+        ]);
       if (error) throw error;
       const adminShare = Number(data?.find((item: any) => item.chave === 'admin_profit_share')?.valor ?? 30);
       const notaMinima = Number(data?.find((item: any) => item.chave === 'nota_minima_prova')?.valor ?? 60);
       const defaultLimit = data?.find((item: any) => item.chave === 'ai_monthly_limit_usd')?.valor ?? '5';
+      const maintenanceValue = data?.find((item: any) => item.chave === 'maintenance_mode')?.valor ?? '0';
+      const signupValue = data?.find((item: any) => item.chave === 'allow_new_signups')?.valor ?? '1';
       setProfitShare((100 - adminShare).toString());
       setMinScore(notaMinima.toString());
       setAiDefaultLimit(defaultLimit);
+      setMaintenanceMode(maintenanceValue === '1');
+      setAllowNewSignups(signupValue !== '0');
     } catch (error) {
       toast.error('Erro ao carregar configurações');
     } finally {
@@ -230,6 +244,36 @@ export default function AdminSettings() {
     } finally {
       setAiLimitSaving((prev) => ({ ...prev, [userId]: false }));
     }
+  };
+
+  const updateSystemFlag = async (
+    key: 'maintenance_mode' | 'allow_new_signups',
+    value: boolean,
+    setSaving: (value: boolean) => void,
+    successLabel: string
+  ) => {
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('configuracoes_site')
+        .upsert([{ chave: key, valor: value ? '1' : '0' }], { onConflict: 'chave' });
+      if (error) throw error;
+      toast.success(successLabel);
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao atualizar configuracao.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleMaintenanceToggle = (value: boolean) => {
+    setMaintenanceMode(value);
+    updateSystemFlag('maintenance_mode', value, setMaintenanceSaving, 'Modo de manutencao atualizado.');
+  };
+
+  const handleSignupsToggle = (value: boolean) => {
+    setAllowNewSignups(value);
+    updateSystemFlag('allow_new_signups', value, setSignupsSaving, 'Cadastro de usuarios atualizado.');
   };
 
 
@@ -522,7 +566,13 @@ export default function AdminSettings() {
               <p className="text-sm text-[hsl(var(--muted-foreground))]">Desabilitar acesso temporariamente</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" />
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={maintenanceMode}
+                onChange={(event) => handleMaintenanceToggle(event.target.checked)}
+                disabled={maintenanceSaving}
+              />
               <div className="w-11 h-6 bg-[hsl(var(--border))] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[hsl(var(--muted))] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-[hsl(var(--border))] after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[hsl(var(--accent))]"></div>
             </label>
           </div>
@@ -533,7 +583,13 @@ export default function AdminSettings() {
               <p className="text-sm text-[hsl(var(--muted-foreground))]">Permitir registro de novos usuários</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" defaultChecked />
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={allowNewSignups}
+                onChange={(event) => handleSignupsToggle(event.target.checked)}
+                disabled={signupsSaving}
+              />
               <div className="w-11 h-6 bg-[hsl(var(--border))] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[hsl(var(--muted))] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-[hsl(var(--border))] after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[hsl(var(--primary))]"></div>
             </label>
           </div>
