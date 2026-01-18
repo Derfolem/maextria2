@@ -49,7 +49,7 @@ export default function Home() {
   const fallbackImages = ['/hero-01.png', '/hero-02.png', '/hero-03.png', '/hero-04.png'];
 
   return (
-    <div className="overflow-x-hidden">
+    <div>
       <section className="hero-gradient text-white">
         <div className="hero-grid">
           <div className="max-w-7xl mx-auto px-[clamp(24px,5vw,80px)] py-[clamp(80px,10vh,160px)] lg:py-[clamp(120px,14vh,200px)]">

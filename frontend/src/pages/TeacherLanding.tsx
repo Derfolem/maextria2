@@ -63,7 +63,7 @@ export default function TeacherLanding() {
   }, []);
 
   return (
-    <div className="overflow-x-hidden">
+    <div>
       {teacherBanner.enabled && teacherBanner.imageUrl && (
         <section className="w-full">
           {teacherBanner.linkUrl ? (
