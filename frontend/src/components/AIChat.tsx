@@ -112,11 +112,12 @@ export default function AIChat() {
       {!isOpen && (
         <button
           type="button"
-          title="Abrir assistente"
+          title="Falar com a IA"
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] p-4 rounded-full shadow-lg z-50"
+          className="fixed bottom-6 right-6 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] px-5 py-3 rounded-full shadow-lg z-50 flex items-center gap-2"
         >
           <FaRobot className="text-2xl" />
+          <span className="text-sm font-semibold">Fale com a IA</span>
         </button>
       )}
 
@@ -125,7 +126,7 @@ export default function AIChat() {
           <div className="bg-[hsl(var(--foreground))] text-[hsl(var(--background))] p-4 rounded-t-lg flex justify-between items-center">
             <div className="flex items-center space-x-2">
               <FaRobot className="text-xl" />
-              <span className="font-semibold">X • Assistente MAEXTRIA</span>
+              <span className="font-semibold">Assistente MAEXTRIA</span>
             </div>
             <button onClick={() => setIsOpen(false)} className="hover:text-[hsl(var(--secondary))]">
               <FaTimes />
@@ -136,7 +137,7 @@ export default function AIChat() {
             {messages.length === 0 && (
               <div className="text-[hsl(var(--muted-foreground))] text-center mt-8 space-y-2">
                 <FaRobot className="text-4xl mx-auto mb-2 text-[hsl(var(--primary))]" />
-                <p>Oi, eu sou o X. Como posso ajudar agora?</p>
+                <p>Oi! Me conte seu objetivo e eu indico cursos e certificados.</p>
               </div>
             )}
 
@@ -172,7 +173,7 @@ export default function AIChat() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                placeholder="Escreva sua pergunta..."
+                placeholder="Qual seu objetivo profissional?"
                 className="input-field flex-grow"
                 disabled={loading}
               />
