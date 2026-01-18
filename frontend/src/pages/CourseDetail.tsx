@@ -144,7 +144,7 @@ export default function CourseDetail() {
     <div className="max-w-7xl mx-auto px-4 py-12">
       <div className="grid lg:grid-cols-[1.4fr_0.6fr] gap-10">
         <div>
-          <div className="w-full h-[420px] md:h-[520px] rounded-[28px] mb-8 overflow-hidden bg-[hsl(var(--foreground))] text-white flex items-center justify-center text-6xl font-bold">
+          <div className="w-full aspect-[3/4] max-h-[640px] rounded-[28px] mb-8 overflow-hidden bg-[hsl(var(--foreground))] text-white flex items-center justify-center text-6xl font-bold">
             {course.thumbnail ? (
               <img
                 src={course.thumbnail}

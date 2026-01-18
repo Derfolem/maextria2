@@ -90,7 +90,7 @@ export default function Courses() {
                 to={`/courses/${course.id}`}
                 className="card group p-6 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(0,0,0,0.12)] transition"
               >
-                <div className="w-full aspect-[16/10] min-h-[220px] md:min-h-[240px] lg:min-h-[260px] rounded-[12px] mb-5 overflow-hidden bg-[hsl(var(--foreground))] text-white flex items-center justify-center text-4xl font-bold">
+                <div className="w-full aspect-[3/4] rounded-[12px] mb-5 overflow-hidden bg-[hsl(var(--foreground))] text-white flex items-center justify-center text-4xl font-bold">
                   {course.thumbnail ? (
                     <img
                       src={course.thumbnail}
