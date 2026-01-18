@@ -39,14 +39,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    if (params.get('admin') === '1') {
+    if (params.get('admin') === '1' && user?.role === 'admin') {
       window.sessionStorage.setItem('maextria_admin_bypass', '1');
     }
-  }, [location.search]);
+  }, [location.search, user?.role]);
 
   const maintenanceBypass =
-    new URLSearchParams(location.search).get('admin') === '1' ||
-    window.sessionStorage.getItem('maextria_admin_bypass') === '1';
+    user?.role === 'admin' &&
+    (new URLSearchParams(location.search).get('admin') === '1' ||
+      window.sessionStorage.getItem('maextria_admin_bypass') === '1');
 
   const handleLogout = () => {
     logout();
