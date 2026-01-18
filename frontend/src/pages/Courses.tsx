@@ -92,7 +92,15 @@ export default function Courses() {
               >
                 <div className="w-full aspect-[16/10] rounded-[12px] mb-5 overflow-hidden bg-[hsl(var(--foreground))] text-white flex items-center justify-center text-4xl font-bold">
                   {course.thumbnail ? (
-                    <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover transition duration-300 group-hover:scale-105" />
+                    <img
+                      src={course.thumbnail}
+                      alt={course.title}
+                      loading="lazy"
+                      decoding="async"
+                      width={640}
+                      height={400}
+                      className="w-full h-full object-cover transition duration-300 group-hover:scale-105"
+                    />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[hsl(var(--primary))] via-[hsl(var(--foreground))] to-[hsl(var(--accent))]">
                       {course.title.charAt(0)}

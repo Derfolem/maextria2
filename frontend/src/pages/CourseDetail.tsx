@@ -146,7 +146,14 @@ export default function CourseDetail() {
         <div>
           <div className="w-full h-96 rounded-[28px] mb-8 overflow-hidden bg-[hsl(var(--foreground))] text-white flex items-center justify-center text-6xl font-bold">
             {course.thumbnail ? (
-              <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover" />
+              <img
+                src={course.thumbnail}
+                alt={course.title}
+                decoding="async"
+                width={1280}
+                height={720}
+                className="w-full h-full object-cover"
+              />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[hsl(var(--primary))] via-[hsl(var(--foreground))] to-[hsl(var(--accent))]">
                 {course.title.charAt(0)}

@@ -5,7 +5,13 @@ import { Toaster } from 'react-hot-toast';
 import App from './App';
 import './index.css';
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+const rootElement = document.getElementById('root');
+
+if (!rootElement) {
+  throw new Error('Root element not found.');
+}
+
+const app = (
   <React.StrictMode>
     <BrowserRouter>
       <App />
@@ -13,3 +19,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     </BrowserRouter>
   </React.StrictMode>
 );
+
+if (rootElement.hasChildNodes()) {
+  ReactDOM.hydrateRoot(rootElement, app);
+} else {
+  ReactDOM.createRoot(rootElement).render(app);
+}

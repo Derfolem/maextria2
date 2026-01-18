@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Course, Lesson, Progress } from '../../types';
 import { supabase } from '../../lib/supabase';
@@ -6,6 +6,31 @@ import { useAuthStore } from '../../lib/store';
 import toast from 'react-hot-toast';
 import { FaCheckCircle, FaCircle, FaDownload, FaArrowLeft, FaCertificate, FaPlay } from 'react-icons/fa';
 import { normalizeCourse } from '../../lib/normalizeCourse';
+
+const YOUTUBE_REGEX = /(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{6,})/;
+const VIMEO_REGEX = /vimeo\.com\/(?:video\/)?(\d+)/;
+
+const getVideoData = (rawUrl: string) => {
+  const url = rawUrl.trim();
+  if (!url) return null;
+  const youtubeMatch = url.match(YOUTUBE_REGEX);
+  if (youtubeMatch) {
+    const id = youtubeMatch[1];
+    return {
+      embedUrl: `https://www.youtube.com/embed/${id}`,
+      thumbnailUrl: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+    };
+  }
+  const vimeoMatch = url.match(VIMEO_REGEX);
+  if (vimeoMatch) {
+    const id = vimeoMatch[1];
+    return {
+      embedUrl: `https://player.vimeo.com/video/${id}`,
+      thumbnailUrl: '',
+    };
+  }
+  return { embedUrl: url, thumbnailUrl: '' };
+};
 
 export default function CoursePlayer() {
   const { id } = useParams();
@@ -16,6 +41,7 @@ export default function CoursePlayer() {
   const [progress, setProgress] = useState<Progress[]>([]);
   const [loading, setLoading] = useState(true);
   const [enrollmentId, setEnrollmentId] = useState<string | number | null>(null);
+  const [activeVideoLessonId, setActiveVideoLessonId] = useState<string | number | null>(null);
   const [noteDraft, setNoteDraft] = useState('');
   const [notes, setNotes] = useState<Array<{ id: string; text: string; createdAt: string }>>([]);
   const [moduleQuizzes, setModuleQuizzes] = useState<Record<string, any>>({});
@@ -43,6 +69,7 @@ export default function CoursePlayer() {
       setNotes([]);
       return;
     }
+    setActiveVideoLessonId(null);
     const stored = localStorage.getItem(`maextria_note_${selectedLesson.id}`);
     if (!stored) {
       setNotes([]);
@@ -471,6 +498,11 @@ export default function CoursePlayer() {
     && allModuleQuizzesPassed
     && finalQuizPassed;
 
+  const videoData = useMemo(() => {
+    if (!selectedLesson?.video_url) return null;
+    return getVideoData(selectedLesson.video_url);
+  }, [selectedLesson?.video_url]);
+
   return (
     <div className="min-h-screen bg-[hsl(var(--background))]">
       <div className="max-w-[1400px] mx-auto px-[clamp(24px,5vw,80px)] py-[clamp(40px,6vh,80px)]">
@@ -555,13 +587,44 @@ export default function CoursePlayer() {
                   </div>
                   <h2 className="headline-font text-3xl mb-4">{selectedLesson.title}</h2>
 
-                  {selectedLesson.video_url && (
-                    <div className="aspect-video bg-[hsl(var(--foreground))] rounded-[12px] mb-6 overflow-hidden">
-                      <iframe
-                        src={selectedLesson.video_url}
-                        className="w-full h-full"
-                        allowFullScreen
-                      />
+                  {videoData && (
+                    <div className="aspect-video bg-[hsl(var(--foreground))] rounded-[12px] mb-6 overflow-hidden relative">
+                      {activeVideoLessonId === selectedLesson.id ? (
+                        <iframe
+                          src={videoData.embedUrl}
+                          title={selectedLesson.title || 'Video da aula'}
+                          className="w-full h-full"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setActiveVideoLessonId(selectedLesson.id)}
+                          className="group relative w-full h-full"
+                          aria-label={`Reproduzir ${selectedLesson.title}`}
+                        >
+                          {videoData.thumbnailUrl ? (
+                            <img
+                              src={videoData.thumbnailUrl}
+                              alt={selectedLesson.title || 'Thumbnail da aula'}
+                              loading="lazy"
+                              decoding="async"
+                              width={1280}
+                              height={720}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-[hsl(var(--primary))] via-[hsl(var(--foreground))] to-[hsl(var(--accent))]" />
+                          )}
+                          <span className="absolute inset-0 bg-black/40 transition group-hover:bg-black/50" />
+                          <span className="absolute inset-0 flex items-center justify-center">
+                            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/90 text-[hsl(var(--foreground))] text-2xl shadow-lg">
+                              <FaPlay />
+                            </span>
+                          </span>
+                        </button>
+                      )}
                     </div>
                   )}
 

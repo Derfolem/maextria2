@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Resumo de Policies (RLS)</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 24px;
+        color: #111;
+      }
+      h1 {
+        font-size: 20px;
+        margin-bottom: 12px;
+      }
+      p {
+        font-size: 12px;
+        margin: 0 0 16px;
+        color: #333;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+      th,
+      td {
+        border: 1px solid #ccc;
+        padding: 8px;
+        vertical-align: top;
+        text-align: left;
+      }
+      th {
+        background: #f2f2f2;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Resumo de Policies (RLS)</h1>
+    <p>
+      Este documento resume quem pode ler, criar, editar e apagar dados nas tabelas principais.
+      Use para auditoria e alinhamento interno.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Tabela</th>
+          <th>SELECT (ler)</th>
+          <th>INSERT (criar)</th>
+          <th>UPDATE (editar)</th>
+          <th>DELETE (apagar)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>usuarios</td>
+          <td>admin: todos / user: proprio</td>
+          <td>-</td>
+          <td>user: proprio</td>
+          <td>-</td>
+        </tr>
+        <tr>
+          <td>user_roles</td>
+          <td>admin: todos / user: proprio</td>
+          <td>admin</td>
+          <td>admin</td>
+          <td>admin</td>
+        </tr>
+        <tr>
+          <td>cursos</td>
+          <td>publico: ativos / teacher: proprios / admin: todos</td>
+          <td>admin ou teacher</td>
+          <td>teacher: proprios / admin: todos</td>
+          <td>teacher: proprios / admin: todos</td>
+        </tr>
+        <tr>
+          <td>certificados</td>
+          <td>admin: todos / user: proprios / publico: por codigo</td>
+          <td>admin</td>
+          <td>admin</td>
+          <td>-</td>
+        </tr>
+        <tr>
+          <td>ai_plan_payments</td>
+          <td>admin: todos / user: proprios</td>
+          <td>-</td>
+          <td>-</td>
+          <td>admin</td>
+        </tr>
+        <tr>
+          <td>ai_plan_access</td>
+          <td>admin: todos / user: proprio</td>
+          <td>-</td>
+          <td>admin</td>
+          <td>admin</td>
+        </tr>
+        <tr>
+          <td>ai_usage_periods</td>
+          <td>admin: todos / user: proprio</td>
+          <td>-</td>
+          <td>-</td>
+          <td>admin</td>
+        </tr>
+        <tr>
+          <td>ai_usage_limits</td>
+          <td>admin: todos</td>
+          <td>admin</td>
+          <td>admin</td>
+          <td>admin</td>
+        </tr>
+      </tbody>
+    </table>
+  </body>
+</html>

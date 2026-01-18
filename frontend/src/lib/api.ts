@@ -1,9 +1,9 @@
 import axios from 'axios';
 
-const fallbackApiUrl =
-  window.location.hostname === 'localhost'
-    ? 'http://localhost:3001/api'
-    : 'https://maextria2-production.up.railway.app/api';
+const isBrowser = typeof window !== 'undefined';
+const fallbackApiUrl = isBrowser && window.location.hostname === 'localhost'
+  ? 'http://localhost:3001/api'
+  : 'https://maextria2-production.up.railway.app/api';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || fallbackApiUrl,
@@ -13,6 +13,13 @@ const api = axios.create({
 });
 
 const resolveAuthStorage = () => {
+  if (!isBrowser) {
+    return {
+      getItem: () => null,
+      setItem: () => undefined,
+      removeItem: () => undefined,
+    };
+  }
   const remember = window.localStorage.getItem('maextria_remember_me');
   const useLocal = remember === null || remember === '1';
   return useLocal ? window.localStorage : window.sessionStorage;
@@ -30,11 +37,13 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      window.localStorage.removeItem('token');
-      window.localStorage.removeItem('user');
-      window.sessionStorage.removeItem('token');
-      window.sessionStorage.removeItem('user');
-      window.location.href = '/login';
+      if (isBrowser) {
+        window.localStorage.removeItem('token');
+        window.localStorage.removeItem('user');
+        window.sessionStorage.removeItem('token');
+        window.sessionStorage.removeItem('user');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

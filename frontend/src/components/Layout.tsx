@@ -5,6 +5,77 @@ import { FaBook, FaBars, FaTimes, FaInstagram, FaLinkedinIn, FaYoutube, FaBell }
 import AIChat from './AIChat';
 import { supabase } from '../lib/supabase';
 
+const SITE_BASE_URL = 'https://www.maextria.com.br';
+const DEFAULT_OG_IMAGE = `${SITE_BASE_URL}/maextria-logo.png`;
+
+const getDefaultSeo = (pathname: string) => {
+  switch (pathname) {
+    case '/courses':
+      return {
+        title: 'Cursos | MAEXTRIA',
+        description: 'Explore cursos curados para aprender, aplicar e expandir com foco pratico.',
+        keywords: '',
+        robots: 'index,follow',
+        canonical: `${SITE_BASE_URL}/courses`,
+        ogImage: `${SITE_BASE_URL}/hero-01.png`,
+      };
+    case '/sou-professor':
+      return {
+        title: 'Sou Professor | MAEXTRIA',
+        description: 'Compartilhe sua experiencia e crie cursos com a MAEXTRIA.',
+        keywords: '',
+        robots: 'index,follow',
+        canonical: `${SITE_BASE_URL}/sou-professor`,
+        ogImage: `${SITE_BASE_URL}/hero-02.png`,
+      };
+    case '/verificar-certificado':
+      return {
+        title: 'Verificar Certificado | MAEXTRIA',
+        description: 'Valide certificados emitidos pela MAEXTRIA com seguranca.',
+        keywords: '',
+        robots: 'index,follow',
+        canonical: `${SITE_BASE_URL}/verificar-certificado`,
+        ogImage: `${SITE_BASE_URL}/hero-03.png`,
+      };
+    case '/login':
+      return {
+        title: 'Entrar | MAEXTRIA',
+        description: 'Acesse sua conta MAEXTRIA.',
+        keywords: '',
+        robots: 'noindex,nofollow',
+        canonical: `${SITE_BASE_URL}/login`,
+        ogImage: DEFAULT_OG_IMAGE,
+      };
+    case '/register':
+      return {
+        title: 'Criar Conta | MAEXTRIA',
+        description: 'Crie sua conta gratuita e comece a aprender na MAEXTRIA.',
+        keywords: '',
+        robots: 'noindex,nofollow',
+        canonical: `${SITE_BASE_URL}/register`,
+        ogImage: DEFAULT_OG_IMAGE,
+      };
+    case '/reset-password':
+      return {
+        title: 'Recuperar Senha | MAEXTRIA',
+        description: 'Redefina sua senha para acessar sua conta.',
+        keywords: '',
+        robots: 'noindex,nofollow',
+        canonical: `${SITE_BASE_URL}/reset-password`,
+        ogImage: DEFAULT_OG_IMAGE,
+      };
+    default:
+      return {
+        title: 'MAEXTRIA - Plataforma de Cursos Online',
+        description: 'MAEXTRIA: plataforma de cursos online com trilhas, certificados e conteudo com IA.',
+        keywords: '',
+        robots: 'index,follow',
+        canonical: `${SITE_BASE_URL}/`,
+        ogImage: DEFAULT_OG_IMAGE,
+      };
+  }
+};
+
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, user, logout } = useAuthStore();
   const navigate = useNavigate();
@@ -47,7 +118,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const maintenanceBypass =
     user?.role === 'admin' &&
     (new URLSearchParams(location.search).get('admin') === '1' ||
-      window.sessionStorage.getItem('maextria_admin_bypass') === '1');
+      (typeof window !== 'undefined' && window.sessionStorage.getItem('maextria_admin_bypass') === '1'));
 
   const handleLogout = () => {
     logout();
@@ -118,8 +189,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (seoConfig.title) {
-      document.title = seoConfig.title;
+    const fallback = getDefaultSeo(location.pathname);
+    const effectiveSeo = {
+      title: seoConfig.title || fallback.title,
+      description: seoConfig.description || fallback.description,
+      keywords: seoConfig.keywords || fallback.keywords,
+      robots: seoConfig.robots || fallback.robots,
+      canonical: seoConfig.canonical || fallback.canonical,
+      ogImage: fallback.ogImage || DEFAULT_OG_IMAGE,
+    };
+
+    if (effectiveSeo.title) {
+      document.title = effectiveSeo.title;
     }
     const ensureMeta = (name: string, content: string) => {
       if (!content) return;
@@ -131,19 +212,36 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       }
       tag.setAttribute('content', content);
     };
-    ensureMeta('description', seoConfig.description);
-    ensureMeta('keywords', seoConfig.keywords);
-    ensureMeta('robots', seoConfig.robots);
-    if (seoConfig.canonical) {
+    const ensureProperty = (property: string, content: string) => {
+      if (!content) return;
+      let tag = document.querySelector(`meta[property="${property}"]`);
+      if (!tag) {
+        tag = document.createElement('meta');
+        tag.setAttribute('property', property);
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute('content', content);
+    };
+    ensureMeta('description', effectiveSeo.description);
+    ensureMeta('keywords', effectiveSeo.keywords);
+    ensureMeta('robots', effectiveSeo.robots);
+    ensureMeta('twitter:title', effectiveSeo.title);
+    ensureMeta('twitter:description', effectiveSeo.description);
+    ensureMeta('twitter:image', effectiveSeo.ogImage);
+    ensureProperty('og:title', effectiveSeo.title);
+    ensureProperty('og:description', effectiveSeo.description);
+    ensureProperty('og:url', effectiveSeo.canonical);
+    ensureProperty('og:image', effectiveSeo.ogImage);
+    if (effectiveSeo.canonical) {
       let canonical = document.querySelector('link[rel="canonical"]');
       if (!canonical) {
         canonical = document.createElement('link');
         canonical.setAttribute('rel', 'canonical');
         document.head.appendChild(canonical);
       }
-      canonical.setAttribute('href', seoConfig.canonical);
+      canonical.setAttribute('href', effectiveSeo.canonical);
     }
-  }, [seoConfig]);
+  }, [seoConfig, location.pathname]);
 
   useEffect(() => {
     const trackPageView = async () => {
