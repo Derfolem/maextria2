@@ -38,8 +38,7 @@ export default function AdminPayments() {
     loadData();
   }, []);
 
-  const resolveCourseOwnerId = (course: Record<string, any>) =>
-    course.professor_id ?? course.teacher_id ?? course.autor_id ?? course.criado_por ?? course.user_id;
+  const resolveCourseOwnerId = (course: Record<string, any>) => course.professor_id;
 
   const loadData = async () => {
     setLoading(true);
@@ -51,6 +50,7 @@ export default function AdminPayments() {
         { data: usageData },
         { data: aiPayments },
         { data: transacoes },
+        { data: certificados },
         { data: cursos },
       ] = await Promise.all([
         supabase.from('usuarios').select('id, nome_completo, email'),
@@ -64,7 +64,11 @@ export default function AdminPayments() {
           .from('transacoes_pagamento')
           .select('id, usuario_id, curso_id, valor, status, criado_em')
           .eq('status', 'completo'),
-        supabase.from('cursos').select('id, titulo, professor_id, teacher_id, autor_id, criado_por, user_id'),
+        supabase
+          .from('certificados')
+          .select('id, usuario_id, curso_id, pago, emitido_em')
+          .eq('pago', true),
+        supabase.from('cursos').select('id, titulo, professor_id, preco_certificado'),
       ]);
 
       const rolesMap = (rolesData || []).reduce((acc: Record<string, string[]>, row: any) => {
@@ -92,6 +96,12 @@ export default function AdminPayments() {
         return acc;
       }, {});
 
+      const coursePriceMap = (cursos || []).reduce((acc: Record<string, number>, course: any) => {
+        acc[String(course.id)] = Number(course.preco_certificado || 0);
+        return acc;
+      }, {});
+      const useCertificadosFallback = (transacoes || []).length === 0;
+
       const certPurchaseMap = (transacoes || []).reduce((acc: Record<string, number>, row: any) => {
         const key = String(row.usuario_id);
         acc[key] = (acc[key] || 0) + Number(row.valor || 0);
@@ -107,6 +117,19 @@ export default function AdminPayments() {
         payingStudentsMap[ownerId] = payingStudentsMap[ownerId] || new Set<string>();
         payingStudentsMap[ownerId].add(String(row.usuario_id));
       });
+
+      if (useCertificadosFallback) {
+        (certificados || []).forEach((row: any) => {
+          const price = coursePriceMap[String(row.curso_id)] || 0;
+          const buyerId = String(row.usuario_id);
+          certPurchaseMap[buyerId] = (certPurchaseMap[buyerId] || 0) + price;
+          const ownerId = courseOwnerMap[String(row.curso_id)];
+          if (!ownerId) return;
+          certSalesMap[ownerId] = (certSalesMap[ownerId] || 0) + price;
+          payingStudentsMap[ownerId] = payingStudentsMap[ownerId] || new Set<string>();
+          payingStudentsMap[ownerId].add(buyerId);
+        });
+      }
 
       const userRows: UserRow[] = (usersData || []).map((user: any) => {
         const roleList = rolesMap[String(user.id)] || [];
@@ -151,6 +174,19 @@ export default function AdminPayments() {
           createdAt: row.criado_em,
           detail: `Certificado ${row.curso_id || ''}`,
         })),
+        ...(useCertificadosFallback
+          ? (certificados || []).map((row: any) => ({
+              id: String(row.id),
+              type: 'certificado' as const,
+              userId: String(row.usuario_id),
+              name: userRows.find((u) => u.userId === String(row.usuario_id))?.name || 'Usuario',
+              email: userRows.find((u) => u.userId === String(row.usuario_id))?.email || '',
+              amount: coursePriceMap[String(row.curso_id)] || 0,
+              status: 'completo',
+              createdAt: row.emitido_em,
+              detail: `Certificado ${row.curso_id || ''}`,
+            }))
+          : []),
       ];
 
       setRows(userRows);
