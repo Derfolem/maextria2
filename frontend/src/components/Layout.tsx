@@ -217,15 +217,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   if (systemFlagsLoaded && maintenanceMode && user?.role !== 'admin') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[hsl(var(--background))] px-6">
-        <div className="max-w-lg w-full text-center card p-8">
-          <p className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--accent))] mb-3">
-            Manutencao
-          </p>
-          <h1 className="headline-font text-3xl mb-4">Voltamos em instantes</h1>
-          <p className="text-[hsl(var(--muted-foreground))]">
-            A MAEXTRIA esta em manutencao. Tente novamente em alguns minutos.
-          </p>
+      <div className="min-h-screen hero-gradient text-white flex items-center justify-center px-6">
+        <div className="max-w-3xl w-full grid gap-8 lg:grid-cols-[1.1fr_0.9fr] items-center">
+          <div className="space-y-5">
+            <p className="text-xs uppercase tracking-[0.35em] text-white/70">Manutencao</p>
+            <h1 className="headline-font text-4xl md:text-5xl leading-tight">
+              No momento o site esta em manutencao.
+            </h1>
+            <p className="text-base md:text-lg text-white/80">
+              Estamos fazendo alguns ajustes para tonar o site ainda mais exponencial para voce.
+              Volte daqui a estantes e veja as novas mudancas.
+            </p>
+          </div>
+          <div className="hero-frame rounded-[28px] p-4 bg-white/5">
+            <img
+              src="/hero-10.png"
+              alt="Pessoa trabalhando na manutencao"
+              className="w-full rounded-[20px]"
+            />
+          </div>
         </div>
       </div>
     );

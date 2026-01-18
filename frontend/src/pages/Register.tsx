@@ -68,8 +68,13 @@ export default function Register() {
           <p className="text-[hsl(var(--muted-foreground))] mt-2">Comece sua jornada na MAEXTRIA</p>
         </div>
         {!allowNewSignups && !configLoading && (
-          <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] p-4 text-sm text-[hsl(var(--muted-foreground))] mb-6">
-            Novos cadastros estao temporariamente fechados. Tente novamente mais tarde.
+          <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))] p-4 text-sm text-[hsl(var(--muted-foreground))] mb-6 flex items-center justify-between gap-4">
+            <span>No momento nao estamos aceitando novos cadastros.</span>
+            <div className="flex items-center gap-1 text-[hsl(var(--accent))]">
+              <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
+              <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" style={{ animationDelay: '0.2s' }} />
+              <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" style={{ animationDelay: '0.4s' }} />
+            </div>
           </div>
         )}
 
