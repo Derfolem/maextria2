@@ -176,7 +176,7 @@ serve(async (req) => {
     });
     const dataCurta = new Date(certificado.emitido_em).toLocaleDateString("pt-BR");
     const percentualProva = provaResultado?.percentual ?? null;
-    const validationUrl = `https://maextria.com.br/validar?codigo=${certificado.codigo_validacao}`;
+    const validationUrl = `https://maextria.com.br/verificar-certificado?codigo=${certificado.codigo_validacao}`;
 
     // Background
     doc.setFillColor(...baseBg);

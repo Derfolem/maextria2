@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,15 +21,26 @@ const VerificarCertificado = () => {
   const [resultado, setResultado] = useState<CertificadoPublico | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
-  const handleVerify = async (event: FormEvent) => {
-    event.preventDefault();
+  // Auto-verify if codigo is in URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const codigoUrl = params.get("codigo");
+    
+    if (codigoUrl && !resultado && !erro && !codigo) {
+      setCodigo(codigoUrl);
+      // Trigger verification
+      verifyCode(codigoUrl);
+    }
+  }, []);
+
+  const verifyCode = async (codigoToVerify: string) => {
     setLoading(true);
     setErro(null);
     setResultado(null);
 
     try {
       const { data, error } = await supabase.functions.invoke("verify-certificate", {
-        body: { codigo: codigo.trim().toUpperCase() },
+        body: { codigo: codigoToVerify.trim().toUpperCase() },
       });
 
       if (error) throw error;
@@ -45,6 +56,11 @@ const VerificarCertificado = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleVerify = async (event: FormEvent) => {
+    event.preventDefault();
+    verifyCode(codigo);
   };
 
   return (
