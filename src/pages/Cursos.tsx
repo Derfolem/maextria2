@@ -175,7 +175,7 @@ const Cursos = () => {
                 className="group hover:shadow-lg transition-all duration-300 flex flex-col"
               >
                 {course.imagem_capa_url && (
-                  <div className="relative overflow-hidden rounded-t-lg aspect-video">
+                  <div className="relative overflow-hidden rounded-t-lg aspect-[2/3]">
                     <img
                       src={course.imagem_capa_url}
                       alt={course.titulo}

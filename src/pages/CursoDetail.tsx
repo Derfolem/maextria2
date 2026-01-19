@@ -175,7 +175,7 @@ const CursoDetail = () => {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Course Info */}
           <div className="lg:col-span-2">
-            <div className="aspect-video bg-gradient-to-br from-primary to-secondary rounded-lg overflow-hidden mb-6">
+            <div className="aspect-[2/3] bg-gradient-to-br from-primary to-secondary rounded-lg overflow-hidden mb-6">
               <img 
                 src={course.imagem_capa_url} 
                 alt={course.titulo}
