@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,6 +9,101 @@ const corsHeaders = {
 type ChatMessage = {
   role: "user" | "assistant";
   content: string;
+};
+
+type CourseSummary = {
+  id: string;
+  titulo: string;
+};
+
+const normalizeInput = (value: string) =>
+  value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+const shouldListCourses = (message: string, history: ChatMessage[]) => {
+  const normalized = normalizeInput(message);
+  const triggers = [
+    "quais cursos",
+    "que cursos",
+    "lista de cursos",
+    "catalogo",
+    "catalogo de cursos",
+    "cursos disponiveis",
+    "cursos disponiveis",
+    "cursos vc tem",
+    "cursos voce tem",
+    "cursos tem",
+  ];
+  if (triggers.some((trigger) => normalized.includes(trigger))) {
+    return true;
+  }
+
+  const wantsRecommendation = [
+    "me indica",
+    "me recomend",
+    "recomenda",
+    "indica",
+    "sugere",
+    "sugestao",
+  ].some((trigger) => normalized.includes(trigger));
+  if (!wantsRecommendation) {
+    return false;
+  }
+
+  if (normalized.includes("curso")) {
+    return true;
+  }
+
+  const historyMentionsCourse = history
+    .filter((item) => item.role === "user")
+    .slice(-4)
+    .some((item) => normalizeInput(item.content).includes("curso"));
+  return historyMentionsCourse;
+};
+
+const buildCourseListResponse = async () => {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+  const supabaseAnonKey =
+    Deno.env.get("SUPABASE_ANON_KEY") ??
+    Deno.env.get("SUPABASE_ANON_PUBLIC_KEY") ??
+    "";
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return "Nao consigo acessar o catalogo agora. Proximo passo: <a href=\"/courses\">clique aqui</a>.";
+  }
+
+  const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+  const { data, error } = await supabaseClient
+    .from("cursos")
+    .select("id, titulo")
+    .eq("ativo", true)
+    .order("criado_em", { ascending: false });
+
+  if (error) {
+    console.error("Erro ao buscar cursos:", error);
+    return "Nao consegui listar os cursos agora. Proximo passo: <a href=\"/courses\">clique aqui</a>.";
+  }
+
+  const courses = (data || []).filter(
+    (course): course is CourseSummary =>
+      Boolean(course?.id) && Boolean(course?.titulo)
+  );
+
+  if (courses.length === 0) {
+    return "Ainda nao ha cursos publicados. Proximo passo: <a href=\"/courses\">clique aqui</a>.";
+  }
+
+  const header = courses.length === 1
+    ? "Curso disponivel agora:"
+    : "Cursos disponiveis agora:";
+  const lines = courses.map(
+    (course) =>
+      `- ${course.titulo}: <a href=\"/courses/${course.id}\">clique aqui</a>`
+  );
+
+  return [header, ...lines].join("\n");
 };
 
 const buildSystemPrompt = (audience: string) => {
@@ -24,7 +120,9 @@ const buildSystemPrompt = (audience: string) => {
     "Sempre direcione para um proximo passo dentro do site com CTA em link.",
     "Formato do CTA: Proximo passo: <a href=\"/caminho\">clique aqui</a>.",
     "Se faltar informacao, faca 3 a 5 perguntas curtas para recomendar melhor.",
+    "Nunca sugira nomes de cursos.",
     "Se o usuario pedir cursos, diga que nao tem acesso a lista em tempo real e direcione para /courses.",
+    "Se o usuario pedir recomendacao, faca 3 a 5 perguntas curtas e só depois direcione para /courses.",
     "Se nao souber, diga que nao tem acesso a dados em tempo real e ofereca um caminho.",
   ].join(" ");
 
@@ -89,15 +187,6 @@ serve(async (req) => {
       );
     }
 
-    const apiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!apiKey) {
-      return new Response(
-        JSON.stringify({ error: "OPENAI_API_KEY nao configurada." }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
-      );
-    }
-
-    const systemPrompt = buildSystemPrompt((audience || "").toString());
     const safeHistory: ChatMessage[] = Array.isArray(history)
       ? history
           .filter((item) => item && typeof item.content === "string")
@@ -108,6 +197,23 @@ serve(async (req) => {
           }))
       : [];
 
+    if (shouldListCourses(trimmed, safeHistory)) {
+      const content = await buildCourseListResponse();
+      return new Response(
+        JSON.stringify({ content }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    const apiKey = Deno.env.get("OPENAI_API_KEY");
+    if (!apiKey) {
+      return new Response(
+        JSON.stringify({ error: "OPENAI_API_KEY nao configurada." }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+      );
+    }
+
+    const systemPrompt = buildSystemPrompt((audience || "").toString());
     const payload = {
       model: "gpt-4o-mini",
       temperature: 0.2,
