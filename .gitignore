@@ -28,3 +28,10 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Temporary files
+start_servers.sh
+backend/database/*.db
+nohup.out
+backend/nohup.out
+frontend/nohup.out
