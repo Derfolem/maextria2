@@ -16,6 +16,11 @@ type CourseSummary = {
   titulo: string;
 };
 
+type CourseListResponse = {
+  content: string;
+  courses?: CourseSummary[];
+};
+
 const normalizeInput = (value: string) =>
   value
     .toLowerCase()
@@ -63,7 +68,7 @@ const shouldListCourses = (message: string, history: ChatMessage[]) => {
   return historyMentionsCourse;
 };
 
-const buildCourseListResponse = async () => {
+const buildCourseListResponse = async (): Promise<CourseListResponse> => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
   const supabaseAnonKey =
     Deno.env.get("SUPABASE_ANON_KEY") ??
@@ -71,7 +76,9 @@ const buildCourseListResponse = async () => {
     "";
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    return "Nao consigo acessar o catalogo agora. Proximo passo: <a href=\"/courses\">clique aqui</a>.";
+    return {
+      content: "Nao consigo acessar o catalogo agora. Proximo passo: clique aqui /courses.",
+    };
   }
 
   const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
@@ -83,7 +90,9 @@ const buildCourseListResponse = async () => {
 
   if (error) {
     console.error("Erro ao buscar cursos:", error);
-    return "Nao consegui listar os cursos agora. Proximo passo: <a href=\"/courses\">clique aqui</a>.";
+    return {
+      content: "Nao consegui listar os cursos agora. Proximo passo: clique aqui /courses.",
+    };
   }
 
   const courses = (data || []).filter(
@@ -92,18 +101,19 @@ const buildCourseListResponse = async () => {
   );
 
   if (courses.length === 0) {
-    return "Ainda nao ha cursos publicados. Proximo passo: <a href=\"/courses\">clique aqui</a>.";
+    return {
+      content: "Ainda nao ha cursos publicados. Proximo passo: clique aqui /courses.",
+    };
   }
 
   const header = courses.length === 1
     ? "Curso disponivel agora:"
     : "Cursos disponiveis agora:";
-  const lines = courses.map(
-    (course) =>
-      `- ${course.titulo}: <a href=\"/courses/${course.id}\">clique aqui</a>`
-  );
 
-  return [header, ...lines].join("\n");
+  return {
+    content: header,
+    courses,
+  };
 };
 
 const buildSystemPrompt = (audience: string) => {
@@ -198,9 +208,9 @@ serve(async (req) => {
       : [];
 
     if (shouldListCourses(trimmed, safeHistory)) {
-      const content = await buildCourseListResponse();
+      const result = await buildCourseListResponse();
       return new Response(
-        JSON.stringify({ content }),
+        JSON.stringify(result),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }

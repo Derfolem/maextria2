@@ -69,8 +69,8 @@ export default function AIChat() {
       const reply = data?.content || 'Nao consegui responder agora.';
       const responseCourses = Array.isArray(data?.courses)
         ? data.courses
-            .filter((course: any) => course?.id && course?.titulo)
-            .map((course: any) => ({ id: String(course.id), title: String(course.titulo) }))
+            .filter((course: { id?: string; titulo?: string }) => course?.id && course?.titulo)
+            .map((course: { id: string; titulo: string }) => ({ id: String(course.id), title: String(course.titulo) }))
         : null;
       setMessages((prev) => [
         ...prev,

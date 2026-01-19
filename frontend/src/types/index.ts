@@ -94,6 +94,7 @@ export interface DashboardStats {
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
+  courses?: { id: string; title: string }[];
 }
 
 export interface SystemSettings {
