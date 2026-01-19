@@ -104,7 +104,8 @@ async function seed() {
       duration_hours: 40,
       difficulty: 'intermediate',
       certificate_price: 49.90,
-      is_published: 1
+      is_published: 1,
+      cover_image: '/hero-01.png'
     },
     {
       id: uuidv4(),
@@ -115,7 +116,8 @@ async function seed() {
       duration_hours: 35,
       difficulty: 'intermediate',
       certificate_price: 59.90,
-      is_published: 1
+      is_published: 1,
+      cover_image: '/hero-02.png'
     },
     {
       id: uuidv4(),
@@ -126,7 +128,8 @@ async function seed() {
       duration_hours: 30,
       difficulty: 'beginner',
       certificate_price: 39.90,
-      is_published: 1
+      is_published: 1,
+      cover_image: '/hero-03.png'
     },
     {
       id: uuidv4(),
@@ -137,7 +140,8 @@ async function seed() {
       duration_hours: 25,
       difficulty: 'beginner',
       certificate_price: 34.90,
-      is_published: 1
+      is_published: 1,
+      cover_image: '/hero-04.png'
     },
     {
       id: uuidv4(),
@@ -148,7 +152,8 @@ async function seed() {
       duration_hours: 50,
       difficulty: 'advanced',
       certificate_price: 69.90,
-      is_published: 1
+      is_published: 1,
+      cover_image: '/hero-05.png'
     },
     {
       id: uuidv4(),
@@ -159,7 +164,8 @@ async function seed() {
       duration_hours: 20,
       difficulty: 'intermediate',
       certificate_price: 44.90,
-      is_published: 1
+      is_published: 1,
+      cover_image: '/hero-06.png'
     },
     {
       id: uuidv4(),
@@ -170,7 +176,8 @@ async function seed() {
       duration_hours: 60,
       difficulty: 'intermediate',
       certificate_price: 79.90,
-      is_published: 1
+      is_published: 1,
+      cover_image: '/hero-07.png'
     },
     {
       id: uuidv4(),
@@ -181,7 +188,8 @@ async function seed() {
       duration_hours: 15,
       difficulty: 'beginner',
       certificate_price: 29.90,
-      is_published: 1
+      is_published: 1,
+      cover_image: '/banners/maextria-banner-gratis.png'
     }
   ];
 
@@ -189,8 +197,8 @@ async function seed() {
     INSERT INTO courses (
       id, title, description, category_id, teacher_id,
       duration_hours, difficulty, certificate_price, is_published,
-      created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      cover_image, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   for (const course of courses) {
@@ -204,6 +212,7 @@ async function seed() {
       course.difficulty,
       course.certificate_price,
       course.is_published,
+      course.cover_image,
       now,
       now
     );

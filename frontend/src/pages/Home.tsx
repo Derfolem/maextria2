@@ -131,8 +131,32 @@ export default function Home() {
                         />
                       </picture>
                       <div className="grid grid-cols-2 gap-4" aria-hidden="true">
-                        <div className="rounded-[20px] bg-white/10 h-[120px] md:h-[160px]" />
-                        <div className="rounded-[20px] bg-white/10 h-[120px] md:h-[160px]" />
+                        <picture>
+                          <source srcSet="/hero-02.avif" type="image/avif" />
+                          <source srcSet="/hero-02.webp" type="image/webp" />
+                          <img
+                            src="/hero-02.png"
+                            alt="Detalhe editorial 1"
+                            loading="lazy"
+                            decoding="async"
+                            width={640}
+                            height={400}
+                            className="w-full rounded-[20px]"
+                          />
+                        </picture>
+                        <picture>
+                          <source srcSet="/hero-03.avif" type="image/avif" />
+                          <source srcSet="/hero-03.webp" type="image/webp" />
+                          <img
+                            src="/hero-03.png"
+                            alt="Detalhe editorial 2"
+                            loading="lazy"
+                            decoding="async"
+                            width={640}
+                            height={400}
+                            className="w-full rounded-[20px]"
+                          />
+                        </picture>
                       </div>
                     </div>
                   </div>
