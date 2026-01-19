@@ -257,9 +257,11 @@ serve(async (req) => {
         .map((item) => item.content);
       const keywords = extractKeywords([trimmed, ...historyTexts]);
       if (intent === "recommend" && keywords.length === 0) {
+        const result = await buildCourseListResponse([], 3);
         return new Response(
           JSON.stringify({
-            content: "Qual area ou objetivo profissional voce quer focar? Quer algo mais tecnico ou introdutorio?",
+            content: "Posso sugerir estes cursos agora:",
+            courses: result.courses,
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
         );
@@ -275,10 +277,18 @@ serve(async (req) => {
       const limit = intent === "recommend" ? 3 : undefined;
       const result = await buildCourseListResponse(keywords, limit);
       if (result.matched === false && keywords.length > 0) {
+        if (keywords.length <= 2) {
+          return new Response(
+            JSON.stringify({
+              content: "Nao entendi bem. Me diz seu objetivo ou area que voce quer melhorar?",
+            }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+          );
+        }
         if (repeated) {
           return new Response(
             JSON.stringify({
-              content: "No momento nao temos esse curso. Posso te ajudar com outra opcao?",
+              content: "Ainda nao temos esse curso. Quer que eu te ajude a escolher algo parecido?",
             }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
           );
