@@ -14,6 +14,8 @@ type ChatMessage = {
 type CourseSummary = {
   id: string;
   titulo: string;
+  descricao?: string | null;
+  categoria?: string | null;
 };
 
 type CourseListResponse = {
@@ -26,6 +28,30 @@ const normalizeInput = (value: string) =>
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
+
+const extractKeywords = (texts: string[]) => {
+  const stopwords = new Set([
+    "a", "o", "e", "de", "da", "do", "das", "dos", "em", "no", "na", "nos", "nas",
+    "para", "por", "com", "sem", "um", "uma", "uns", "umas", "que", "qual", "quais",
+    "tem", "tenho", "quero", "gostaria", "me", "meu", "minha", "meus", "minhas",
+    "curso", "cursos", "area", "areas", "objetivo", "profissional", "atualizar",
+    "atualizando", "indica", "indique", "recomenda", "recomende", "sugere", "sugestao",
+  ]);
+  const words = texts
+    .flatMap((text) => normalizeInput(text).split(/[^a-z0-9]+/g))
+    .filter((word) => word && word.length > 2 && !stopwords.has(word));
+  return Array.from(new Set(words));
+};
+
+const scoreCourse = (course: CourseSummary, keywords: string[]) => {
+  if (keywords.length === 0) return 0;
+  const haystack = normalizeInput(
+    [course.titulo, course.descricao, course.categoria].filter(Boolean).join(" ")
+  );
+  return keywords.reduce((score, keyword) => (
+    haystack.includes(keyword) ? score + 1 : score
+  ), 0);
+};
 
 const shouldListCourses = (message: string, history: ChatMessage[]) => {
   const normalized = normalizeInput(message);
@@ -40,6 +66,11 @@ const shouldListCourses = (message: string, history: ChatMessage[]) => {
     "cursos vc tem",
     "cursos voce tem",
     "cursos tem",
+    "quais sao os cursos",
+    "quais sao",
+    "vc tem",
+    "voce tem",
+    "tem curso",
   ];
   if (triggers.some((trigger) => normalized.includes(trigger))) {
     return true;
@@ -68,7 +99,7 @@ const shouldListCourses = (message: string, history: ChatMessage[]) => {
   return historyMentionsCourse;
 };
 
-const buildCourseListResponse = async (): Promise<CourseListResponse> => {
+const buildCourseListResponse = async (keywords: string[] = []): Promise<CourseListResponse> => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
   const supabaseAnonKey =
     Deno.env.get("SUPABASE_ANON_KEY") ??
@@ -84,7 +115,7 @@ const buildCourseListResponse = async (): Promise<CourseListResponse> => {
   const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
   const { data, error } = await supabaseClient
     .from("cursos")
-    .select("id, titulo")
+    .select("id, titulo, descricao, categoria")
     .eq("ativo", true)
     .order("criado_em", { ascending: false });
 
@@ -106,13 +137,26 @@ const buildCourseListResponse = async (): Promise<CourseListResponse> => {
     };
   }
 
-  const header = courses.length === 1
+  const ranked = keywords.length > 0
+    ? [...courses]
+        .map((course) => ({ course, score: scoreCourse(course, keywords) }))
+        .sort((a, b) => b.score - a.score)
+    : courses.map((course) => ({ course, score: 0 }));
+  const best = ranked.filter((item) => item.score > 0).map((item) => item.course);
+  const fallback = ranked.map((item) => item.course);
+  const selected = best.length > 0 ? best : fallback;
+
+  const header = selected.length === 1
     ? "Curso disponivel agora:"
     : "Cursos disponiveis agora:";
+  const noMatchPrefix = best.length === 0 && keywords.length > 0
+    ? `Nao encontrei curso de ${keywords.join(", ")}. `
+    : "";
+  const onlineNote = "Todos os cursos sao online. ";
 
   return {
-    content: header,
-    courses,
+    content: `${noMatchPrefix}${onlineNote}${header}`,
+    courses: selected,
   };
 };
 
@@ -126,14 +170,12 @@ const buildSystemPrompt = (audience: string) => {
     "Nao informe valores, planos, precos, ou numeros de cursos.",
     "Nao invente cursos, cargas horarias, certificados, politicas ou resultados.",
     "Nao diga que ha varios cursos ou muitas areas; nao afirme quantidade.",
-    "Se precisar de dados reais, diga que nao tem acesso e direcione para a pagina correta.",
-    "Sempre direcione para um proximo passo dentro do site com CTA em link.",
-    "Formato do CTA: Proximo passo: <a href=\"/caminho\">clique aqui</a>.",
-    "Se faltar informacao, faca 3 a 5 perguntas curtas para recomendar melhor.",
-    "Nunca sugira nomes de cursos.",
-    "Se o usuario pedir cursos, diga que nao tem acesso a lista em tempo real e direcione para /courses.",
-    "Se o usuario pedir recomendacao, faca 3 a 5 perguntas curtas e só depois direcione para /courses.",
-    "Se nao souber, diga que nao tem acesso a dados em tempo real e ofereca um caminho.",
+    "Se precisar de dados reais, responda com o que foi fornecido pela plataforma.",
+    "Nunca invente cursos.",
+    "Evite perguntas demais: no maximo 2 perguntas curtas.",
+    "Nao pergunte sobre modalidade presencial ou online.",
+    "Se nao tiver curso da area pedida, diga isso e ofereca os cursos disponiveis.",
+    "No fim, use uma orientacao simples sem links: \"Clique no botao Cursos no menu\".",
   ].join(" ");
 
   switch (audience) {
@@ -208,7 +250,11 @@ serve(async (req) => {
       : [];
 
     if (shouldListCourses(trimmed, safeHistory)) {
-      const result = await buildCourseListResponse();
+      const historyTexts = safeHistory
+        .filter((item) => item.role === "user")
+        .map((item) => item.content);
+      const keywords = extractKeywords([trimmed, ...historyTexts]);
+      const result = await buildCourseListResponse(keywords);
       return new Response(
         JSON.stringify(result),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
