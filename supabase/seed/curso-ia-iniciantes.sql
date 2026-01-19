@@ -15,7 +15,7 @@ WITH course AS (
     'Curso de Inteligencia Artificial para Iniciantes (com Certificado)',
     'curso-inteligencia-artificial-para-iniciantes',
     'O Curso de Inteligencia Artificial para Iniciantes da MAEXTRIA e ideal para quem deseja aprender IA do zero, mesmo sem conhecimento tecnico. Voce vai entender o que e inteligencia artificial, como ela funciona na pratica e como pode ser usada no trabalho, nos estudos e no dia a dia. Curso online, linguagem simples e certificado digital incluso para curriculo, LinkedIn e horas complementares.',
-    'https://images.unsplash.com/photo-1677442d019cecf8949e0a6109d9a29d969afa6bc?w=800&q=80',
+    'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&auto=format&fit=crop&q=60',
     true,
     'Tecnologia e Inovacao',
     49.90,
