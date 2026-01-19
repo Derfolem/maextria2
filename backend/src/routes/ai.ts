@@ -62,12 +62,23 @@ router.post('/generate-lesson', authenticate, authorize('teacher', 'admin'), asy
 });
 
 // Chat with AI assistant
-router.post('/chat', async (req: Request, res: Response) => {
+router.post('/chat', authenticate, async (req: Request, res: Response) => {
   try {
     const { message, conversationHistory } = req.body;
 
     if (!message) {
       res.status(400).json({ error: 'Message is required' });
+      return;
+    }
+
+    // Validação de tamanho para prevenir abuso
+    if (message.length > 5000) {
+      res.status(400).json({ error: 'Message is too long (max 5000 characters)' });
+      return;
+    }
+
+    if (conversationHistory && conversationHistory.length > 50) {
+      res.status(400).json({ error: 'Conversation history is too long (max 50 messages)' });
       return;
     }
 

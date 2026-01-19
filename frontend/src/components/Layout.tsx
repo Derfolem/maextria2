@@ -4,6 +4,7 @@ import { useAuthStore } from '../lib/store';
 import { FaBook, FaBars, FaTimes, FaInstagram, FaLinkedinIn, FaYoutube, FaBell } from 'react-icons/fa';
 import AIChat from './AIChat';
 import { supabase } from '../lib/supabase';
+import DOMPurify from 'dompurify';
 
 const SITE_BASE_URL = 'https://www.maextria.com.br';
 const DEFAULT_OG_IMAGE = `${SITE_BASE_URL}/maextria-logo.png`;
@@ -170,7 +171,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         if (!marker) {
           const container = document.createElement('div');
           container.id = 'maextria-pixel-head';
-          container.innerHTML = headCode;
+          // Sanitizar código de marketing para prevenir XSS, mas permitir scripts de analytics
+          container.innerHTML = DOMPurify.sanitize(headCode, {
+            ADD_TAGS: ['script', 'noscript', 'iframe'],
+            ADD_ATTR: ['async', 'defer', 'src', 'type']
+          });
           document.head.appendChild(container);
         }
       }
@@ -179,7 +184,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         if (!marker) {
           const container = document.createElement('div');
           container.id = 'maextria-pixel-body';
-          container.innerHTML = bodyCode;
+          // Sanitizar código de marketing para prevenir XSS, mas permitir scripts de analytics
+          container.innerHTML = DOMPurify.sanitize(bodyCode, {
+            ADD_TAGS: ['script', 'noscript', 'iframe'],
+            ADD_ATTR: ['async', 'defer', 'src', 'type']
+          });
           document.body.appendChild(container);
         }
       }

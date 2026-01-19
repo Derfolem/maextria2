@@ -1,5 +1,6 @@
 import jwt, { SignOptions } from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { AuthPayload } from '../types';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'default-secret-change-in-production';
@@ -25,6 +26,6 @@ export function verifyToken(token: string): AuthPayload {
 }
 
 export function generateVerificationToken(): string {
-  return Math.random().toString(36).substring(2, 15) +
-         Math.random().toString(36).substring(2, 15);
+  // Gera token criptograficamente seguro de 32 bytes (64 caracteres hex)
+  return crypto.randomBytes(32).toString('hex');
 }

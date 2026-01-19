@@ -6,6 +6,7 @@ import { useAuthStore } from '../../lib/store';
 import toast from 'react-hot-toast';
 import { FaCheckCircle, FaCircle, FaDownload, FaArrowLeft, FaCertificate, FaPlay } from 'react-icons/fa';
 import { normalizeCourse } from '../../lib/normalizeCourse';
+import DOMPurify from 'dompurify';
 
 const YOUTUBE_REGEX = /(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{6,})/;
 const VIMEO_REGEX = /vimeo\.com\/(?:video\/)?(\d+)/;
@@ -630,7 +631,7 @@ export default function CoursePlayer() {
 
                   {selectedLesson.content && (
                     <div className="prose max-w-none mb-6">
-                      <div dangerouslySetInnerHTML={{ __html: selectedLesson.content }} />
+                      <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedLesson.content) }} />
                     </div>
                   )}
 

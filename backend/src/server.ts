@@ -25,23 +25,64 @@ const allowedOrigins = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL ||
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Em desenvolvimento, permite requisições do Postman/curl (sem origin)
+    // Em produção, apenas permite origens na whitelist
+    if (process.env.NODE_ENV === 'development' && !origin) {
       callback(null, true);
       return;
     }
+
+    if (origin && allowedOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true
 }));
 
-// Rate limiting
+// Rate limiting global
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 100, // limite de 100 requisições por IP
   message: 'Too many requests from this IP, please try again later.'
 });
 
+// Rate limiters específicos para rotas sensíveis
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 5, // 5 tentativas
+  message: 'Too many authentication attempts, please try again later.',
+  skipSuccessfulRequests: true // Não conta requisições bem-sucedidas
+});
+
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hora
+  max: 3, // 3 registros
+  message: 'Too many accounts created from this IP, please try again later.'
+});
+
+const passwordResetLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hora
+  max: 3, // 3 tentativas
+  message: 'Too many password reset attempts, please try again later.'
+});
+
+const aiChatLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hora
+  max: 20, // 20 mensagens
+  message: 'Too many AI chat requests, please try again later.'
+});
+
 app.use('/api/', limiter);
+
+// Aplicar rate limiters específicos
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', registerLimiter);
+app.use('/api/auth/forgot-password', passwordResetLimiter);
+app.use('/api/auth/reset-password', passwordResetLimiter);
+app.use('/api/ai/chat', aiChatLimiter);
 
 // Parsers
 app.use(express.json());
