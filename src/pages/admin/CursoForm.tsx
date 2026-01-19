@@ -241,10 +241,8 @@ export default function CursoForm() {
 
             <div className="space-y-2">
               <Label htmlFor="carga_horaria">Carga Horária (horas)</Label>
-              <Input
+              <select
                 id="carga_horaria"
-                type="number"
-                min="1"
                 value={formData.carga_horaria_horas}
                 onChange={(e) =>
                   setFormData({
@@ -252,7 +250,19 @@ export default function CursoForm() {
                     carga_horaria_horas: parseInt(e.target.value) || 0,
                   })
                 }
-              />
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              >
+                <option value="0">Selecionar carga horária</option>
+                <option value="2">2 horas</option>
+                <option value="4">4 horas</option>
+                <option value="8">8 horas</option>
+                <option value="10">10 horas</option>
+                <option value="20">20 horas</option>
+                <option value="40">40 horas</option>
+                <option value="50">50 horas</option>
+                <option value="100">100 horas</option>
+                <option value="200">200 horas</option>
+              </select>
             </div>
 
             <div className="space-y-2">

@@ -16,6 +16,7 @@ export default function CourseEditor() {
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState('');
   const [level, setLevel] = useState('');
+  const [cargaHoraria, setCargaHoraria] = useState('');
   const [thumbnail, setThumbnail] = useState('');
   const [slug, setSlug] = useState('');
   const [teacherName, setTeacherName] = useState('');
@@ -113,6 +114,7 @@ export default function CourseEditor() {
       setPrice(courseData.preco_certificado ? String(courseData.preco_certificado) : '');
       setCategory(courseData.categoria || '');
       setLevel(courseData.nivel || '');
+      setCargaHoraria(courseData.carga_horaria_horas ? String(courseData.carga_horaria_horas) : '');
       setThumbnail(courseData.imagem_capa_url || '');
       setSlug(courseData.slug || '');
       setTeacherName(courseData.professor_nome || '');
@@ -209,6 +211,7 @@ export default function CourseEditor() {
         preco_certificado: parseFloat(price),
         categoria: category.trim() || null,
         nivel: level || null,
+        carga_horaria_horas: cargaHoraria ? parseInt(cargaHoraria) : null,
         slug: slug || slugify(title),
         professor_nome: teacherName.trim() || user.name || null,
       };
@@ -659,6 +662,24 @@ export default function CourseEditor() {
                 <option value="Iniciante">Iniciante</option>
                 <option value="Intermediário">Intermediário</option>
                 <option value="Avançado">Avançado</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Carga Horária
+              </label>
+              <select value={cargaHoraria} onChange={(e) => setCargaHoraria(e.target.value)} className="input-field">
+                <option value="">Selecionar carga horária</option>
+                <option value="2">2 horas</option>
+                <option value="4">4 horas</option>
+                <option value="8">8 horas</option>
+                <option value="10">10 horas</option>
+                <option value="20">20 horas</option>
+                <option value="40">40 horas</option>
+                <option value="50">50 horas</option>
+                <option value="100">100 horas</option>
+                <option value="200">200 horas</option>
               </select>
             </div>
 
