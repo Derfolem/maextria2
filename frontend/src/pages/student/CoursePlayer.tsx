@@ -502,7 +502,7 @@ export default function CoursePlayer() {
   const videoData = useMemo(() => {
     if (!selectedLesson?.video_url) return null;
     return getVideoData(selectedLesson.video_url);
-  }, [selectedLesson?.video_url ?? '']);
+  }, [String(selectedLesson?.video_url || '')]);
 
   return (
     <div className="min-h-screen bg-[hsl(var(--background))]">
