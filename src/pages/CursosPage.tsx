@@ -11,10 +11,10 @@ export default function CursosPage() {
   useEffect(() => {
     (async () => {
       const { data, error } = await supabase
-        .from("courses")
+        .from("cursos")
         .select("*")
-        .eq("published", true)
-        .order("created_at", { ascending: false });
+        .eq("ativo", true)
+        .order("criado_em", { ascending: false });
       if (!error) setCourses(data || []);
       setLoading(false);
     })();
