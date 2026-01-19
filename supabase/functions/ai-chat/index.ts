@@ -21,6 +21,7 @@ type CourseSummary = {
 type CourseListResponse = {
   content: string;
   courses?: CourseSummary[];
+  matched?: boolean;
 };
 
 const normalizeInput = (value: string) =>
@@ -53,7 +54,7 @@ const scoreCourse = (course: CourseSummary, keywords: string[]) => {
   ), 0);
 };
 
-const shouldListCourses = (message: string, history: ChatMessage[]) => {
+const getCourseIntent = (message: string, history: ChatMessage[]) => {
   const normalized = normalizeInput(message);
   const triggers = [
     "quais cursos",
@@ -73,7 +74,7 @@ const shouldListCourses = (message: string, history: ChatMessage[]) => {
     "tem curso",
   ];
   if (triggers.some((trigger) => normalized.includes(trigger))) {
-    return true;
+    return "list";
   }
 
   const wantsRecommendation = [
@@ -84,22 +85,25 @@ const shouldListCourses = (message: string, history: ChatMessage[]) => {
     "sugere",
     "sugestao",
   ].some((trigger) => normalized.includes(trigger));
-  if (!wantsRecommendation) {
-    return false;
+  if (wantsRecommendation) {
+    return "recommend";
   }
 
   if (normalized.includes("curso")) {
-    return true;
+    return "list";
   }
 
   const historyMentionsCourse = history
     .filter((item) => item.role === "user")
     .slice(-4)
     .some((item) => normalizeInput(item.content).includes("curso"));
-  return historyMentionsCourse;
+  return historyMentionsCourse ? "list" : null;
 };
 
-const buildCourseListResponse = async (keywords: string[] = []): Promise<CourseListResponse> => {
+const buildCourseListResponse = async (
+  keywords: string[] = [],
+  limit?: number
+): Promise<CourseListResponse> => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
   const supabaseAnonKey =
     Deno.env.get("SUPABASE_ANON_KEY") ??
@@ -144,19 +148,16 @@ const buildCourseListResponse = async (keywords: string[] = []): Promise<CourseL
     : courses.map((course) => ({ course, score: 0 }));
   const best = ranked.filter((item) => item.score > 0).map((item) => item.course);
   const fallback = ranked.map((item) => item.course);
-  const selected = best.length > 0 ? best : fallback;
+  const selected = (best.length > 0 ? best : fallback).slice(0, limit ?? fallback.length);
 
   const header = selected.length === 1
     ? "Curso disponivel agora:"
     : "Cursos disponiveis agora:";
-  const noMatchPrefix = best.length === 0 && keywords.length > 0
-    ? `Nao encontrei curso de ${keywords.join(", ")}. `
-    : "";
-  const onlineNote = "Todos os cursos sao online. ";
 
   return {
-    content: `${noMatchPrefix}${onlineNote}${header}`,
+    content: header,
     courses: selected,
+    matched: best.length > 0,
   };
 };
 
@@ -170,12 +171,12 @@ const buildSystemPrompt = (audience: string) => {
     "Nao informe valores, planos, precos, ou numeros de cursos.",
     "Nao invente cursos, cargas horarias, certificados, politicas ou resultados.",
     "Nao diga que ha varios cursos ou muitas areas; nao afirme quantidade.",
+    "Responda de forma humana e direta, sem parecer robo.",
     "Se precisar de dados reais, responda com o que foi fornecido pela plataforma.",
     "Nunca invente cursos.",
     "Evite perguntas demais: no maximo 2 perguntas curtas.",
     "Nao pergunte sobre modalidade presencial ou online.",
     "Se nao tiver curso da area pedida, diga isso e ofereca os cursos disponiveis.",
-    "No fim, use uma orientacao simples sem links: \"Clique no botao Cursos no menu\".",
   ].join(" ");
 
   switch (audience) {
@@ -249,12 +250,47 @@ serve(async (req) => {
           }))
       : [];
 
-    if (shouldListCourses(trimmed, safeHistory)) {
+    const intent = getCourseIntent(trimmed, safeHistory);
+    if (intent) {
       const historyTexts = safeHistory
         .filter((item) => item.role === "user")
         .map((item) => item.content);
       const keywords = extractKeywords([trimmed, ...historyTexts]);
-      const result = await buildCourseListResponse(keywords);
+      if (intent === "recommend" && keywords.length === 0) {
+        return new Response(
+          JSON.stringify({
+            content: "Qual area ou objetivo profissional voce quer focar? Quer algo mais tecnico ou introdutorio?",
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+        );
+      }
+
+      const priorUserTexts = safeHistory
+        .filter((item) => item.role === "user")
+        .map((item) => normalizeInput(item.content));
+      const repeated = keywords.some((keyword) =>
+        priorUserTexts.some((text) => text.includes(keyword))
+      );
+
+      const limit = intent === "recommend" ? 3 : undefined;
+      const result = await buildCourseListResponse(keywords, limit);
+      if (result.matched === false && keywords.length > 0) {
+        if (repeated) {
+          return new Response(
+            JSON.stringify({
+              content: "No momento nao temos esse curso. Posso te ajudar com outra opcao?",
+            }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+          );
+        }
+        return new Response(
+          JSON.stringify({
+            content: `Nao encontrei curso de ${keywords.join(", ")}. Quer que eu te ajude a escolher algo proximo?`,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+        );
+      }
+
       return new Response(
         JSON.stringify(result),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }

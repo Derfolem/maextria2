@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { FaRobot, FaTimes, FaPaperPlane } from 'react-icons/fa';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { FaTimes, FaPaperPlane, FaStar } from 'react-icons/fa';
 import { ChatMessage } from '../types';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
@@ -15,6 +15,7 @@ export default function AIChat() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [lastUserId, setLastUserId] = useState<string | null>(user?.id ? String(user.id) : null);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
 
   const audience = useMemo(() => {
     if (user?.role === 'admin') return 'admin';
@@ -39,10 +40,21 @@ export default function AIChat() {
   }, [user?.id, lastUserId]);
 
   useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [messages, loading]);
+
+  useEffect(() => {
     if (typeof window === 'undefined') return;
     const legacyKey = `maextria_ai_cache_${audience}`;
     window.localStorage.removeItem(legacyKey);
   }, [audience]);
+
+  const AIIcon = ({ className = '' }: { className?: string }) => (
+    <span className={`relative inline-flex items-center justify-center ${className}`}>
+      <FaTimes />
+      <FaStar className="absolute -top-1 -right-1 text-[10px] text-[hsl(var(--accent))]" />
+    </span>
+  );
 
   const sendMessage = async () => {
     if (!input.trim()) return;
@@ -100,7 +112,7 @@ export default function AIChat() {
           onClick={() => setIsOpen(true)}
           className="fixed bottom-6 right-6 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] px-5 py-3 rounded-full shadow-lg z-50 flex items-center gap-2"
         >
-          <FaRobot className="text-2xl" />
+          <AIIcon className="text-2xl" />
           <span className="text-sm font-semibold">Fale com a IA</span>
         </button>
       )}
@@ -109,7 +121,7 @@ export default function AIChat() {
         <div className="fixed bottom-6 right-6 w-96 h-[32rem] bg-[hsl(var(--card))] rounded-lg shadow-2xl flex flex-col z-50">
           <div className="bg-[hsl(var(--foreground))] text-[hsl(var(--background))] p-4 rounded-t-lg flex justify-between items-center">
             <div className="flex items-center space-x-2">
-              <FaRobot className="text-xl" />
+              <AIIcon className="text-xl" />
               <span className="font-semibold">Assistente MAEXTRIA</span>
             </div>
             <button onClick={() => setIsOpen(false)} className="hover:text-[hsl(var(--secondary))]">
@@ -120,7 +132,7 @@ export default function AIChat() {
           <div className="flex-grow overflow-y-auto p-4 space-y-4">
             {messages.length === 0 && (
               <div className="text-[hsl(var(--muted-foreground))] text-center mt-8 space-y-2">
-                <FaRobot className="text-4xl mx-auto mb-2 text-[hsl(var(--primary))]" />
+                <AIIcon className="text-4xl mx-auto mb-2 text-[hsl(var(--primary))]" />
                 <p>Oi! Me conte seu objetivo e eu indico cursos e certificados.</p>
               </div>
             )}
@@ -163,6 +175,7 @@ export default function AIChat() {
                 </div>
               </div>
             )}
+            <div ref={bottomRef} />
           </div>
 
           <div className="p-4 border-t border-[hsl(var(--border))]">
