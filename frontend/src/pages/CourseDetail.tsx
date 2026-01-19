@@ -144,7 +144,7 @@ export default function CourseDetail() {
     <div className="max-w-7xl mx-auto px-4 py-12">
       <div className="grid lg:grid-cols-[1.4fr_0.6fr] gap-10">
         <div>
-          <div className="w-full aspect-[2/3] max-h-[720px] rounded-[28px] mb-8 overflow-hidden bg-[hsl(var(--foreground))] text-white flex items-center justify-center text-6xl font-bold">
+          <div className="w-full aspect-[2/3] rounded-[28px] mb-8 overflow-hidden bg-[hsl(var(--foreground))] text-white flex items-center justify-center text-6xl font-bold">
             {course.thumbnail ? (
               <img
                 src={course.thumbnail}
@@ -152,7 +152,7 @@ export default function CourseDetail() {
                 decoding="async"
                 width={1280}
                 height={720}
-                className="w-full h-full object-contain"
+                className="w-full h-full object-cover"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[hsl(var(--primary))] via-[hsl(var(--foreground))] to-[hsl(var(--accent))]">

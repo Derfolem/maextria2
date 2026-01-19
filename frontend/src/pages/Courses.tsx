@@ -99,7 +99,7 @@ export default function Courses() {
                       decoding="async"
                       width={640}
                       height={400}
-                      className="w-full h-full object-contain transition duration-300 group-hover:scale-105"
+                      className="w-full h-full object-cover transition duration-300 group-hover:scale-105"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[hsl(var(--primary))] via-[hsl(var(--foreground))] to-[hsl(var(--accent))]">
