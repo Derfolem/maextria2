@@ -4,7 +4,7 @@ import { ChatMessage } from '../types';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../lib/store';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 export default function AIChat() {
   const { user } = useAuthStore();
@@ -38,24 +38,11 @@ export default function AIChat() {
     }
   }, [user?.id, lastUserId]);
 
-  const cacheKey = useMemo(() => `maextria_ai_cache_${audience}`, [audience]);
-
-  const readCache = () => {
-    if (typeof window === 'undefined') return {} as Record<string, string>;
-    const raw = window.localStorage.getItem(cacheKey);
-    if (!raw) return {};
-    try {
-      const parsed = JSON.parse(raw);
-      return parsed && typeof parsed === 'object' ? parsed : {};
-    } catch (error) {
-      return {};
-    }
-  };
-
-  const writeCache = (nextCache: Record<string, string>) => {
+  useEffect(() => {
     if (typeof window === 'undefined') return;
-    window.localStorage.setItem(cacheKey, JSON.stringify(nextCache));
-  };
+    const legacyKey = `maextria_ai_cache_${audience}`;
+    window.localStorage.removeItem(legacyKey);
+  }, [audience]);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
@@ -66,14 +53,6 @@ export default function AIChat() {
     setLoading(true);
 
     try {
-      const normalizedQuestion = userMessage.content.trim().toLowerCase();
-      const cached = readCache()[normalizedQuestion];
-      if (cached) {
-        setMessages((prev) => [...prev, { role: 'assistant', content: cached }]);
-        setLoading(false);
-        return;
-      }
-
       const history = [...messages, userMessage].slice(-8);
       const { data, error } = await supabase.functions.invoke('ai-chat', {
         body: {
@@ -88,10 +67,15 @@ export default function AIChat() {
       }
 
       const reply = data?.content || 'Nao consegui responder agora.';
-      const cache = readCache();
-      cache[normalizedQuestion] = reply;
-      writeCache(cache);
-      setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
+      const responseCourses = Array.isArray(data?.courses)
+        ? data.courses
+            .filter((course: any) => course?.id && course?.titulo)
+            .map((course: any) => ({ id: String(course.id), title: String(course.titulo) }))
+        : null;
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: reply, courses: responseCourses || undefined },
+      ]);
     } catch (error: any) {
       toast.error(error?.message || 'Nao foi possivel responder agora.');
       setMessages((prev) => [
@@ -149,6 +133,21 @@ export default function AIChat() {
                     : 'bg-[hsl(var(--muted))] text-[hsl(var(--foreground))]'
                 }`}>
                   {msg.content}
+                  {msg.role === 'assistant' && msg.courses && msg.courses.length > 0 && (
+                    <div className="mt-3 space-y-2 text-sm">
+                      {msg.courses.map((course) => (
+                        <div key={course.id} className="flex items-center justify-between gap-2">
+                          <span className="font-medium">{course.title}</span>
+                          <Link
+                            to={`/courses/${course.id}`}
+                            className="text-[hsl(var(--primary))] underline"
+                          >
+                            Clique aqui
+                          </Link>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
