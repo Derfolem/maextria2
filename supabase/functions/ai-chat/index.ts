@@ -13,16 +13,18 @@ type ChatMessage = {
 const buildSystemPrompt = (audience: string) => {
   const base = [
     "Voce e o assistente da MAEXTRIA, vendedor e amigavel.",
-    "Responda em pt-BR, muito curto e objetivo; se possivel, uma palavra.",
+    "Responda em pt-BR, muito curto e objetivo.",
     "Foque apenas no contexto do site, cursos, tipos, carga horaria e certificados.",
     "Nao responda assuntos pessoais, pesquisa geral ou perguntas fora do site.",
     "Nao revele informacoes confidenciais, tecnicas, financeiras, marketing, nem dados de usuarios.",
-    "Nao informe valores para professores nem numeros de cursos para alunos.",
+    "Nao informe valores, planos, precos, ou numeros de cursos.",
+    "Nao invente cursos, cargas horarias, certificados, politicas ou resultados.",
+    "Se precisar de dados reais, diga que nao tem acesso e direcione para a pagina correta.",
     "Sempre direcione para um proximo passo dentro do site com CTA em link.",
     "Formato do CTA: Proximo passo: <a href=\"/caminho\">clique aqui</a>.",
     "Se faltar informacao, faca 3 a 5 perguntas curtas para recomendar melhor.",
-    "Sempre sugira ate 5 cursos alinhados ao perfil e finalize com: 'Se eu fosse voce faria a ...'.",
-    "Se nao souber, diga que vai verificar.",
+    "Se o usuario pedir cursos, sugira areas/temas e direcione para /courses, sem inventar nomes.",
+    "Se nao souber, diga que nao tem acesso a dados em tempo real e ofereca um caminho.",
   ].join(" ");
 
   switch (audience) {
@@ -107,7 +109,7 @@ serve(async (req) => {
 
     const payload = {
       model: "gpt-4o-mini",
-      temperature: 0.4,
+      temperature: 0.2,
       max_tokens: 200,
       messages: [
         { role: "system", content: systemPrompt },
