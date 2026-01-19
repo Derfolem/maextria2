@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Course, Lesson, Progress } from '../../types';
 import { supabase } from '../../lib/supabase';
@@ -499,10 +499,9 @@ export default function CoursePlayer() {
     && allModuleQuizzesPassed
     && finalQuizPassed;
 
-  const videoData = useMemo(() => {
-    if (!selectedLesson?.video_url) return null;
-    return getVideoData(selectedLesson.video_url);
-  }, [String(selectedLesson?.video_url || '')]);
+  const videoData = selectedLesson?.video_url 
+    ? getVideoData(selectedLesson.video_url)
+    : null;
 
   return (
     <div className="min-h-screen bg-[hsl(var(--background))]">
