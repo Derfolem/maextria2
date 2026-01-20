@@ -133,7 +133,7 @@ export function parseCourseText(rawText: string, currentUserId: string | number,
 
 
   // Clean up empty modules/lessons that might have been created
-  course.modules = course.modules?.filter(m => m.title || m.lessons?.length > 0);
+  course.modules = course.modules?.filter(m => m.title || (m.lessons && m.lessons.length > 0));
   course.modules?.forEach(m => {
     m.lessons = m.lessons?.filter(l => l.title || l.content || l.video_url);
   });

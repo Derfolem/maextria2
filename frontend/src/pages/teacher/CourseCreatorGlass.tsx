@@ -1,5 +1,5 @@
 // frontend/src/pages/teacher/CourseCreatorGlass.tsx
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaSave, FaMagic } from 'react-icons/fa';
 import toast from 'react-hot-toast';
@@ -177,6 +177,12 @@ export default function CourseCreatorGlass() {
               <label className="block text-sm font-medium text-white/70 mb-1">Título do Curso *</label>
               <input type="text" value={title} onChange={(e) => setTitle(e.target.value)}
                      className="input-glass" placeholder="Ex: Desenvolvimento Web Completo" />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-white/70 mb-1">Descrição do Curso *</label>
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)}
+                        className="input-glass w-full h-24 resize-y" placeholder="Descreva seu curso em detalhes..." />
             </div>
 
             <div>
