@@ -100,6 +100,56 @@ export default function CourseEditor() {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)+/g, '');
 
+  // Palavras/frases suspeitas para moderação
+  const SUSPICIOUS_WORDS = [
+    'negro de merda', 'preto de merda', 'volta pra senzala', 'cabelo de bombril',
+    'heil hitler', 'sieg heil', 'raça pura', 'supremacia branca',
+    'criança nua', 'menor nua', 'abuso infantil', 'child porn',
+    'sexo explícito', 'video pornô', 'pornografia',
+    'vou te matar', 'tem que morrer', 'merece morrer',
+    'viado de merda', 'bicha de merda', 'gay de merda',
+    'vsf', 'vtnc', 'fdp', 'pqp', 'filho da puta',
+    'whatsapp', 'wa.me', 't.me', 'telegram',
+  ];
+
+  // Detectar palavras suspeitas no conteúdo
+  const detectSuspiciousContent = (text: string): string[] => {
+    const lowerText = text.toLowerCase();
+    const found: string[] = [];
+    SUSPICIOUS_WORDS.forEach(word => {
+      if (lowerText.includes(word.toLowerCase())) {
+        found.push(word);
+      }
+    });
+    return found;
+  };
+
+  // Registrar conteúdo para moderação
+  const flagForModeration = async (
+    lessonId: string | number,
+    lessonTitle: string,
+    content: string,
+    detectedWords: string[]
+  ) => {
+    try {
+      await supabase.from('conteudo_moderacao').insert({
+        aula_id: lessonId,
+        curso_id: id || null,
+        professor_id: String(user?.id),
+        professor_nome: user?.name || teacherName,
+        curso_titulo: title,
+        aula_titulo: lessonTitle || 'Aula sem título',
+        conteudo_texto: content,
+        palavras_detectadas: detectedWords,
+        status: 'pendente',
+      });
+    } catch (error) {
+      console.error('Erro ao registrar moderação:', error);
+    }
+  };
+
+
+
   const loadCourse = async () => {
     try {
       const { data: courseData, error } = await supabase
@@ -395,7 +445,16 @@ export default function CourseEditor() {
     try {
       const payload: Record<string, any> = {};
       if (data.title !== undefined) payload.titulo = data.title;
-      if (data.content !== undefined) payload.conteudo_html = data.content;
+      if (data.content !== undefined) {
+        payload.conteudo_html = data.content;
+        
+        // Verificar conteúdo suspeito e sinalizar para moderação
+        const suspiciousWords = detectSuspiciousContent(data.content);
+        if (suspiciousWords.length > 0) {
+          const lesson = modules.flatMap(m => m.lessons || []).find(l => l.id === lessonId);
+          await flagForModeration(lessonId, lesson?.title || '', data.content, suspiciousWords);
+        }
+      }
       if (data.video_url !== undefined) payload.video_url = data.video_url;
       if (data.order_index !== undefined) payload.ordem = data.order_index;
       const { error } = await supabase
