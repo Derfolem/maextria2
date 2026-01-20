@@ -3,6 +3,7 @@ export interface User {
   name: string;
   email: string;
   role: 'student' | 'teacher' | 'admin';
+  is_admin?: boolean; // Added for local auth handling
   created_at: string;
 }
 
