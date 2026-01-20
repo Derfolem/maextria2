@@ -140,7 +140,30 @@ export default function CoursePlayer() {
       if (modulesError) {
         throw modulesError;
       }
-
+      // Buscar todas as aulas do curso para pegar os IDs
+      const allLessonIds: (string | number)[] = [];
+      (modulesData || []).forEach((module: any) => {
+        (module.aulas || []).forEach((lesson: any) => {
+          allLessonIds.push(lesson.id);
+        });
+      });
+      // Buscar imagens de todas as aulas
+      let imagesByLesson: Record<string, string[]> = {};
+      if (allLessonIds.length > 0) {
+        const { data: imagesData } = await supabase
+          .from('aula_imagens')
+          .select('aula_id, url, ordem')
+          .in('aula_id', allLessonIds);
+        
+        (imagesData || []).forEach((row: any) => {
+          const key = String(row.aula_id);
+          if (!imagesByLesson[key]) imagesByLesson[key] = ['', '', ''];
+          const index = (row.ordem ?? 1) - 1;
+          if (index >= 0 && index < 3) {
+            imagesByLesson[key][index] = row.url;
+          }
+        });
+      }
       const mappedModules = (modulesData || []).map((module: any) => ({
         id: module.id,
         course_id: module.curso_id,
@@ -155,6 +178,7 @@ export default function CoursePlayer() {
             title: lesson.titulo,
             content: lesson.conteudo_html,
             video_url: lesson.video_url,
+            image_urls: imagesByLesson[String(lesson.id)] || [],
             order_index: lesson.ordem,
           })),
       }));
@@ -633,7 +657,32 @@ export default function CoursePlayer() {
                       <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedLesson.content) }} />
                     </div>
                   )}
-
+                  {/* Imagens da Aula */}
+                  {selectedLesson.image_urls && selectedLesson.image_urls.filter((url: string) => url).length > 0 && (
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold mb-3">Imagens da Aula</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {selectedLesson.image_urls.filter((url: string) => url).map((url: string, index: number) => (
+                          <a 
+                            key={index} 
+                            href={url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="block overflow-hidden rounded-lg border border-[hsl(var(--border))] hover:border-[hsl(var(--primary))] transition"
+                          >
+                            <img 
+                              src={url} 
+                              alt={`Imagem ${index + 1} da aula`}
+                              className="w-full h-48 object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   {selectedLesson.materials && selectedLesson.materials.length > 0 && (
                     <div className="mt-6">
                       <h3 className="text-xl font-semibold mb-3">Materiais da Aula</h3>
