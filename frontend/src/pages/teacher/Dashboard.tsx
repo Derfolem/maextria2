@@ -227,10 +227,16 @@ export default function TeacherDashboard() {
           <p className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--primary))]">Painel do professor</p>
           <h1 className="headline-font text-4xl md:text-5xl">Gestao com criterio</h1>
         </div>
-        <Link to="/teacher/course/new" className="btn-accent inline-flex items-center gap-2">
-          <FaPlus />
-          Novo curso
-        </Link>
+        <div className="flex gap-3"> {/* Added a div to contain both buttons */}
+          <Link to="/teacher/course/new-glass" className="btn-glass flex items-center gap-2"> {/* New button */}
+            <FaPlus />
+            Novo curso (Glass)
+          </Link>
+          <Link to="/teacher/course/new" className="btn-outline inline-flex items-center gap-2"> {/* Existing button, changed style */}
+            <FaPlus />
+            Novo curso (Clássico)
+          </Link>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-4 gap-6 mb-12">
