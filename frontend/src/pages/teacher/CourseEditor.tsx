@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Module, Lesson } from '../../types';
 import toast from 'react-hot-toast';
 import { FaPlus, FaTrash, FaSave, FaRobot } from 'react-icons/fa';
+import { FaImage, FaVideo } from 'react-icons/fa';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
 
@@ -147,6 +148,60 @@ export default function CourseEditor() {
       console.error('Erro ao registrar moderação:', error);
     }
   };
+
+  // Inserir imagem no conteúdo
+  const insertImage = (lessonId: string | number) => {
+    const url = prompt('Cole a URL da imagem (PNG, JPG, GIF, WebP):');
+    if (!url) return;
+    
+    // Validar URL de imagem
+    const imageRegex = /\.(png|jpg|jpeg|gif|webp)(\?.*)?$/i;
+    const isValidImage = imageRegex.test(url) || url.includes('imgur') || url.includes('cloudinary') || url.includes('unsplash');
+    
+    if (!isValidImage) {
+      alert('URL inválida. Use uma imagem PNG, JPG, GIF ou WebP.');
+      return;
+    }
+    
+    const lesson = modules.flatMap(m => m.lessons || []).find(l => l.id === lessonId);
+    if (lesson) {
+      const imageTag = `\n<img src="${url}" alt="Imagem da aula" style="max-width:100%;height:auto;margin:10px 0;" />\n`;
+      updateLessonState(lessonId, { content: (lesson.content || '') + imageTag });
+    }
+  };
+
+  // Inserir vídeo no conteúdo
+  const insertVideo = (lessonId: string | number) => {
+    const url = prompt('Cole a URL do vídeo (YouTube ou Vimeo):');
+    if (!url) return;
+    
+    let embedUrl = '';
+    
+    // YouTube
+    const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+    if (youtubeMatch) {
+      embedUrl = `https://www.youtube.com/embed/${youtubeMatch[1]}`;
+    }
+    
+    // Vimeo
+    const vimeoMatch = url.match(/vimeo\.com\/([0-9]+)/);
+    if (vimeoMatch) {
+      embedUrl = `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+    }
+    
+    if (!embedUrl) {
+      alert('URL inválida. Use um link do YouTube ou Vimeo.');
+      return;
+    }
+    
+    const lesson = modules.flatMap(m => m.lessons || []).find(l => l.id === lessonId);
+    if (lesson) {
+      const videoTag = `\n<iframe src="${embedUrl}" width="100%" height="400" frameborder="0" allowfullscreen style="margin:10px 0;"></iframe>\n`;
+      updateLessonState(lessonId, { content: (lesson.content || '') + videoTag });
+    }
+  };
+
+
 
 
 
