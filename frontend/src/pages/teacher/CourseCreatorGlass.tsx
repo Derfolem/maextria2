@@ -4,34 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { FaSave, FaMagic } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../lib/store';
-import { supabase } from '../../lib/supabase'; // Assuming Supabase will still be used
-import { parseCourseText } from '../../lib/courseTextParser'; // Import the parser
-
-export default function CourseCreatorGlass() {
-  const navigate = useNavigate();
-  const user = useAuthStore((state) => state.user);
-  const isAdmin = user?.role === 'admin';
-
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [price, setPrice] = useState('');
-  const [category, setCategory] = useState('');
-  const [level, setLevel] = useState('');
-  const [thumbnail, setThumbnail] = useState(''); // Only editable by admin
-  const [teacherName, setTeacherName] = useState(user?.name || '');
-
-  // State for the raw text input for the extractor
-  const [rawCourseText, setRawCourseText] = useState('');
-  // State for parsed course structure (to be populated by the extractor)
-  const [parsedCourse, setParsedCourse] = useState<any>(null);
-
-  useEffect(() => {
-    if (user?.name && !teacherName) {
-      setTeacherName(user.name);
-    }
-  }, [user?.name, teacherName]);
-
 import { supabase } from '../../lib/supabase';
+import { parseCourseText } from '../../lib/courseTextParser'; // Import the parser
+import api from '../../lib/api'; // Import the custom API client
 import { Course as CourseType, Module as ModuleType, Lesson as LessonType } from '../../types'; // Alias to avoid confusion with parsedCourse
 
 // Determine if local auth should be used (copied from store.ts for consistency)
