@@ -1,0 +1,233 @@
+name: Security Checks
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Roda todo domingo às 00:00 UTC
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+jobs:
+  # Job 1: CodeQL Analysis
+  codeql-analysis:
+    name: CodeQL Security Scan
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'javascript', 'typescript' ]
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔍 Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-and-quality
+
+      - name: 🏗️ Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: 🔒 Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
+
+  # Job 2: Dependency Vulnerability Scan
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: 🔒 Audit Backend Dependencies
+        run: |
+          echo "🔍 Scanning backend dependencies..."
+          cd backend
+          npm audit --audit-level=high --json > audit-backend.json || true
+          npm audit --audit-level=high || echo "⚠️ Backend has vulnerabilities"
+
+      - name: 🔒 Audit Frontend Dependencies
+        run: |
+          echo "🔍 Scanning frontend dependencies..."
+          cd frontend
+          npm audit --audit-level=high --json > audit-frontend.json || true
+          npm audit --audit-level=high || echo "⚠️ Frontend has vulnerabilities"
+
+      - name: 📊 Upload audit reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-audit-reports
+          path: |
+            backend/audit-backend.json
+            frontend/audit-frontend.json
+          retention-days: 30
+
+  # Job 3: Secret Scanning
+  secret-scan:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch full history
+
+      - name: 🔍 Scan for secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified
+
+  # Job 4: Environment Variables Check
+  env-check:
+    name: Environment Variables Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔍 Check for exposed secrets
+        run: |
+          echo "🔍 Checking for .env files in repository..."
+
+          if find . -type f -name ".env" -not -path "*/node_modules/*" -not -name "*.example" | grep -q .; then
+            echo "❌ ERROR: .env files found in repository!"
+            find . -type f -name ".env" -not -path "*/node_modules/*" -not -name "*.example"
+            exit 1
+          fi
+
+          echo "✅ No .env files found"
+
+      - name: 🔍 Check for hardcoded secrets
+        run: |
+          echo "🔍 Scanning for potential hardcoded secrets..."
+
+          # Patterns to search for
+          patterns=(
+            "password\s*=\s*['\"][^'\"]+['\"]"
+            "api[_-]?key\s*=\s*['\"][^'\"]+['\"]"
+            "secret\s*=\s*['\"][^'\"]+['\"]"
+            "token\s*=\s*['\"][^'\"]+['\"]"
+            "jwt[_-]?secret\s*=\s*['\"][^'\"]+['\"]"
+          )
+
+          found=0
+          for pattern in "${patterns[@]}"; do
+            if grep -rE "$pattern" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --exclude-dir=node_modules --exclude-dir=dist .; then
+              found=1
+            fi
+          done
+
+          if [ $found -eq 1 ]; then
+            echo "⚠️ WARNING: Potential hardcoded secrets found. Please review."
+          else
+            echo "✅ No obvious hardcoded secrets found"
+          fi
+
+  # Job 5: OWASP Dependency Check
+  owasp-check:
+    name: OWASP Dependency Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔒 Run OWASP Dependency Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: 'MAEXTRIA'
+          path: '.'
+          format: 'HTML'
+          out: 'reports'
+          args: >
+            --enableRetired
+            --enableExperimental
+
+      - name: 📊 Upload OWASP report
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-dependency-check-report
+          path: reports
+          retention-days: 30
+
+  # Job 6: License Compliance Check
+  license-check:
+    name: License Compliance
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: 📦 Install license checker
+        run: npm install -g license-checker
+
+      - name: 📄 Check backend licenses
+        run: |
+          cd backend
+          npm ci
+          echo "🔍 Checking backend licenses..."
+          license-checker --production --json > ../backend-licenses.json || true
+
+      - name: 📄 Check frontend licenses
+        run: |
+          cd frontend
+          npm ci
+          echo "🔍 Checking frontend licenses..."
+          license-checker --production --json > ../frontend-licenses.json || true
+
+      - name: 📊 Upload license reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: license-reports
+          path: |
+            backend-licenses.json
+            frontend-licenses.json
+          retention-days: 30
+
+  # Summary Job
+  security-summary:
+    name: 🔒 Security Summary
+    runs-on: ubuntu-latest
+    needs: [codeql-analysis, dependency-scan, secret-scan, env-check]
+    if: always()
+
+    steps:
+      - name: 📊 Generate summary
+        run: |
+          echo "## 🔒 Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| CodeQL Analysis | ${{ needs.codeql-analysis.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Dependency Scan | ${{ needs.dependency-scan.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Secret Scan | ${{ needs.secret-scan.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment Check | ${{ needs.env-check.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY

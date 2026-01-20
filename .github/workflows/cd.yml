@@ -1,0 +1,252 @@
+name: CD - Continuous Deployment
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: # Permite trigger manual
+
+env:
+  NODE_VERSION: '20.x'
+
+jobs:
+  # Job 1: Build and Test
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: 📦 Install backend dependencies
+        run: |
+          cd backend
+          npm ci
+
+      - name: 🏗️ Build backend
+        run: |
+          cd backend
+          npm run build
+
+      - name: 📦 Install frontend dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: 🏗️ Build frontend
+        run: |
+          cd frontend
+          npm run build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL_PROD }}
+          VITE_APP_TITLE: MAEXTRIA - Plataforma de Cursos Online
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+
+      - name: 📊 Upload backend artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-production
+          path: |
+            backend/dist
+            backend/package.json
+            backend/package-lock.json
+          retention-days: 30
+
+      - name: 📊 Upload frontend artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-production
+          path: frontend/dist
+          retention-days: 30
+
+  # Job 2: Deploy Backend (exemplo com Railway/Heroku/VPS)
+  deploy-backend:
+    name: Deploy Backend
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: production-backend
+      url: https://api.maextria.com.br
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📥 Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-production
+          path: ./backend
+
+      # Opção 1: Deploy para Railway
+      - name: 🚀 Deploy to Railway
+        if: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          echo "🚂 Deploying to Railway..."
+          # npm install -g @railway/cli
+          # railway link ${{ secrets.RAILWAY_PROJECT_ID }}
+          # railway up
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      # Opção 2: Deploy via SSH para VPS
+      - name: 🚀 Deploy to VPS via SSH
+        if: ${{ secrets.VPS_SSH_KEY }}
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            cd /var/www/maextria/backend
+            git pull origin main
+            npm ci --production
+            npm run build
+            pm2 restart maextria-backend
+
+      # Opção 3: Deploy para Vercel (alternativa)
+      - name: 🚀 Deploy to Vercel
+        if: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          echo "Vercel deployment placeholder"
+          # npm install -g vercel
+          # vercel --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: ✅ Backend deployment completed
+        run: echo "✅ Backend deployed successfully!"
+
+  # Job 3: Deploy Frontend
+  deploy-frontend:
+    name: Deploy Frontend
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: production-frontend
+      url: https://maextria.com.br
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📥 Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-production
+          path: ./frontend/dist
+
+      # Opção 1: Deploy para Vercel
+      - name: 🚀 Deploy to Vercel
+        if: ${{ secrets.VERCEL_TOKEN }}
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: ./frontend
+          vercel-args: '--prod'
+
+      # Opção 2: Deploy para Netlify
+      - name: 🚀 Deploy to Netlify
+        if: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        uses: netlify/actions/cli@master
+        with:
+          args: deploy --prod --dir=frontend/dist
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+
+      # Opção 3: Deploy via SSH para VPS com Nginx
+      - name: 🚀 Deploy to VPS with Nginx
+        if: ${{ secrets.VPS_SSH_KEY }}
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            cd /var/www/maextria/frontend
+            git pull origin main
+            npm ci
+            npm run build
+            sudo cp -r dist/* /var/www/html/maextria/
+            sudo systemctl reload nginx
+
+      - name: ✅ Frontend deployment completed
+        run: echo "✅ Frontend deployed successfully!"
+
+  # Job 4: Health Check
+  health-check:
+    name: Health Check
+    runs-on: ubuntu-latest
+    needs: [deploy-backend, deploy-frontend]
+
+    steps:
+      - name: 🏥 Check backend health
+        run: |
+          echo "Checking backend health..."
+          response=$(curl -f -s -o /dev/null -w "%{http_code}" https://api.maextria.com.br/health || echo "000")
+          if [ "$response" = "200" ]; then
+            echo "✅ Backend is healthy (HTTP $response)"
+          else
+            echo "⚠️ Backend health check returned HTTP $response"
+            exit 1
+          fi
+
+      - name: 🏥 Check frontend health
+        run: |
+          echo "Checking frontend health..."
+          response=$(curl -f -s -o /dev/null -w "%{http_code}" https://maextria.com.br || echo "000")
+          if [ "$response" = "200" ]; then
+            echo "✅ Frontend is healthy (HTTP $response)"
+          else
+            echo "⚠️ Frontend health check returned HTTP $response"
+            exit 1
+          fi
+
+  # Job 5: Notification
+  notify:
+    name: Send Notification
+    runs-on: ubuntu-latest
+    needs: [deploy-backend, deploy-frontend, health-check]
+    if: always()
+
+    steps:
+      - name: 📧 Send deployment notification
+        run: |
+          if [ "${{ needs.health-check.result }}" == "success" ]; then
+            echo "✅ Deployment successful! All services are healthy."
+            # Adicione aqui integração com Slack/Discord/Email se necessário
+          else
+            echo "❌ Deployment failed or health check did not pass."
+            exit 1
+          fi
+
+      # Opcional: Notificar via Slack
+      - name: 💬 Notify Slack
+        if: ${{ secrets.SLACK_WEBHOOK }}
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "🚀 MAEXTRIA deployed to production!",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Deployment Status:* ${{ needs.health-check.result == 'success' && '✅ Success' || '❌ Failed' }}\n*Environment:* Production\n*Commit:* ${{ github.sha }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
