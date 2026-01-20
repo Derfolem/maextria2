@@ -558,6 +558,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <FaYoutube />
             </div>
           </div>
+          {!isMemberArea && (
+            <div className="pt-3 text-[5px] text-white/40">
+              criado por Fred MeloR
+            </div>
+          )}
         </div>
       </footer>
     </div>
