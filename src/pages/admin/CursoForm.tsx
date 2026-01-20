@@ -23,7 +23,7 @@ export default function CursoForm() {
     categoria: "",
     descricao: "",
     publico_alvo: "",
-    carga_horaria_horas: 0,
+    carga_horaria_horas: 2,
     imagem_capa_url: "",
     preco_certificado: 39.00,
     ativo: true,
@@ -247,12 +247,12 @@ export default function CursoForm() {
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    carga_horaria_horas: parseInt(e.target.value) || 0,
+                    carga_horaria_horas: parseInt(e.target.value) || 2,
                   })
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
               >
-                <option value="0">Selecionar carga horária</option>
+                <option value="">Selecionar carga horária</option>
                 <option value="2">2 horas</option>
                 <option value="4">4 horas</option>
                 <option value="8">8 horas</option>
