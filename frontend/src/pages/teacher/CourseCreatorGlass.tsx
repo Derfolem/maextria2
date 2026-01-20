@@ -91,6 +91,7 @@ export default function CourseCreatorGlass() {
           .from('cursos')
           .insert({
             titulo: parsedCourse.title,
+            slug: parsedCourse.title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
             descricao: parsedCourse.description,
             preco_certificado: parsedCourse.price,
             categoria_id: finalCategoryId,
