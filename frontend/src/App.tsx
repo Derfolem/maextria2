@@ -23,6 +23,7 @@ const CourseEditor = lazy(() => import('./pages/teacher/CourseEditor'));
 const AiAccessPayment = lazy(() => import('./pages/teacher/AiAccessPayment'));
 const AiCreator = lazy(() => import('./pages/teacher/AiCreator'));
 const TeacherNotifications = lazy(() => import('./pages/teacher/Notifications'));
+const CourseCreatorGlass = lazy(() => import('./pages/teacher/CourseCreatorGlass')); // New import
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
 const AdminUsers = lazy(() => import('./pages/admin/Users'));
 const AdminCourses = lazy(() => import('./pages/admin/Courses'));
@@ -183,6 +184,14 @@ function App() {
             element={
               <ProtectedRoute roles={['teacher', 'admin']}>
                 <TeacherNotifications />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/teacher/course/new-glass" // New route for glassmorphism creator
+            element={
+              <ProtectedRoute roles={['teacher', 'admin']}>
+                <CourseCreatorGlass />
               </ProtectedRoute>
             }
           />

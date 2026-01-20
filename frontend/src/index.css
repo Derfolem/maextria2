@@ -171,7 +171,52 @@
   .nav-link:hover::after {
     width: 100%;
   }
+
+  .glass-panel {
+    @apply relative bg-white/5 border border-white/10 rounded-xl shadow-lg overflow-hidden;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px); /* For Safari support */
+  }
+
+  .input-glass {
+    @apply w-full px-4 py-2 outline-none transition duration-200 text-white placeholder-white/50;
+    background: rgba(255, 255, 255, 0.08); /* More subtle background */
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+  }
+
+  .input-glass:focus {
+    @apply ring-2 ring-blue-500/50 border-transparent;
+  }
+
+  .input-glass:disabled {
+    @apply opacity-50 cursor-not-allowed;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .btn-glass {
+    @apply transition duration-300 px-6 py-3 rounded-lg font-semibold uppercase tracking-wide text-sm;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  }
+
+  .btn-glass:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+  }
+
+  .glass-card {
+    @apply relative bg-white/5 border border-white/10 rounded-md p-3;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px); /* For Safari support */
+  }
 }
+
 
 .hero-gradient {
   background:
