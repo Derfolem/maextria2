@@ -7,7 +7,7 @@ import { useAuthStore } from '../../lib/store';
 import { supabase } from '../../lib/supabase';
 import { parseCourseText } from '../../lib/courseTextParser'; // Import the parser
 import api from '../../lib/api'; // Import the custom API client
-import { Course as CourseType, Module as ModuleType, Lesson as LessonType } from '../../types'; // Alias to avoid confusion with parsedCourse
+import { Course as CourseType } from '../../types'; // Alias to avoid confusion with parsedCourse
 
 // Determine if local auth should be used (copied from store.ts for consistency)
 const USE_LOCAL_AUTH = import.meta.env.VITE_USE_LOCAL_AUTH === 'true';
@@ -62,7 +62,7 @@ export default function CourseCreatorGlass() {
           const { data } = await supabase.from('categories').select('id, name');
           categoryData = data || [];
         }
-        const existingCategory = categoryData.find((cat: any) => cat.name.toLowerCase() === parsedCourse.category.toLowerCase());
+        const existingCategory = categoryData.find((cat: any) => cat.name.toLowerCase() === parsedCourse.category?.toLowerCase());
         if (existingCategory) {
           finalCategoryId = existingCategory.id;
         } else {
