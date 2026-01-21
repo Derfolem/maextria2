@@ -654,7 +654,7 @@ export default function CoursePlayer() {
 
                   {selectedLesson.content && (
                     <div className="prose max-w-none mb-6">
-                      <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedLesson.content) }} />
+                      <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedLesson.content, { ADD_TAGS: ['iframe', 'video', 'source'], ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'src', 'controls', 'autoplay', 'loop', 'muted', 'poster', 'width', 'height', 'style'] }) }} />
                     </div>
                   )}
                   {/* Imagens da Aula */}
