@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Module, Lesson } from '../../types';
 import toast from 'react-hot-toast';
-import { FaPlus, FaTrash, FaSave, FaRobot, FaImage, FaVideo } from 'react-icons/fa';
+import { FaPlus, FaTrash, FaSave, FaRobot } from 'react-icons/fa';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
 
@@ -201,18 +201,7 @@ export default function CourseEditor() {
   };
     
 
-  // Função para inserir texto na posição do cursor
-  const insertAtCursor = (textareaId: string, textToInsert: string) => {
-    const textarea = document.getElementById(textareaId) as HTMLTextAreaElement;
-    if (!textarea) return;
-    
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const currentValue = textarea.value;
-    const newValue = currentValue.substring(0, start) + textToInsert + currentValue.substring(end);
-    
-    return newValue;
-  };
+  
 
   // Função para inserir imagem no conteúdo
   const handleInsertImage = (lessonId: string | number) => {
@@ -294,53 +283,11 @@ export default function CourseEditor() {
     toast.success('Vídeo inserido!');
   };
 
-  // Palavras/frases suspeitas para moderação
-  const SUSPICIOUS_WORDS = [
-    'negro de merda', 'preto de merda', 'volta pra senzala', 'cabelo de bombril',
-    'heil hitler', 'sieg heil', 'raça pura', 'supremacia branca',
-    'criança nua', 'menor nua', 'abuso infantil', 'child porn',
-    'sexo explícito', 'video pornô', 'pornografia',
-    'vou te matar', 'tem que morrer', 'merece morrer',
-    'viado de merda', 'bicha de merda', 'gay de merda',
-    'vsf', 'vtnc', 'fdp', 'pqp', 'filho da puta',
-    'whatsapp', 'wa.me', 't.me', 'telegram',
-  ];
+  
 
-  // Detectar palavras suspeitas no conteúdo
-  const detectSuspiciousContent = (text: string): string[] => {
-    const lowerText = text.toLowerCase();
-    const found: string[] = [];
-    SUSPICIOUS_WORDS.forEach(word => {
-      if (lowerText.includes(word.toLowerCase())) {
-        found.push(word);
-      }
-    });
-    return found;
-  };
+  
 
-  // Registrar conteúdo para moderação
-  const flagForModeration = async (
-    lessonId: string | number,
-    lessonTitle: string,
-    content: string,
-    detectedWords: string[]
-  ) => {
-    try {
-      await supabase.from('conteudo_moderacao').insert({
-        aula_id: lessonId,
-        curso_id: id || null,
-        professor_id: String(user?.id),
-        professor_nome: user?.name || teacherName,
-        curso_titulo: title,
-        aula_titulo: lessonTitle || 'Aula sem título',
-        conteudo_texto: content,
-        palavras_detectadas: detectedWords,
-        status: 'pendente',
-      });
-    } catch (error) {
-      console.error('Erro ao registrar moderação:', error);
-    }
-  };
+  
 
   // Inserir imagem no conteúdo
   const insertImage = (lessonId: string | number) => {
