@@ -106,7 +106,7 @@ export default function TeacherMyCourses() {
           <p className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--primary))]">Cursos</p>
           <h1 className="headline-font text-4xl md:text-5xl">Seu catálogo</h1>
         </div>
-        <Link to="/teacher/course/new" className="btn-accent flex items-center space-x-2">
+        <Link to="/teacher/new-glass" className="btn-accent flex items-center space-x-2">
           <FaPlus />
           <span>Novo curso</span>
         </Link>
@@ -115,7 +115,7 @@ export default function TeacherMyCourses() {
       {courses.length === 0 ? (
         <div className="card text-center py-12">
           <p className="text-[hsl(var(--muted-foreground))] mb-4">Você ainda não criou nenhum curso</p>
-          <Link to="/teacher/course/new" className="btn-accent">
+          <Link to="/teacher/new-glass" className="btn-accent">
             Criar primeiro curso
           </Link>
         </div>
