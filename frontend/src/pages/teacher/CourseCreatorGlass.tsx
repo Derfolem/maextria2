@@ -1,7 +1,7 @@
 // frontend/src/pages/teacher/CourseCreatorGlass.tsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaSave, FaMagic } from 'react-icons/fa';
+import { FaSave, FaMagic } , FaImage, FaVideo } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../lib/store';
 import { supabase } from '../../lib/supabase';
@@ -88,8 +88,7 @@ export default function CourseCreatorGlass() {
         newCourseId = response.data.id;
       } else {
         const { data, error } = await supabase
-          .from('cursos')
-          .insert({
+          .from('cursos').upsert({
             titulo: parsedCourse.title,
             slug: parsedCourse.title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
             descricao: parsedCourse.description,
@@ -203,6 +202,64 @@ export default function CourseCreatorGlass() {
       setParsedCourse(null);
     }
   };
+  // Inserir imagem no conteúdo da aula
+  const handleInsertImage = (moduleIndex: number, lessonIndex: number) => {
+    const url = prompt('Cole a URL da imagem (PNG, JPG, GIF, WebP):');
+    if (!url) return;
+    
+    if (!/\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?.*)?$/i.test(url) && !url.includes('imgur') && !url.includes('cloudinary')) {
+      toast.error('URL inválida. Use uma URL de imagem válida.');
+      return;
+    }
+    
+    const imgHtml = `<img src="${url}" alt="Imagem" style="max-width:100%; border-radius:8px; margin:10px 0;">`;
+    
+    setCourse(prev => {
+      const newModules = [...prev.modules];
+      const lesson = newModules[moduleIndex].lessons[lessonIndex];
+      lesson.content = (lesson.content || '') + '\n' + imgHtml;
+      return { ...prev, modules: newModules };
+    });
+    
+    toast.success('Imagem inserida!');
+  };
+
+  // Inserir vídeo no conteúdo da aula
+  const handleInsertVideo = (moduleIndex: number, lessonIndex: number) => {
+    const url = prompt('Cole a URL do vídeo (YouTube ou Vimeo):');
+    if (!url) return;
+    
+    let embedUrl = '';
+    
+    const youtubeMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{6,})/);
+    if (youtubeMatch) {
+      embedUrl = `https://www.youtube.com/embed/${youtubeMatch[1]}`;
+    }
+    
+    const vimeoMatch = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+    if (vimeoMatch) {
+      embedUrl = `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+    }
+    
+    if (!embedUrl) {
+      toast.error('URL inválida. Use YouTube ou Vimeo.');
+      return;
+    }
+    
+    const videoHtml = `<div style="position:relative; padding-bottom:56.25%; height:0; overflow:hidden; margin:10px 0; border-radius:8px;"><iframe src="${embedUrl}" style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;" allowfullscreen></iframe></div>`;
+    
+    setCourse(prev => {
+      const newModules = [...prev.modules];
+      const lesson = newModules[moduleIndex].lessons[lessonIndex];
+      lesson.content = (lesson.content || '') + '\n' + videoHtml;
+      return { ...prev, modules: newModules };
+    });
+    
+    toast.success('Vídeo inserido!');
+  };
+
+
+
 
   return (
     <div className="max-w-7xl mx-auto px-[clamp(24px,5vw,80px)] py-[clamp(40px,6vh,80px)]">
