@@ -90,7 +90,7 @@ export default function CourseCreatorGlass() {
         const { data, error } = await supabase
           .from('cursos').upsert({
             titulo: parsedCourse.title,
-            slug: parsedCourse.title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
+            slug: parsedCourse.title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") + "-" + Date.now(),
             descricao: parsedCourse.description,
             preco_certificado: parsedCourse.price,
             categoria_id: finalCategoryId,
