@@ -200,16 +200,6 @@ export default function CourseEditor() {
     return sanitized;
   };
     
-    // Verifica URLs soltas no texto
-    sanitized = sanitized.replace(/(https?:\/\/[^\s<>"]+)/gi, (url) => {
-      if (!isUrlAllowed(url)) {
-        return '[link removido]';
-      }
-      return url;
-    });
-    
-    return sanitized;
-  };
 
   // Função para inserir texto na posição do cursor
   const insertAtCursor = (textareaId: string, textToInsert: string) => {
