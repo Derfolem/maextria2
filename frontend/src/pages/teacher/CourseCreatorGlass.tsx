@@ -381,7 +381,23 @@ export default function CourseCreatorGlass() {
                             <div key={lesson.id} className="glass-card p-3 rounded-md text-sm">
                               <p><span className="font-semibold">Aula {modIndex + 1}.{lessonIndex + 1}:</span> {lesson.title}</p>
                               {lesson.video_url && <p className="text-xs text-white/60">Vídeo: <a href={lesson.video_url} target="_blank" rel="noopener noreferrer" className="text-[hsl(var(--primary))] hover:underline">{lesson.video_url}</a></p>}
-                              {lesson.content && <p className="text-xs text-white/60">{lesson.content.substring(0, 100)}...</p>}
+                              <div className="flex gap-2 mt-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleInsertImage(moduleIndex, lessonIndex)}
+                                    className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-500/20 text-blue-300 rounded hover:bg-blue-500/30"
+                                  >
+                                    <FaImage /> Imagem
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleInsertVideo(moduleIndex, lessonIndex)}
+                                    className="flex items-center gap-1 px-2 py-1 text-xs bg-purple-500/20 text-purple-300 rounded hover:bg-purple-500/30"
+                                  >
+                                    <FaVideo /> Vídeo
+                                  </button>
+                                </div>
+                                {lesson.content && <p className="text-xs text-white/60 mt-1">{lesson.content.substring(0, 100)}...</p>}
                             </div>
                           ))}
                         </div>
