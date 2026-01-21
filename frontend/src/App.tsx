@@ -245,6 +245,14 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/admin/moderacao"
+            element={
+              <ProtectedRoute roles={['admin']}>
+                <AdminModeracao />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </Suspense>
     </Layout>
