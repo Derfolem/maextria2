@@ -282,34 +282,6 @@ export default function CourseEditor() {
     
     toast.success('Vídeo inserido!');
   };
-
-  
-
-  
-
-  
-
-  // Inserir imagem no conteúdo
-  const insertImage = (lessonId: string | number) => {
-    const url = prompt('Cole a URL da imagem (PNG, JPG, GIF, WebP):');
-    if (!url) return;
-    
-    // Validar URL de imagem
-    const imageRegex = /\.(png|jpg|jpeg|gif|webp)(\?.*)?$/i;
-    const isValidImage = imageRegex.test(url) || url.includes('imgur') || url.includes('cloudinary') || url.includes('unsplash');
-    
-    if (!isValidImage) {
-      alert('URL inválida. Use uma imagem PNG, JPG, GIF ou WebP.');
-      return;
-    }
-    
-    const lesson = modules.flatMap(m => m.lessons || []).find(l => l.id === lessonId);
-    if (lesson) {
-      const imageTag = `\n<img src="${url}" alt="Imagem da aula" style="max-width:100%;height:auto;margin:10px 0;" />\n`;
-      updateLessonState(lessonId, { content: (lesson.content || '') + imageTag });
-    }
-  };
-
   // Inserir vídeo no conteúdo
   const insertVideo = (lessonId: string | number) => {
     const url = prompt('Cole a URL do vídeo (YouTube ou Vimeo):');
