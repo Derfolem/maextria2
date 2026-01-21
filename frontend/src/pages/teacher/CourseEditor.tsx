@@ -797,6 +797,13 @@ const loadCourse = async () => {
         </div>
       </div>
 
+      <div className="fixed bottom-6 right-6 z-40">
+        <button onClick={handleSave} disabled={loading} className="btn-primary flex items-center space-x-2 shadow-lg">
+          <FaSave />
+          <span>{loading ? 'Salvando...' : 'Salvar Curso'}</span>
+        </button>
+      </div>
+
       <div className="space-y-8">
         <div className="card">
           <h2 className="text-xl font-semibold mb-4">Informações Básicas</h2>
