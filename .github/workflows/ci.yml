@@ -86,6 +86,8 @@ jobs:
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
           VITE_APP_TITLE: MAEXTRIA - Plataforma de Cursos Online
+          VITE_SUPABASE_URL: https://zcrwmdctwjqrvzbvfpuj.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_mQQbxvu4RiNr6S_Qv03r7g_wnc6k_Cm
 
       - name: ✅ Run tests
         run: npm test --if-present
