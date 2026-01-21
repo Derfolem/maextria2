@@ -84,6 +84,12 @@ export default function TeacherMyCourses() {
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-12">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-bold gradient-text">Meus Cursos</h1>
+          <Link to="/teacher/new-glass" className="btn-primary flex items-center gap-2">
+            <FaPlus /> Novo Curso
+          </Link>
+        </div>
         <div className="animate-pulse space-y-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-32 bg-gray-200 rounded"></div>
