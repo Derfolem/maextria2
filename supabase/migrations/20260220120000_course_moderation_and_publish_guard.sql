@@ -10,6 +10,15 @@ CREATE TABLE IF NOT EXISTS public.conteudo_moderacao (
   criado_em timestamptz NOT NULL DEFAULT now()
 );
 
+ALTER TABLE public.conteudo_moderacao
+  ADD COLUMN IF NOT EXISTS usuario_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS tipo text,
+  ADD COLUMN IF NOT EXISTS referencia_id uuid,
+  ADD COLUMN IF NOT EXISTS trecho text,
+  ADD COLUMN IF NOT EXISTS motivos text[] DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'pendente',
+  ADD COLUMN IF NOT EXISTS criado_em timestamptz DEFAULT now();
+
 CREATE INDEX IF NOT EXISTS idx_conteudo_moderacao_criado_em
   ON public.conteudo_moderacao (criado_em DESC);
 
