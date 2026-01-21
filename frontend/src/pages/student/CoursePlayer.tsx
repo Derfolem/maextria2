@@ -630,7 +630,7 @@ export default function CoursePlayer() {
                         >
                           {videoData.thumbnailUrl ? (
                             <img
-                              src={videoData.thumbnailUrl}
+                              src={videoData.thumbnailUrl} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                               alt={selectedLesson.title || 'Thumbnail da aula'}
                               loading="lazy"
                               decoding="async"
