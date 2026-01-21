@@ -2,8 +2,12 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Module, Lesson } from '../../types';
 import toast from 'react-hot-toast';
+<<<<<<< HEAD
+import { FaPlus, FaTrash, FaSave, FaRobot, FaImage, FaVideo } from 'react-icons/fa';
+=======
 import { FaPlus, FaTrash, FaSave, FaRobot } from 'react-icons/fa';
 import { FaImage, FaVideo } from 'react-icons/fa';
+>>>>>>> eba1fd94ef859460da4d87b6287617de962ea63f
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
 
@@ -100,7 +104,212 @@ export default function CourseEditor() {
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)+/g, '');
+      // Lista de domínios/padrões bloqueados
+  const BLOCKED_PATTERNS = [
+    /whatsapp\.com/i,
+    /wa\.me/i,
+    /t\.me/i,
+    /telegram\.org/i,
+    /telegram\.me/i,
+    /facebook\.com/i,
+    /fb\.com/i,
+    /instagram\.com/i,
+    /twitter\.com/i,
+    /x\.com/i,
+    /tiktok\.com/i,
+    /linkedin\.com/i,
+    /discord\.gg/i,
+    /discord\.com/i,
+    /bit\.ly/i,
+    /goo\.gl/i,
+    /tinyurl\.com/i,
+    /encurtador/i,
+  ];
 
+  // Domínios permitidos (YouTube, Vimeo para vídeos)
+  const ALLOWED_DOMAINS = [
+    /youtube\.com/i,
+    /youtu\.be/i,
+    /vimeo\.com/i,
+    /player\.vimeo\.com/i,
+  ];
+
+  // Função para verificar se uma URL é permitida
+  const isUrlAllowed = (url: string): boolean => {
+    // Permitir URLs de imagem (terminam com extensões de imagem)
+    if (/\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?.*)?$/i.test(url)) {
+      return true;
+    }
+    // Permitir domínios de vídeo
+    if (ALLOWED_DOMAINS.some(pattern => pattern.test(url))) {
+      return true;
+    }
+    // Bloquear padrões proibidos
+    if (BLOCKED_PATTERNS.some(pattern => pattern.test(url))) {
+      return false;
+    }
+    // Bloquear outros links externos (http/https que não são imagens ou vídeos permitidos)
+    if (/^https?:\/\//i.test(url)) {
+      return false;
+    }
+    return true;
+  };
+
+    // Padrões de dados sensíveis para bloquear
+  const SENSITIVE_PATTERNS = [
+    // Telefones brasileiros (com ou sem formatação)
+    /(?:\+?55\s?)?(?:\(?\d{2}\)?\s?)?(?:9\s?)?\d{4}[-.\s]?\d{4}/g,
+    // CPF (com ou sem formatação)
+    /\d{3}[.\s-]?\d{3}[.\s-]?\d{3}[.\s-]?\d{2}/g,
+    // CNPJ
+    /\d{2}[.\s]?\d{3}[.\s]?\d{3}[\/.\s]?\d{4}[.\s-]?\d{2}/g,
+    // Contas bancárias (agência e conta)
+    /(?:ag[eê]ncia|ag)[:\s]*\d{4,5}[-.\s]?\d?/gi,
+    /(?:conta|c\/c|cc)[:\s]*\d{5,12}[-.\s]?\d?/gi,
+    // Chaves PIX (email, telefone, CPF/CNPJ, aleatória)
+    /(?:pix|chave\s*pix)[:\s]*[\w.@+-]+/gi,
+    // Emails (podem ser usados como PIX)
+    /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
+    // Chave PIX aleatória (UUID)
+    /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/gi,
+  ];
+
+  // Função para sanitizar conteúdo HTML removendo links bloqueados e dados sensíveis
+  const sanitizeContent = (html: string): string => {
+    let sanitized = html;
+    
+    // Remove tags <a> com href bloqueado
+    sanitized = sanitized.replace(/<a\s+[^>]*href=["']([^"']*)["'][^>]*>.*?<\/a>/gi, (match, href) => {
+      if (!isUrlAllowed(href)) {
+        return '[link removido]';
+      }
+      return match;
+    });
+    
+    // Verifica URLs soltas no texto
+    sanitized = sanitized.replace(/(https?:\/\/[^\s<>"]+)/gi, (url) => {
+      if (!isUrlAllowed(url)) {
+        return '[link removido]';
+      }
+      return url;
+    });
+    
+    // Remove dados sensíveis
+    SENSITIVE_PATTERNS.forEach(pattern => {
+      sanitized = sanitized.replace(pattern, '[dado protegido]');
+    });
+    
+    // Remove menções explícitas de transferência/pagamento
+    sanitized = sanitized.replace(/(?:me\s*(?:pague|transfira|deposite|envie)|(?:faz|fazer)\s*(?:pix|transfer[eê]ncia)|minha?\s*(?:conta|pix|chave))[^.!?\n]*/gi, '[conteúdo removido]');
+    
+    return sanitized;
+  };
+    
+    // Verifica URLs soltas no texto
+    sanitized = sanitized.replace(/(https?:\/\/[^\s<>"]+)/gi, (url) => {
+      if (!isUrlAllowed(url)) {
+        return '[link removido]';
+      }
+      return url;
+    });
+    
+    return sanitized;
+  };
+
+  // Função para inserir texto na posição do cursor
+  const insertAtCursor = (textareaId: string, textToInsert: string) => {
+    const textarea = document.getElementById(textareaId) as HTMLTextAreaElement;
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const currentValue = textarea.value;
+    const newValue = currentValue.substring(0, start) + textToInsert + currentValue.substring(end);
+    
+    return newValue;
+  };
+
+  // Função para inserir imagem no conteúdo
+  const handleInsertImage = (lessonId: string | number) => {
+    const url = prompt('Cole a URL da imagem (PNG, JPG, GIF, WebP):');
+    if (!url) return;
+    
+    if (!/\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?.*)?$/i.test(url) && !url.includes('imgur') && !url.includes('cloudinary')) {
+      toast.error('URL inválida. Use uma URL de imagem válida (PNG, JPG, GIF, WebP).');
+      return;
+    }
+    
+    const imgHtml = `<img src="${url}" alt="Imagem" style="max-width:100%; border-radius:8px; margin:10px 0;">`;
+    
+    setModules((prev) =>
+      prev.map((m) => ({
+        ...m,
+        lessons: m.lessons?.map((l) => {
+          if (l.id !== lessonId) return l;
+          const newContent = (l.content || '') + '\n' + imgHtml;
+          return { ...l, content: newContent };
+        }),
+      }))
+    );
+    
+    // Salvar no banco
+    const lesson = modules.flatMap(m => m.lessons || []).find(l => l.id === lessonId);
+    if (lesson) {
+      const newContent = (lesson.content || '') + '\n' + imgHtml;
+      updateLesson(lessonId, { content: sanitizeContent(newContent) });
+    }
+    
+    toast.success('Imagem inserida!');
+  };
+
+  // Função para inserir vídeo no conteúdo
+  const handleInsertVideo = (lessonId: string | number) => {
+    const url = prompt('Cole a URL do vídeo (YouTube ou Vimeo):');
+    if (!url) return;
+    
+    let embedUrl = '';
+    
+    // YouTube
+    const youtubeMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{6,})/);
+    if (youtubeMatch) {
+      embedUrl = `https://www.youtube.com/embed/${youtubeMatch[1]}`;
+    }
+    
+    // Vimeo
+    const vimeoMatch = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+    if (vimeoMatch) {
+      embedUrl = `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+    }
+    
+    if (!embedUrl) {
+      toast.error('URL inválida. Use uma URL do YouTube ou Vimeo.');
+      return;
+    }
+    
+    const videoHtml = `<div style="position:relative; padding-bottom:56.25%; height:0; overflow:hidden; margin:10px 0; border-radius:8px;"><iframe src="${embedUrl}" style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;" allowfullscreen></iframe></div>`;
+    
+    setModules((prev) =>
+      prev.map((m) => ({
+        ...m,
+        lessons: m.lessons?.map((l) => {
+          if (l.id !== lessonId) return l;
+          const newContent = (l.content || '') + '\n' + videoHtml;
+          return { ...l, content: newContent };
+        }),
+      }))
+    );
+    
+    // Salvar no banco
+    const lesson = modules.flatMap(m => m.lessons || []).find(l => l.id === lessonId);
+    if (lesson) {
+      const newContent = (lesson.content || '') + '\n' + videoHtml;
+      updateLesson(lessonId, { content: sanitizeContent(newContent) });
+    }
+    
+    toast.success('Vídeo inserido!');
+  };
+
+=======
   // Palavras/frases suspeitas para moderação
   const SUSPICIOUS_WORDS = [
     'negro de merda', 'preto de merda', 'volta pra senzala', 'cabelo de bombril',
@@ -205,6 +414,7 @@ export default function CourseEditor() {
 
 
 
+>>>>>>> eba1fd94ef859460da4d87b6287617de962ea63f
   const loadCourse = async () => {
     try {
       const { data: courseData, error } = await supabase
@@ -496,10 +706,13 @@ export default function CourseEditor() {
     );
   };
 
-  const updateLesson = async (lessonId: string | number, data: Partial<Lesson>) => {
+    const updateLesson = async (lessonId: string | number, data: Partial<Lesson>) => {
     try {
       const payload: Record<string, any> = {};
       if (data.title !== undefined) payload.titulo = data.title;
+<<<<<<< HEAD
+      if (data.content !== undefined) payload.conteudo_html = sanitizeContent(data.content);
+=======
       if (data.content !== undefined) {
         payload.conteudo_html = data.content;
         
@@ -510,6 +723,7 @@ export default function CourseEditor() {
           await flagForModeration(lessonId, lesson?.title || '', data.content, suspiciousWords);
         }
       }
+>>>>>>> eba1fd94ef859460da4d87b6287617de962ea63f
       if (data.video_url !== undefined) payload.video_url = data.video_url;
       if (data.order_index !== undefined) payload.ordem = data.order_index;
       const { error } = await supabase
@@ -1023,7 +1237,25 @@ export default function CourseEditor() {
                                 />
                               ))}
                             </div>
+                            {/* Botões de inserção */}
+                            <div className="flex gap-2 mb-2">
+                              <button
+                                type="button"
+                                onClick={() => handleInsertImage(lesson.id)}
+                                className="btn-outline text-sm py-1 px-3 flex items-center gap-1"
+                              >
+                                📷 Inserir Imagem
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleInsertVideo(lesson.id)}
+                                className="btn-outline text-sm py-1 px-3 flex items-center gap-1"
+                              >
+                                🎬 Inserir Vídeo
+                              </button>
+                            </div>
 
+                        
                             <textarea
                               value={lesson.content || ''}
                               onChange={(e) => updateLessonState(lesson.id, { content: e.target.value })}
