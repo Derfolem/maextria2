@@ -2,12 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Module, Lesson } from '../../types';
 import toast from 'react-hot-toast';
-<<<<<<< HEAD
 import { FaPlus, FaTrash, FaSave, FaRobot, FaImage, FaVideo } from 'react-icons/fa';
-=======
-import { FaPlus, FaTrash, FaSave, FaRobot } from 'react-icons/fa';
-import { FaImage, FaVideo } from 'react-icons/fa';
->>>>>>> eba1fd94ef859460da4d87b6287617de962ea63f
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
 
@@ -309,7 +304,6 @@ export default function CourseEditor() {
     toast.success('Vídeo inserido!');
   };
 
-=======
   // Palavras/frases suspeitas para moderação
   const SUSPICIOUS_WORDS = [
     'negro de merda', 'preto de merda', 'volta pra senzala', 'cabelo de bombril',
@@ -414,8 +408,7 @@ export default function CourseEditor() {
 
 
 
->>>>>>> eba1fd94ef859460da4d87b6287617de962ea63f
-  const loadCourse = async () => {
+const loadCourse = async () => {
     try {
       const { data: courseData, error } = await supabase
         .from('cursos')
@@ -710,20 +703,8 @@ export default function CourseEditor() {
     try {
       const payload: Record<string, any> = {};
       if (data.title !== undefined) payload.titulo = data.title;
-<<<<<<< HEAD
       if (data.content !== undefined) payload.conteudo_html = sanitizeContent(data.content);
-=======
-      if (data.content !== undefined) {
-        payload.conteudo_html = data.content;
-        
-        // Verificar conteúdo suspeito e sinalizar para moderação
-        const suspiciousWords = detectSuspiciousContent(data.content);
-        if (suspiciousWords.length > 0) {
-          const lesson = modules.flatMap(m => m.lessons || []).find(l => l.id === lessonId);
-          await flagForModeration(lessonId, lesson?.title || '', data.content, suspiciousWords);
-        }
-      }
->>>>>>> eba1fd94ef859460da4d87b6287617de962ea63f
+
       if (data.video_url !== undefined) payload.video_url = data.video_url;
       if (data.order_index !== undefined) payload.ordem = data.order_index;
       const { error } = await supabase
