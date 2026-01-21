@@ -1,7 +1,7 @@
 // frontend/src/pages/teacher/CourseCreatorGlass.tsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaSave, FaMagic } , FaImage, FaVideo } from 'react-icons/fa';
+import { FaSave, FaMagic, FaImage, FaVideo } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../lib/store';
 import { supabase } from '../../lib/supabase';
