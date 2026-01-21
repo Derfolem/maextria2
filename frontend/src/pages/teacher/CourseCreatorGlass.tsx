@@ -214,7 +214,7 @@ export default function CourseCreatorGlass() {
     
     const imgHtml = `<img src="${url}" alt="Imagem" style="max-width:100%; border-radius:8px; margin:10px 0;">`;
     
-    setCourse(prev => {
+    setParsedCourse((prev: any) => {
       const newModules = [...prev.modules];
       const lesson = newModules[moduleIndex].lessons[lessonIndex];
       lesson.content = (lesson.content || '') + '\n' + imgHtml;
@@ -248,7 +248,7 @@ export default function CourseCreatorGlass() {
     
     const videoHtml = `<div style="position:relative; padding-bottom:56.25%; height:0; overflow:hidden; margin:10px 0; border-radius:8px;"><iframe src="${embedUrl}" style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;" allowfullscreen></iframe></div>`;
     
-    setCourse(prev => {
+    setParsedCourse((prev: any) => {
       const newModules = [...prev.modules];
       const lesson = newModules[moduleIndex].lessons[lessonIndex];
       lesson.content = (lesson.content || '') + '\n' + videoHtml;
@@ -384,14 +384,14 @@ export default function CourseCreatorGlass() {
                               <div className="flex gap-2 mt-1">
                                   <button
                                     type="button"
-                                    onClick={() => handleInsertImage(moduleIndex, lessonIndex)}
+                                    onClick={() => handleInsertImage(modIndex, lessonIndex)}
                                     className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-500/20 text-blue-300 rounded hover:bg-blue-500/30"
                                   >
                                     <FaImage /> Imagem
                                   </button>
                                   <button
                                     type="button"
-                                    onClick={() => handleInsertVideo(moduleIndex, lessonIndex)}
+                                    onClick={() => handleInsertVideo(modIndex, lessonIndex)}
                                     className="flex items-center gap-1 px-2 py-1 text-xs bg-purple-500/20 text-purple-300 rounded hover:bg-purple-500/30"
                                   >
                                     <FaVideo /> Vídeo
