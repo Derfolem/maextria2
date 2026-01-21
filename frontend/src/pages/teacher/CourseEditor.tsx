@@ -282,36 +282,6 @@ export default function CourseEditor() {
     
     toast.success('Vídeo inserido!');
   };
-  // Inserir vídeo no conteúdo
-  const insertVideo = (lessonId: string | number) => {
-    const url = prompt('Cole a URL do vídeo (YouTube ou Vimeo):');
-    if (!url) return;
-    
-    let embedUrl = '';
-    
-    // YouTube
-    const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
-    if (youtubeMatch) {
-      embedUrl = `https://www.youtube.com/embed/${youtubeMatch[1]}`;
-    }
-    
-    // Vimeo
-    const vimeoMatch = url.match(/vimeo\.com\/([0-9]+)/);
-    if (vimeoMatch) {
-      embedUrl = `https://player.vimeo.com/video/${vimeoMatch[1]}`;
-    }
-    
-    if (!embedUrl) {
-      alert('URL inválida. Use um link do YouTube ou Vimeo.');
-      return;
-    }
-    
-    const lesson = modules.flatMap(m => m.lessons || []).find(l => l.id === lessonId);
-    if (lesson) {
-      const videoTag = `\n<iframe src="${embedUrl}" width="100%" height="400" frameborder="0" allowfullscreen style="margin:10px 0;"></iframe>\n`;
-      updateLessonState(lessonId, { content: (lesson.content || '') + videoTag });
-    }
-  };
 
 
 
