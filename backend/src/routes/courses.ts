@@ -318,7 +318,7 @@ router.put('/:courseId', authenticate, authorize('teacher', 'admin'), (req: Requ
 });
 
 // Publish/Unpublish course
-router.patch('/:courseId/publish', authenticate, authorize('teacher', 'admin'), (req: Request, res: Response) => {
+router.patch('/:courseId/publish', authenticate, authorize('admin'), (req: Request, res: Response) => {
   try {
     const { courseId } = req.params;
     const { is_published } = req.body;
