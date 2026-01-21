@@ -230,11 +230,7 @@ export default function TeacherDashboard() {
         <div className="flex gap-3"> {/* Added a div to contain both buttons */}
           <Link to="/teacher/course/new-glass" className="btn-glass flex items-center gap-2"> {/* New button */}
             <FaPlus />
-            Novo curso (Glass)
-          </Link>
-          <Link to="/teacher/course/new" className="btn-outline inline-flex items-center gap-2"> {/* Existing button, changed style */}
-            <FaPlus />
-            Novo curso (Clássico)
+            Novo Curso
           </Link>
         </div>
       </div>
