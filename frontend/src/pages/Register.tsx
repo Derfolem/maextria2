@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../lib/store';
 import toast from 'react-hot-toast';
-import { FaUser, FaEnvelope, FaLock, FaHourglassHalf } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaLock, FaHourglassHalf, FaGoogle } from 'react-icons/fa';
 import { supabase } from '../lib/supabase';
 
 export default function Register() {
@@ -62,6 +62,29 @@ export default function Register() {
     }
   };
 
+  const handleGoogleSignup = async () => {
+    if (!allowNewSignups) {
+      toast.error('Novos cadastros estão temporariamente fechados.');
+      setBlockedPulse(true);
+      window.setTimeout(() => setBlockedPulse(false), 800);
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/`,
+        },
+      });
+      if (error) {
+        throw error;
+      }
+    } catch (error: any) {
+      toast.error(error?.message || 'Nao foi possivel entrar com Google.');
+    }
+  };
+
   return (
     <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center bg-[hsl(var(--background))] py-12 px-[clamp(24px,5vw,80px)]">
       <div className="max-w-md w-full card p-8">
@@ -89,6 +112,23 @@ export default function Register() {
             </div>
           </div>
         )}
+
+        <div className="space-y-4 mb-6">
+          <button
+            type="button"
+            onClick={handleGoogleSignup}
+            disabled={!allowNewSignups || configLoading}
+            className="w-full btn-outline flex items-center justify-center gap-3 py-3"
+          >
+            <FaGoogle />
+            <span>Continuar com Google</span>
+          </button>
+          <div className="flex items-center gap-3 text-xs text-[hsl(var(--muted-foreground))]">
+            <span className="flex-1 h-px bg-[hsl(var(--border))]" />
+            <span>ou</span>
+            <span className="flex-1 h-px bg-[hsl(var(--border))]" />
+          </div>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../lib/store';
 import toast from 'react-hot-toast';
-import { FaEnvelope, FaLock } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaGoogle } from 'react-icons/fa';
 import { getRememberMeDefault, supabase } from '../lib/supabase';
 
 export default function Login() {
@@ -57,6 +57,22 @@ export default function Login() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/`,
+        },
+      });
+      if (error) {
+        throw error;
+      }
+    } catch (error: any) {
+      toast.error(error?.message || 'Nao foi possivel entrar com Google.');
+    }
+  };
+
   return (
     <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center bg-[hsl(var(--background))] py-12 px-[clamp(24px,5vw,80px)]">
       <div className="max-w-md w-full card p-8">
@@ -64,6 +80,22 @@ export default function Login() {
           <p className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--primary))]">Login</p>
           <h2 className="headline-font text-3xl">Bem-vindo de volta</h2>
           <p className="text-[hsl(var(--muted-foreground))]">Acesse sua conta MAEXTRIA</p>
+        </div>
+
+        <div className="space-y-4 mb-6">
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            className="w-full btn-outline flex items-center justify-center gap-3 py-3"
+          >
+            <FaGoogle />
+            <span>Entrar com Google</span>
+          </button>
+          <div className="flex items-center gap-3 text-xs text-[hsl(var(--muted-foreground))]">
+            <span className="flex-1 h-px bg-[hsl(var(--border))]" />
+            <span>ou</span>
+            <span className="flex-1 h-px bg-[hsl(var(--border))]" />
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
