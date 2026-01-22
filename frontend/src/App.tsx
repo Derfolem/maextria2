@@ -32,6 +32,8 @@ const AdminNotifications = lazy(() => import('./pages/admin/Notifications'));
 const AdminPayments = lazy(() => import('./pages/admin/Payments'));
 const AdminModeracao = lazy(() => import('./pages/admin/Moderacao'));
 const TeacherLanding = lazy(() => import('./pages/TeacherLanding'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 
 function ProtectedRoute({ children, roles }: { children: React.ReactNode; roles?: string[] }) {
   const { isAuthenticated, user, isLoading } = useAuthStore();
@@ -80,6 +82,8 @@ function App() {
           <Route path="/courses/:id" element={<CourseDetail />} />
           <Route path="/sou-professor" element={<TeacherLanding />} />
           <Route path="/verificar-certificado" element={<VerificarCertificado />} />
+          <Route path="/privacidade" element={<PrivacyPolicy />} />
+          <Route path="/termos" element={<TermsOfService />} />
 
           <Route
             path="/pagamento-certificado/:cursoId"
