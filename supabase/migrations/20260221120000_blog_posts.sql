@@ -17,6 +17,11 @@ CREATE INDEX IF NOT EXISTS idx_blog_posts_publicado_em
 
 ALTER TABLE public.blog_posts ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Blog publicado e publico" ON public.blog_posts;
+DROP POLICY IF EXISTS "Admins podem criar posts do blog" ON public.blog_posts;
+DROP POLICY IF EXISTS "Admins podem atualizar posts do blog" ON public.blog_posts;
+DROP POLICY IF EXISTS "Admins podem deletar posts do blog" ON public.blog_posts;
+
 CREATE POLICY "Blog publicado e publico"
   ON public.blog_posts
   FOR SELECT
@@ -50,596 +55,207 @@ INSERT INTO public.blog_posts (
 (
   'Certificacoes que aceleram sua entrada no mercado',
   'certificacoes-que-aceleram-sua-entrada-no-mercado',
-  'Entenda por que certificacoes validam sua historia profissional e criam vantagem real em processos seletivos.',
-  $$<h2>Por que certificacao virou o sinal de confianca no mercado</h2>
-<p>Voce pode ter experiencia, mas sem prova fica facil perder uma vaga para quem tem.</p>
-<p>Recrutadores precisam de evidencias objetivas e rapidas.</p>
-<p>Certificacoes cumprem esse papel de maneira clara e imediata.</p>
-<p>Quando um curriculo passa pelo filtro inicial, os sinais contam.</p>
-<p>O sinal mais forte hoje e a combinacao entre pratica e comprovacao.</p>
-<p>Sem isso, voce entra no bloco dos curriculos que precisam de tempo.</p>
-<p>Tempo e exatamente o que o recrutador nao tem.</p>
-<p>E aqui aparece a oportunidade.</p>
-<p>Certificados encurtam o caminho entre o seu valor e a percepcao do mercado.</p>
-<p>Isso muda o jogo para quem quer entrar rapido.</p>
-<p>Voce nao precisa esperar anos para ter reconhecimento.</p>
-<p>Precisa apenas provar que sabe fazer.</p>
-<p>Esse texto foi criado para quem quer acelerar a entrada no mercado.</p>
-<p>Especialmente para quem esta mudando de area ou com lacunas no curriculo.</p>
-<p>Se isso descreve voce, continue.</p>
-<p>O objetivo aqui e simples: mostrar o caminho mais curto ate a vaga.</p>
-<p>Sem enrolacao.</p>
-<p>Sem promessas irreais.</p>
-<p>Com estrategia.</p>
-<p>Com foco em cursos e certificados que geram retorno rapido.</p>
-<h2>Problema: o mercado quer prova, nao promessa</h2>
-<p>Quem contrata precisa reduzir risco.</p>
-<p>Curriculo bonito e bom, mas nao basta.</p>
-<p>Entrevistas iniciais sao feitas para cortar.</p>
-<p>Se o recrutador nao encontra sinais objetivos, ele segue para o proximo.</p>
-<p>E voce perde chances antes de mostrar o seu valor.</p>
-<p>Isso nao e pessoal.</p>
-<p>E o processo.</p>
-<p>O que muda esse processo sao evidencias.</p>
-<p>Certificacao e evidencIa.</p>
-<p>Ela mostra que voce investiu em conhecimento estruturado.</p>
-<p>Mostra que concluiu, que dedicou tempo, que entregou resultado.</p>
-<p>Ela mostra que voce esta pronto para aprender e aplicar.</p>
-<p>E isso e exatamente o que o mercado procura.</p>
-<p>Se voce esta entrando agora ou voltando ao mercado, a certificacao serve como ponte.</p>
-<p>Uma ponte clara entre sua historia e a exigencia da vaga.</p>
-<p>Sem ponte, voce depende apenas de sorte.</p>
-<p>Com ponte, voce cria previsibilidade.</p>
-<h2>Agitacao: a vaga perdida custa mais do que o curso</h2>
-<p>Cada vaga perdida vira atraso.</p>
-<p>Atraso vira inseguranca.</p>
-<p>Inseguranca vira paralisia.</p>
-<p>Quando isso acontece, muitos desistem do plano.</p>
-<p>O custo invisivel e alto.</p>
-<p>E ele nao aparece no extrato.</p>
-<p>Mas aparece na sua carreira.</p>
-<p>Uma certificacao custa menos do que ficar meses parado.</p>
-<p>Custa menos do que aceitar oportunidades abaixo do seu potencial.</p>
-<p>E custa menos do que a frustracao de nao ser chamado.</p>
-<p>O valor nao esta apenas no certificado.</p>
-<p>Esta na velocidade que ele gera.</p>
-<p>Velocidade para entrar.</p>
-<p>Velocidade para ser notado.</p>
-<p>Velocidade para subir.</p>
-<p>Isso e ROI.</p>
-<p>Retorno em tempo, autoestima e dinheiro.</p>
-<p>E quanto antes voce cria esse retorno, melhor.</p>
-<h2>Solucao: cursos curtos, com certificados e foco pratico</h2>
-<p>A melhor estrategia nao e fazer tudo.</p>
-<p>E escolher bem.</p>
-<p>Voce precisa de cursos que sejam reconhecidos e objetivos.</p>
-<p>Que tenham trilha clara.</p>
-<p>Que resultem em certificado verificavel.</p>
-<p>Que falem a lingua do mercado.</p>
-<p>Na MAEXTRIA, a curadoria nasce com esse objetivo.</p>
-<p>Menos cursos, mais impacto.</p>
-<p>Menos teoria vazia, mais aplicacao.</p>
-<p>Quando voce termina, voce tem algo concreto para mostrar.</p>
-<p>Isso torna sua apresentacao mais forte.</p>
-<p>Isso muda sua conversa em entrevistas.</p>
-<p>Isso tira voce do grupo invisivel.</p>
-<h2>AIDA em pratica: como apresentar seu certificado</h2>
-<p>Atencao: use um resumo curto no curriculo.</p>
-<p>Interesse: destaque a habilidade-chave que o curso comprovou.</p>
-<p>Desejo: conecte a habilidade ao desafio da vaga.</p>
-<p>Acao: convide o recrutador para ver o certificado.</p>
-<p>Simples.</p>
-<p>Direto.</p>
-<p>E eficaz.</p>
-<h2>Certificado sem estrategia e certificado esquecido</h2>
-<p>O certificado precisa de contexto.</p>
-<p>Ele precisa viver no seu perfil profissional.</p>
-<p>Precisa aparecer no LinkedIn.</p>
-<p>Precisa estar nos seus projetos.</p>
-<p>Precisa ser citado em entrevistas.</p>
-<p>Isso transforma um documento em vantagem.</p>
-<p>E vantagem e o que voce busca.</p>
-<h2>O que o mercado valoriza hoje</h2>
-<p>Habilidades aplicadas.</p>
-<p>Capacidade de aprender rapido.</p>
-<p>Resiliencia para mudar.</p>
-<p>Disciplina para concluir.</p>
-<p>Certificacoes provam isso.</p>
-<p>Elas falam por voce antes da entrevista.</p>
-<p>Elas abrem portas.</p>
-<p>Elas aceleram resultados.</p>
-<h2>Como escolher o curso certo</h2>
-<p>Comece pelo objetivo.</p>
-<p>Depois escolha a habilidade que mais aproxima voce da vaga.</p>
-<p>Evite cursos genericos sem certificacao.</p>
-<p>Evite trilhas longas sem pratica.</p>
-<p>Prefira cursos objetivos e reconheciveis.</p>
-<p>O seu tempo e o seu recurso mais caro.</p>
-<p>Use ele para gerar retorno.</p>
-<h2>Fechamento: a escolha que reduz incerteza</h2>
-<p>Se voce quer entrar mais rapido no mercado, precisa de provas.</p>
-<p>Certificacao e a prova mais simples e direta.</p>
-<p>Ela reduz a distancia entre voce e a vaga.</p>
-<p>Ela transforma sua historia em argumento.</p>
-<p>Ela mostra compromisso com a sua evolucao.</p>
-<p>Na MAEXTRIA, voce encontra cursos curtos, aplicados e certificados.</p>
-<p>O custo e menor do que o valor gerado.</p>
-<p>E o valor aparece na primeira oportunidade.</p>
-<p>Se voce quer acelerar sua entrada, comeca por aqui.</p>
-<p>Escolha um curso hoje.</p>
-<p>Conclua.</p>
-<p>Valide.</p>
-<p>Apresente.</p>
-<p>E entre no mercado com muito mais forca.</p>
-<p>O seu proximo passo e simples.</p>
-<p>Veja os cursos e escolha o certificado que abre a sua porta.</p>
-<p>Depois, o mercado faz o resto.</p>
-<p>Agora e sua vez.</p>
-<p>Seu futuro profissional agradece.</p>
-<p>Seu curriculo agradece.</p>
-<p>Seu salario agradece.</p>
-<p>E o seu tempo agradece.</p>
-<p>Comece hoje.</p>
-<p>O impacto e real.</p>
-<p>E esta ao seu alcance.</p>
-<p>Fim.</p>
-<h2>Checklist de conversao: transforme certificado em vaga</h2>
-<p>Defina uma vaga alvo.</p>
-<p>Leia a descricao com calma.</p>
-<p>Extraia palavras-chave.</p>
-<p>Compare com o seu curso.</p>
-<p>Atualize o titulo no curriculo.</p>
-<p>Adicione o certificado em destaque.</p>
-<p>Inclua data de conclusao.</p>
-<p>Inclua carga horaria.</p>
-<p>Inclua habilidades praticas.</p>
-<p>Inclua resultados obtidos.</p>
-<p>Atualize o LinkedIn.</p>
-<p>Inclua o link do certificado.</p>
-<p>Inclua um resumo objetivo.</p>
-<p>Crie um mini projeto.</p>
-<p>Mostre evidencias do aprendizado.</p>
-<p>Explique o problema resolvido.</p>
-<p>Explique o impacto gerado.</p>
-<p>Prepare um pitch curto.</p>
-<p>Treine o pitch em voz alta.</p>
-<p>Mostre com seguranca.</p>
-<p>Evite textos longos.</p>
-<p>Seja direto.</p>
-<p>Seja especifico.</p>
-<p>Mostre o que voce sabe fazer.</p>
-<p>Mostre como voce aprende rapido.</p>
-<p>Mostre disciplina de conclusao.</p>
-<p>Mostre foco em resultado.</p>
-<p>Mostre postura profissional.</p>
-<p>Mostre vontade de crescer.</p>
-<p>Conecte com o objetivo da empresa.</p>
-<p>Use frases curtas.</p>
-<p>Evite jargao desnecessario.</p>
-<p>Evite promessas vagas.</p>
-<p>Entregue clareza.</p>
-<p>Entregue prova.</p>
-<p>Entregue consistencia.</p>
-<p>Revise seu perfil.</p>
-<p>Revise sua bio.</p>
-<p>Revise suas habilidades.</p>
-<p>Revise sua linguagem.</p>
-<p>Revise sua foto profissional.</p>
-<p>Revise seu portfolio.</p>
-<p>Envie candidaturas estrategicas.</p>
-<p>Envie menos, melhor.</p>
-<p>Personalize a mensagem.</p>
-<p>Fale do desafio da vaga.</p>
-<p>Conecte o curso ao desafio.</p>
-<p>Mostre o certificado.</p>
-<p>Peça uma conversa.</p>
-<p>Seja educado.</p>
-<p>Seja objetivo.</p>
-<p>Seja consistente.</p>
-<p>Atualize a cada novo curso.</p>
-<p>Mantenha o ritmo.</p>
-<p>Mantenha a motivacao.</p>
-<p>Mantenha o foco.</p>
-<p>Repita o processo.</p>
-<p>O resultado vem.</p>
-<p>Comprovacao acelera.</p>
-<p>Certificado abre portas.</p>
-<p>Trilha certa gera retorno.</p>
-<p>Investimento pequeno, impacto grande.</p>
-<p>Voce esta mais perto do que imagina.</p>
-<p>Continue.</p>
-<p>Final do checklist.</p>
-<p>Pergunta 1: qual vaga voce quer?</p>
-<p>Pergunta 2: qual habilidade mais pesa?</p>
-<p>Pergunta 3: qual curso prova isso?</p>
-<p>Pergunta 4: qual certificado valida?</p>
-<p>Pergunta 5: quando voce conclui?</p>
-<p>Pergunta 6: como vai mostrar?</p>
-<p>Pergunta 7: qual projeto curto?</p>
-<p>Pergunta 8: qual prova visual?</p>
-<p>Pergunta 9: qual resultado medido?</p>
-<p>Pergunta 10: qual empresa alvo?</p>
-<p>Pergunta 11: qual contato chave?</p>
-<p>Pergunta 12: qual mensagem de entrada?</p>
-<p>Pergunta 13: qual diferencial imediato?</p>
-<p>Pergunta 14: qual prazo?</p>
-<p>Pergunta 15: qual risco?</p>
-<p>Pergunta 16: qual plano B?</p>
-<p>Pergunta 17: qual rotina?</p>
-<p>Pergunta 18: qual habito?</p>
-<p>Pergunta 19: qual compromisso?</p>
-<p>Pergunta 20: qual proximo curso?</p>
-<p>Pergunta 21: qual certificacao extra?</p>
-<p>Pergunta 22: qual objetivo financeiro?</p>
-<p>Pergunta 23: qual meta mensal?</p>
-<p>Pergunta 24: qual indicador de progresso?</p>
-<p>Pergunta 25: qual apoio voce precisa?</p>
-<p>Pergunta 26: qual mentor?</p>
-<p>Pergunta 27: qual comunidade?</p>
-<p>Pergunta 28: qual semana de revisao?</p>
-<p>Pergunta 29: qual celebracao?</p>
-<p>Pergunta 30: qual compromisso final?</p>
+  'Por que certificados confiaveis encurtam o tempo ate a vaga e transformam sua historia em prova objetiva.',
+  $$<h2>A atencao do recrutador dura segundos</h2>
+<p>Se o recrutador olhar seu perfil por poucos segundos, o que ele ve primeiro? Essa pergunta decide se voce avanca ou fica no corte inicial. Certificacoes funcionam como sinal rapido de competencia e de compromisso com resultados.</p>
+<p>Sem prova objetiva, seu valor fica invisivel. Com prova, sua historia ganha velocidade.</p>
+<p>Este artigo foi pensado para quem quer entrar no mercado, voltar ao mercado ou acelerar a transicao de carreira. O foco aqui e simples: como usar cursos e certificados para reduzir o tempo ate uma oportunidade real.</p>
+<h2>Problema: o mercado quer evidencia, nao promessa</h2>
+<p>Empresas evitam risco. Isso nao e pessoal, e processo. Um curriculo cheio de palavras bonitas nao prova dominio, apenas sugere.</p>
+<p>O recrutador precisa ver algo que comprove. Certificados entregam isso com clareza e rapidez.</p>
+<p>Quando voce mostra um certificado verificavel, voce elimina duvidas e ganha tempo na conversa. Em um funil de selecao, tempo e vantagem.</p>
+<h2>Agitacao: cada vaga perdida tem um custo oculto</h2>
+<p>Vaga perdida vira atraso. Atraso vira perda de renda e de confianca. E a confiança e o combustivel da sua carreira.</p>
+<p>O custo de ficar parado e sempre maior do que parece. E quase sempre maior do que o custo de um curso objetivo com certificado.</p>
+<p>O mercado nao espera, mas tambem nao exige perfeicao. Exige prova de preparo. Quem entrega prova, avanca.</p>
+<h2>Solucao: cursos curtos, com certificacao e aplicacao direta</h2>
+<p>O caminho mais curto e escolher cursos com foco pratico e validacao clara. Cursos com certificado reduzem o tempo entre aprender e ser reconhecido.</p>
+<p>Na MAEXTRIA, os cursos sao desenhados para gerar clareza, aplicacao e certificado verificavel. Menos teoria vazia, mais impacto real.</p>
+<p>O resultado e simples: voce termina com algo concreto para apresentar. Isso muda sua postura e muda a forma como o mercado te enxerga.</p>
+<figure>
+  <img src="/banners/maextria-banner-gratis.png" alt="Certificacao valida e prova objetiva" />
+  <figcaption>Quando o certificado e claro, a conversa com o recrutador fica simples e objetiva.</figcaption>
+</figure>
+<h2>AIDA na pratica: transforme certificado em convite</h2>
+<p><strong>Atencao:</strong> destaque o certificado nos primeiros pontos do curriculo e do perfil.</p>
+<p><strong>Interesse:</strong> descreva o que voce fez na pratica, em uma frase clara e mensuravel.</p>
+<p><strong>Desejo:</strong> conecte essa habilidade a um problema real da vaga.</p>
+<p><strong>Acao:</strong> convide o recrutador para ver o certificado, o projeto ou o resultado.</p>
+<p>Quando o fluxo e simples, a resposta vem mais rapido.</p>
+<h2>O que o mercado realmente valoriza</h2>
+<p>O mercado valoriza prova de aprendizado aplicado, consistencia e capacidade de evoluir. Certificacoes representam isso em forma objetiva.</p>
+<p>Mais do que um papel, o certificado e o registro de uma jornada concluida. E isso diferencia voce de quem apenas diz que sabe.</p>
+<p>Se voce quer competir, precisa mostrar. Se voce quer vencer, precisa mostrar melhor.</p>
+<h2>Como escolher o curso certo (sem desperdicio)</h2>
+<p>Comece pela vaga que voce quer. Leia a descricao e anote as habilidades citadas com mais frequencia.</p>
+<p>Depois escolha o curso que prova exatamente essas habilidades. Evite cursos longos, genéricos e sem certificado.</p>
+<p>O seu tempo e o recurso mais caro. Use ele para gerar retorno.</p>
+<h2>Momento decisivo: custo menor que o valor</h2>
+<p>O custo de um curso com certificado e menor do que o custo de perder meses buscando vaga sem prova.</p>
+<p>O certificado encurta o funil. Encorta a duvida. Encorta a distancia entre voce e o sim.</p>
+<p>Se voce quer entrar mais rapido, a estrategia mais inteligente e simples: aprenda, conclua, certifique e apresente.</p>
+<figure>
+  <img src="/curso-ia-pratica.webp" alt="Cursos praticos e certificados" />
+  <figcaption>Curso pratico + certificado gera resultado rapido e visivel.</figcaption>
+</figure>
+<h2>Checklist de conversao: de curso a vaga</h2>
+<p>Defina uma vaga alvo e analise o que ela exige.</p>
+<p>Escolha um curso que cobre o essencial e gere certificado verificavel.</p>
+<p>Conclua o curso com foco em resultado, nao apenas em horas assistidas.</p>
+<p>Crie um mini projeto que prove o aprendizado, mesmo que simples.</p>
+<p>Atualize curriculo e LinkedIn com o certificado e o projeto.</p>
+<p>Use uma mensagem curta e direta ao se candidatar, mostrando prova e resultado.</p>
+<p>Repita o processo para uma segunda habilidade estrategica.</p>
+<p>Isso cria uma trilha, e trilha cria carreira.</p>
+<h2>Fechamento: seu proximo passo esta claro</h2>
+<p>Certificacoes aceleram sua entrada no mercado porque mostram o que o recrutador precisa ver: prova.</p>
+<p>Na MAEXTRIA, voce encontra cursos diretos, com conteudo aplicado e certificado verificavel.</p>
+<p>O valor gerado e maior do que o custo. O retorno vem em forma de convites, entrevistas e oportunidades reais.</p>
+<p>Escolha um curso hoje, conclua e valide. O mercado responde mais rapido quando voce apresenta evidencia.</p>
+<p>Esse e o caminho mais curto entre voce e a vaga. E ele esta aberto agora.</p>
 $$,
   'Equipe Maextria',
-  '/maextria-logo.png',
+  '/banners/maextria-banner-gratis.png',
   true,
   now()
 ),
 (
   'Profissoes do futuro e as novas trilhas de carreira',
   'profissoes-do-futuro-e-as-novas-trilhas-de-carreira',
-  'Como se posicionar para carreiras emergentes, com foco em habilidades que o mercado ja exige.',
-  $$<h2>O futuro nao espera: o mercado ja mudou</h2>
-<p>As profissoes do futuro nao estao no futuro.</p>
-<p>Elas ja estao acontecendo.</p>
-<p>As empresas ja contratam por habilidades novas.</p>
-<p>Quem demora, perde ritmo.</p>
-<p>Quem se antecipa, ganha espaco.</p>
-<p>Este artigo foi feito para quem quer clareza.</p>
-<p>Clareza sobre carreiras emergentes.</p>
-<p>Clareza sobre habilidades com alta demanda.</p>
-<p>Clareza sobre o que aprender agora.</p>
-<p>Sem fantasia.</p>
-<p>Sem promessa vazia.</p>
-<p>Com foco no que gera resultado real.</p>
-<h2>Problema: a escolha errada custa anos</h2>
-<p>Muita gente escolhe pela moda.</p>
-<p>Outros escolhem pelo medo.</p>
-<p>E acabam travados.</p>
-<p>O tempo passa, a tecnologia avanca, o mercado muda.</p>
-<p>E a pessoa fica para tras.</p>
-<p>O maior risco hoje nao e aprender algo novo.</p>
-<p>E aprender algo que ja perdeu valor.</p>
-<p>Por isso, escolher bem importa.</p>
-<p>E escolher bem depende de sinais claros.</p>
-<h2>Agitacao: a porta fecha para quem nao acompanha</h2>
-<p>Empresas querem resultado.</p>
-<p>Querem eficiencia.</p>
-<p>Querem adaptacao.</p>
-<p>Quando nao encontram, substituem.</p>
-<p>Quando encontram, investem.</p>
-<p>Isso e direto.</p>
-<p>Sem drama.</p>
-<p>Sem desculpa.</p>
-<p>O mercado decide pelo que voce entrega.</p>
-<p>Se voce nao entrega, ele vai para outro.</p>
-<p>Isso pode ser duro, mas e libertador.</p>
-<p>Porque voce pode decidir mudar hoje.</p>
-<p>E mudar hoje e mais facil do que parece.</p>
-<p>Com o curso certo.</p>
-<p>Com o certificado certo.</p>
-<p>Com a trilha certa.</p>
-<h2>Solucao: novas trilhas com base em habilidades</h2>
-<p>O futuro e baseado em habilidades, nao em diplomas longos.</p>
-<p>Isso abre portas para quem aprende rapido.</p>
-<p>As empresas querem ver capacidade aplicada.</p>
-<p>Querem provas curtas e objetivas.</p>
-<p>Certificacoes curtas fazem sentido aqui.</p>
-<p>Elas mostram dominio e interesse.</p>
-<p>Elas mostram que voce esta em movimento.</p>
-<p>Elas mostram que voce se atualiza.</p>
-<h2>Carreiras em alta e por que elas crescem</h2>
-<p>Dados e analise: empresas precisam entender o que acontece.</p>
-<p>Automacao: processos precisam ser eficientes.</p>
-<p>Experiencia do usuario: fidelizacao depende disso.</p>
-<p>Seguranca digital: risco custa caro.</p>
-<p>Gestao de projetos: entregar bem virou diferencial.</p>
-<p>Educacao corporativa: equipes precisam aprender mais rapido.</p>
-<p>Essas areas crescem porque resolvem problemas reais.</p>
-<p>Problemas que doem no bolso das empresas.</p>
-<p>Se voce resolve, voce se torna necessario.</p>
-<h2>AIDA para sua nova carreira</h2>
-<p>Atencao: escolha uma area com demanda.</p>
-<p>Interesse: entenda como essa area funciona na pratica.</p>
-<p>Desejo: veja como voce pode ganhar com isso.</p>
-<p>Acao: entre em uma trilha objetiva, com certificado.</p>
-<p>Esse e o caminho curto.</p>
-<p>Esse e o caminho inteligente.</p>
-<h2>Como fazer a transicao sem perder tempo</h2>
-<p>Comece pequeno, mas comece.</p>
-<p>Um curso bem escolhido muda sua rota.</p>
-<p>Com o certificado, voce prova compromisso.</p>
-<p>Com a pratica, voce cria historia.</p>
-<p>Com a historia, voce conquista a vaga.</p>
-<p>Isso e processo.</p>
-<p>E processo precisa de estrutura.</p>
-<p>A MAEXTRIA entrega essa estrutura.</p>
-<p>Conteudo direto, aplicado, com validação.</p>
-<p>Sem perda de tempo.</p>
-<h2>O que voce ganha ao se antecipar</h2>
-<p>Voce ganha poder de escolha.</p>
-<p>Voce ganha confianca.</p>
-<p>Voce ganha velocidade.</p>
-<p>Voce ganha salario melhor.</p>
-<p>Voce ganha estabilidade no que realmente importa.</p>
-<p>E o melhor: voce ganha liberdade.</p>
-<p>Liberdade para negociar.</p>
-<p>Liberdade para crescer.</p>
-<p>Liberdade para mudar de novo, quando quiser.</p>
+  'Como se posicionar para carreiras emergentes com habilidades que o mercado ja exige.',
+  $$<h2>O futuro ja esta no mercado</h2>
+<p>As profissoes do futuro nao estao distantes. Elas ja estao em selecoes, projetos e equipes que crescem agora.</p>
+<p>Quem entende esse movimento sai do modo expectativa e entra no modo estrategia.</p>
+<p>Este artigo mostra o caminho para transformar incerteza em direcao, com foco em habilidades reais e certificacoes que comprovam preparo.</p>
+<h2>Problema: escolher pela moda gera atraso</h2>
+<p>Muita gente escolhe uma carreira pela moda do momento. O problema e que o mercado muda rapido, e a moda nem sempre vira vaga.</p>
+<p>Quando a escolha nao tem fundamento, o resultado aparece em meses perdidos e em frustracao acumulada.</p>
+<p>O que protege sua carreira nao e a modinha, e a habilidade aplicavel.</p>
+<h2>Agitacao: o mercado nao espera evolucao lenta</h2>
+<p>As empresas precisam de gente pronta para resolver problemas reais. E precisam disso agora.</p>
+<p>Quando nao encontram, buscam em outro lugar. Quando encontram, investem.</p>
+<p>Esse movimento cria uma regra simples: quem se atualiza vira prioridade.</p>
+<p>E atualizar nao significa estudar tudo. Significa aprender o que resolve dor real.</p>
+<h2>Solucao: trilhas curtas, certificadas e orientadas ao mercado</h2>
+<p>As melhores transicoes acontecem quando voce escolhe uma habilidade com demanda e prova que domina o essencial.</p>
+<p>Certificacoes curtas ajudam exatamente nisso: reduzem o tempo de entrada e aumentam a confianca do recrutador.</p>
+<p>Na MAEXTRIA, as trilhas sao desenhadas para esse movimento: foco, aplicacao e certificado verificavel.</p>
+<figure>
+  <img src="/curso-ia-pratica.webp" alt="Profissoes do futuro e habilidades praticas" />
+  <figcaption>Profissoes do futuro exigem habilidades aplicadas e comprovadas.</figcaption>
+</figure>
+<h2>Areas que crescem porque resolvem problemas reais</h2>
+<p>Dados e analise para tomada de decisao rapida.</p>
+<p>Automacao de processos para eficiencia e escala.</p>
+<p>Experiencia do usuario para fidelizacao e crescimento.</p>
+<p>Seguranca digital para reduzir risco e perdas.</p>
+<p>Gestao de projetos para entregar no prazo, com qualidade e previsibilidade.</p>
+<p>Educacao corporativa para acelerar aprendizado interno.</p>
+<p>Essas areas crescem porque doem no bolso das empresas. Quem resolve, vira necessario.</p>
+<h2>AIDA aplicado a sua transicao</h2>
+<p><strong>Atencao:</strong> escolha uma area com demanda comprovada.</p>
+<p><strong>Interesse:</strong> entenda o que a area resolve e onde ela gera valor.</p>
+<p><strong>Desejo:</strong> conecte essa area ao seu objetivo profissional e de renda.</p>
+<p><strong>Acao:</strong> inicie uma trilha com certificado e uma prova pratica.</p>
+<p>Esse fluxo diminui inseguranca e aumenta a chance de resultado.</p>
+<h2>Como montar seu plano em 30 dias</h2>
+<p>Semana 1: escolha a habilidade base e um curso objetivo.</p>
+<p>Semana 2: pratique com um mini projeto, simples e real.</p>
+<p>Semana 3: finalize o curso e emita o certificado.</p>
+<p>Semana 4: atualize perfil, currículo e apresente a prova.</p>
+<p>Com isso, voce cria narrativa, evidencia e prontidao.</p>
+<figure>
+  <img src="/og-maextria.png" alt="Plano de evolucao em 30 dias" />
+  <figcaption>Trilha curta, prova clara, resultado objetivo.</figcaption>
+</figure>
+<h2>O que diferencia quem consegue a vaga</h2>
+<p>Clareza de objetivo.</p>
+<p>Prova pratica do que aprendeu.</p>
+<p>Certificado verificavel.</p>
+<p>Comunicação direta e sem exagero.</p>
+<p>Coerencia entre curso, projeto e vaga.</p>
+<p>Essa combinacao transforma interesse em convite para entrevista.</p>
 <h2>Fechamento: escolha uma trilha, nao um destino fixo</h2>
-<p>O futuro pertence a quem aprende e aplica.</p>
-<p>Voce nao precisa saber tudo.</p>
-<p>Precisa apenas comecar.</p>
-<p>Escolha uma trilha com demanda.</p>
-<p>Busque certificacao.</p>
-<p>Mostre que voce esta pronto.</p>
-<p>Esse e o movimento que o mercado recompensa.</p>
-<p>Se o futuro parece incerto, a resposta esta no seu proximo curso.</p>
-<p>Na MAEXTRIA, voce encontra a trilha certa.</p>
-<p>Com prova, com foco e com retorno.</p>
-<p>Seu futuro profissional nao precisa esperar.</p>
-<p>Ele pode comecar agora.</p>
-<p>Essa e a sua janela.</p>
-<p>Aproveite.</p>
-<p>Fim.</p>
-<h2>Mapa rapido para sua nova carreira</h2>
-<p>Escolha uma area com demanda.</p>
-<p>Entenda o problema que ela resolve.</p>
-<p>Defina um cargo inicial.</p>
-<p>Liste habilidades basicas.</p>
-<p>Escolha um curso objetivo.</p>
-<p>Conclua rapido.</p>
-<p>Certifique.</p>
-<p>Crie um pequeno projeto.</p>
-<p>Documente o projeto.</p>
-<p>Mostre o projeto no perfil.</p>
-<p>Mostre o certificado.</p>
-<p>Atualize o curriculo.</p>
-<p>Atualize o LinkedIn.</p>
-<p>Peça feedback.</p>
-<p>Melhore a cada entrega.</p>
-<p>Conecte com pessoas da area.</p>
-<p>Participe de comunidades.</p>
-<p>Aprenda com desafios reais.</p>
-<p>Resolva um problema por semana.</p>
-<p>Registre os aprendizados.</p>
-<p>Use palavras do mercado.</p>
-<p>Use exemplos curtos.</p>
-<p>Mostre consistencia.</p>
-<p>Mostre dedicacao.</p>
-<p>Mostre velocidade.</p>
-<p>Mostre adaptacao.</p>
-<p>Evite promessas vagas.</p>
-<p>Evite frases longas.</p>
-<p>Fale de resultados.</p>
-<p>Fale de impacto.</p>
-<p>Fale de melhoria.</p>
-<p>Use AIDA na sua apresentacao.</p>
-<p>Atencao com uma frase forte.</p>
-<p>Interesse com um exemplo.</p>
-<p>Desejo com um beneficio.</p>
-<p>Acao com um convite.</p>
-<p>Repita o processo com outra habilidade.</p>
-<p>Construa uma trilha.</p>
-<p>Uma trilha vira carreira.</p>
-<p>Carreira vira estabilidade.</p>
-<p>Estabilidade vira liberdade.</p>
-<p>Esse e o caminho.</p>
-<p>Voce decide o ritmo.</p>
-<p>Mas o mercado nao espera.</p>
-<p>Por isso, comece agora.</p>
-<p>Escolha um curso.</p>
-<p>Conclua.</p>
-<p>Mostre o certificado.</p>
-<p>Conquiste o proximo passo.</p>
-<p>Final do mapa.</p>
-<p>Roteiro rapido de decisao:</p>
-<p>1. O que voce quer construir?</p>
-<p>2. Qual problema voce resolve?</p>
-<p>3. Quem paga por isso?</p>
-<p>4. Quais habilidades sao base?</p>
-<p>5. Quais habilidades sao avancadas?</p>
-<p>6. Qual curso resolve 80%?</p>
-<p>7. Qual certificado valida?</p>
-<p>8. Qual projeto prova?</p>
-<p>9. Qual historia voce conta?</p>
-<p>10. Qual resultado voce mostra?</p>
-<p>11. Qual diferenca voce entrega?</p>
-<p>12. Qual tempo voce precisa?</p>
-<p>13. Qual passo voce da hoje?</p>
-<p>14. Qual passo voce da amanha?</p>
-<p>15. Qual passo voce da esta semana?</p>
-<p>16. Qual passo voce da este mes?</p>
-<p>17. Qual proximo curso?</p>
-<p>18. Qual proximo certificado?</p>
-<p>19. Qual proxima meta?</p>
-<p>20. Qual proxima entrega?</p>
-<p>21. Qual proximo feedback?</p>
-<p>22. Qual proxima conexao?</p>
-<p>23. Qual proxima vaga?</p>
-<p>24. Qual proximo salario?</p>
-<p>25. Qual proximo nivel?</p>
-<p>26. Qual proxima habilidade?</p>
-<p>27. Qual proxima prova?</p>
-<p>28. Qual proximo desafio?</p>
-<p>29. Qual proximo passo?</p>
-<p>30. Qual proxima conquista?</p>
+<p>O futuro pertence a quem aprende rapido e aplica com foco.</p>
+<p>Voce nao precisa saber tudo; precisa escolher a proxima habilidade certa.</p>
+<p>A MAEXTRIA entrega cursos curtos e certificados que viram prova real no mercado.</p>
+<p>Se o futuro parece incerto, comece pelo proximo passo certo. Ele esta nos cursos e nas certificacoes que o mercado reconhece.</p>
+<p>Entre na trilha, conclua e mostre o resultado. Essa e a rota mais segura para crescer.</p>
 $$,
   'Equipe Maextria',
-  '/maextria-logo.png',
+  '/curso-ia-pratica.webp',
   true,
   now()
 ),
 (
   'Industria 4.0 e a exigencia de novas skills',
   'industria-40-e-a-exigencia-de-novas-skills',
-  'A nova industria exige pessoas preparadas para tecnologia, processos inteligentes e certificacoes validas.',
-  $$<h2>A industria mudou e o profissional precisa acompanhar</h2>
-<p>As fabricas ficaram conectadas.</p>
-<p>Os processos ficaram inteligentes.</p>
-<p>O erro ficou caro demais.</p>
-<p>Por isso, a industria exige novas skills.</p>
-<p>Quem nao acompanha, fica obsoleto.</p>
-<p>Quem se atualiza, vira referencia.</p>
-<p>Este artigo e um mapa direto.</p>
-<p>Um mapa para entender o que mudou.</p>
-<p>E o que voce precisa aprender para crescer.</p>
-<h2>Problema: a industria quer resultado e rastreabilidade</h2>
-<p>Hoje, tudo precisa ser medido.</p>
-<p>Tudo precisa ser otimizado.</p>
-<p>Falhas viram custo alto.</p>
-<p>Isso pressiona empresas e profissionais.</p>
-<p>Se voce nao domina novos processos, fica travado.</p>
-<p>Se voce domina, ganha destaque.</p>
-<h2>Agitacao: ficar parado vira risco de substituicao</h2>
-<p>Quando a tecnologia entra, tarefas mudam.</p>
-<p>O profissional precisa evoluir junto.</p>
-<p>Se nao evolui, vira gargalo.</p>
-<p>E gargalo e removido.</p>
-<p>Essa e a realidade.</p>
-<p>Sem dramatizar.</p>
-<p>Sem esconder.</p>
-<p>Sem ilusao.</p>
-<p>Mas com oportunidade.</p>
-<p>Porque a industria precisa de gente preparada.</p>
-<p>E quem se prepara, domina o jogo.</p>
+  'A industria moderna exige tecnologia, processos inteligentes e profissionais certificados.',
+  $$<h2>O chao de fabrica virou sistema inteligente</h2>
+<p>Processos conectados, dados em tempo real e decisao rapida mudaram o jogo da industria.</p>
+<p>O profissional que nao acompanha fica para tras. O profissional que se atualiza vira referencia.</p>
+<p>Este artigo mostra quais skills ganharam peso e como transformar esse movimento em oportunidades reais.</p>
+<h2>Problema: a industria quer previsibilidade</h2>
+<p>Erros custam caro. Atrasos custam caro. Falhas custam caro.</p>
+<p>Por isso as empresas buscam padrao, processo e pessoas preparadas.</p>
+<p>Sem prova de preparo, o profissional perde espaco. Com prova, ganha confiança imediata.</p>
+<h2>Agitacao: quem nao atualiza vira gargalo</h2>
+<p>Quando a tecnologia avanca, tarefas mudam. Quem nao acompanha vira gargalo operacional.</p>
+<p>Gargalos são removidos. E isso acontece rapido.</p>
+<p>Mas a mesma tecnologia que tira, tambem cria oportunidade. Para quem se prepara.</p>
 <h2>Solucao: skills tecnicas + certificacao valida</h2>
-<p>As empresas buscam conhecimento aplicado.</p>
-<p>Buscam gente que entende processos.</p>
-<p>Buscam gente que sabe melhorar indicadores.</p>
-<p>E buscam pessoas que comprovem isso.</p>
-<p>Certificacao e o caminho mais curto.</p>
-<p>Ela mostra que voce investiu.</p>
-<p>Ela mostra que voce aprendeu.</p>
-<p>Ela mostra que voce esta pronto.</p>
-<p>Sem prova, voce fica no escuro.</p>
-<p>Com prova, voce vira escolha natural.</p>
-<h2>As skills que a industria mais valoriza</h2>
-<p>Leitura de dados para decisao rapida.</p>
-<p>Automacao de processos e controle.</p>
+<p>As empresas querem conhecimento aplicado e certificado. Isso reduz risco e acelera a decisao de contratar.</p>
+<p>Certificacao valida mostra que voce segue metodo e sabe aplicar processos industriais atuais.</p>
+<p>Na MAEXTRIA, os cursos traduzem demandas reais da industria em conteudo direto e comprovavel.</p>
+<figure>
+  <img src="/banners/maextria-banner-gratis.png" alt="Industria 4.0 e novos processos" />
+  <figcaption>Industria 4.0 exige profissoes com prova de atualizacao.</figcaption>
+</figure>
+<h2>Skills que mais aparecem nas vagas industriais</h2>
+<p>Leitura de indicadores e dados operacionais.</p>
+<p>Automacao basica e controle de processos.</p>
 <p>Manutencao preditiva e preventiva.</p>
-<p>Seguranca e confiabilidade operacional.</p>
+<p>Seguranca operacional e qualidade integrada.</p>
 <p>Gestao enxuta e melhoria continua.</p>
-<p>Qualidade integrada ao processo.</p>
-<p>Ferramentas digitais no chao de fabrica.</p>
-<p>Visao sistemica para reduzir desperdicio.</p>
-<p>Comunicação clara com times multifuncionais.</p>
-<p>Essas habilidades abrem portas reais.</p>
-<p>E elas estao ao seu alcance.</p>
-<h2>PAS aplicado: problema, agitacao, solucao</h2>
-<p>Problema: o mercado quer profissionais atualizados.</p>
-<p>Agitacao: quem nao se atualiza perde oportunidades.</p>
-<p>Solucao: cursos objetivos com certificados reconhecidos.</p>
-<p>Simples assim.</p>
-<p>O caminho curto e o caminho certo.</p>
-<h2>Como transformar atualizacao em resultado</h2>
-<p>Escolha uma habilidade clara.</p>
-<p>Escolha um curso com aplicacao pratica.</p>
-<p>Conclua.</p>
-<p>Certifique.</p>
-<p>Mostre o resultado.</p>
-<p>Voce passa a ser visto como profissional de confianca.</p>
-<p>Essa percepcao vale mais do que qualquer discurso.</p>
-<h2>Por que certificados importam na industria</h2>
-<p>O ambiente industrial exige padrao.</p>
-<p>Certificacao e padrao.</p>
-<p>Ela demonstra que voce segue metodo.</p>
-<p>Ela demonstra que voce entende processo.</p>
-<p>Ela demonstra que voce sabe aplicar.</p>
-<p>E isso gera promocao.</p>
-<p>Gera novos projetos.</p>
-<p>Gera lideranca.</p>
+<p>Essas habilidades reduzem custo, aumentam confiabilidade e geram vantagem competitiva.</p>
+<h2>PAS aplicado: o caminho curto</h2>
+<p><strong>Problema:</strong> o mercado industrial exige profissionais atualizados.</p>
+<p><strong>Agitacao:</strong> quem nao se atualiza perde oportunidades e ritmo.</p>
+<p><strong>Solucao:</strong> cursos objetivos com certificados reconhecidos e aplicacao direta.</p>
+<p>Essa e a rota de quem quer subir mais rapido e com mais seguranca.</p>
+<figure>
+  <img src="/og-maextria.png" alt="Atualizacao industrial e certificacao" />
+  <figcaption>Atualizar-se e certificar-se virou requisito, nao opcao.</figcaption>
+</figure>
+<h2>Plano simples para se destacar na industria</h2>
+<p>Escolha uma skill critica da sua area.</p>
+<p>Inscreva-se em um curso com certificado.</p>
+<p>Conclua e documente o aprendizado.</p>
+<p>Mostre evidencias de aplicacao no seu ambiente ou em um mini projeto.</p>
+<p>Atualize curriculo e perfil com dados objetivos.</p>
+<p>Esse plano cria prova, melhora sua reputacao e abre portas.</p>
+<h2>Por que o certificado pesa tanto</h2>
+<p>O ambiente industrial valoriza padrao e processo. Certificacao e o simbolo disso.</p>
+<p>Ela mostra que voce domina metodo, linguagem e pratica.</p>
+<p>Ela reduz a incerteza para quem contrata e aumenta a sua autoridade.</p>
 <h2>Fechamento: o valor de estar pronto</h2>
-<p>O mercado industrial nao desacelera.</p>
-<p>Ele exige mais tecnologia e mais preparo.</p>
-<p>Quem se atualiza vence a disputa.</p>
-<p>Quem se certifica, avanca.</p>
-<p>Na MAEXTRIA, voce encontra cursos pensados para isso.</p>
-<p>Conteudo direto.</p>
-<p>Certificado valido.</p>
-<p>Valor muito maior do que o custo.</p>
-<p>Seu proximo movimento define seu futuro.</p>
-<p>Escolha se preparar.</p>
-<p>Escolha se certificar.</p>
-<p>Escolha crescer.</p>
-<p>O melhor momento e agora.</p>
-<p>Fim.</p>
-<h2>Plano de 30 dias para virar referencia na industria</h2>
-<p>Semana 1: escolha a skill critica.</p>
-<p>Semana 1: estude o basico.</p>
-<p>Semana 1: defina metas diarias.</p>
-<p>Semana 1: registre o progresso.</p>
-<p>Semana 2: aplique em um caso real.</p>
-<p>Semana 2: busque um mentor.</p>
-<p>Semana 2: peça feedback.</p>
-<p>Semana 2: ajuste o caminho.</p>
-<p>Semana 3: aprofunde o conteudo.</p>
-<p>Semana 3: pratique todos os dias.</p>
-<p>Semana 3: documente resultados.</p>
-<p>Semana 3: prepare uma apresentacao.</p>
-<p>Semana 4: finalize o curso.</p>
-<p>Semana 4: emita o certificado.</p>
-<p>Semana 4: atualize curriculo e perfil.</p>
-<p>Semana 4: compartilhe sua evolucao.</p>
-<p>Semana 4: busque oportunidades.</p>
-<p>Semana 4: envie candidaturas certeiras.</p>
-<p>Semana 4: seja objetivo.</p>
-<p>Semana 4: mantenha consistencia.</p>
-<p>Esse plano reduz a distancia entre voce e a vaga.</p>
-<p>Ele cria prova rapida.</p>
-<p>Ele cria tracao.</p>
-<p>Ele cria reconhecimento.</p>
-<p>Ele cria avancos reais.</p>
-<p>O segredo e simples: constancia e certificacao.</p>
-<p>Sem ambos, o mercado nao enxerga.</p>
-<p>Com ambos, o mercado chama.</p>
-<p>Esse e o jogo.</p>
-<p>Voce escolhe como jogar.</p>
-<p>Final do plano.</p>
-<p>Checklist de skills industriais:</p>
-<p>Leitura de indicadores.</p>
-<p>Registro de falhas.</p>
-<p>Padronizacao de processos.</p>
-<p>Analise de causa raiz.</p>
-<p>Controle estatistico.</p>
-<p>Rotina de melhoria.</p>
-<p>Seguranca operacional.</p>
-<p>Gestao de riscos.</p>
-<p>Automacao basica.</p>
-<p>Instrumentacao.</p>
-<p>Controle de qualidade.</p>
-<p>Gestao de tempo.</p>
-<p>Comunicacao clara.</p>
-<p>Trabalho em equipe.</p>
-<p>Leitura de dados em tempo real.</p>
-<p>Relatorios curtos.</p>
-<p>Padroes de manutencao.</p>
-<p>Procedimentos operacionais.</p>
-<p>Higiene e seguranca.</p>
-<p>Auditoria interna.</p>
-<p>Treinamento continuo.</p>
-<p>Feedback rapido.</p>
-<p>Aprendizado aplicado.</p>
-<p>Certificacao valida.</p>
-<p>Registro de evidencias.</p>
-<p>Organizacao de documentos.</p>
-<p>Disciplina diaria.</p>
-<p>Busca por eficiencia.</p>
-<p>Foco em qualidade.</p>
-<p>Foco em resultado.</p>
+<p>A industria nao desacelera. Ela exige mais tecnologia, mais processo e mais preparo.</p>
+<p>Quem se atualiza e certifica ganha prioridade e crescimento.</p>
+<p>Na MAEXTRIA, voce encontra cursos diretos, certificados e com foco real na pratica.</p>
+<p>O valor gerado e maior do que o custo. O resultado aparece na primeira oportunidade.</p>
+<p>Se o mercado industrial exige novas skills, a resposta e clara: aprenda, certifique e avance.</p>
 $$,
   'Equipe Maextria',
-  '/maextria-logo.png',
+  '/og-maextria.png',
   true,
   now()
-);
+)
+ON CONFLICT (slug) DO UPDATE SET
+  titulo = EXCLUDED.titulo,
+  resumo = EXCLUDED.resumo,
+  conteudo_html = EXCLUDED.conteudo_html,
+  autor = EXCLUDED.autor,
+  imagem_capa_url = EXCLUDED.imagem_capa_url,
+  publicado = EXCLUDED.publicado,
+  publicado_em = EXCLUDED.publicado_em,
+  atualizado_em = now();

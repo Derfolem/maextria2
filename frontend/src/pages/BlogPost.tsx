@@ -57,7 +57,7 @@ export default function BlogPost() {
 
   return (
     <div className="min-h-[calc(100vh-8rem)] bg-[hsl(var(--background))] py-12 px-[clamp(24px,5vw,80px)]">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <Link to="/blog" className="text-sm text-[hsl(var(--primary))] hover:text-[hsl(var(--foreground))]">
           Voltar ao blog
         </Link>
@@ -76,34 +76,55 @@ export default function BlogPost() {
             Artigo nao encontrado.
           </div>
         ) : (
-          <article className="card p-8 mt-6 space-y-6">
+          <article className="card p-8 mt-6 space-y-8">
             {schema && (
               <script type="application/ld+json">
                 {JSON.stringify(schema)}
               </script>
             )}
-            <div className="space-y-3">
-              <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--primary))]">{post.autor}</p>
-              <h1 className="headline-font text-3xl md:text-4xl">{post.titulo}</h1>
-              {post.publicado_em && (
-                <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                  Publicado em {new Date(post.publicado_em).toLocaleDateString('pt-BR')}
-                </p>
-              )}
-            </div>
-            {post.imagem_capa_url && (
-              <img
-                src={post.imagem_capa_url}
-                alt={post.titulo}
-                className="w-full rounded-[20px] object-cover max-h-[420px]"
-              />
-            )}
-            <div
-              className="prose prose-neutral max-w-none"
-              dangerouslySetInnerHTML={{ __html: sanitized }}
-            />
-            <div className="pt-6 border-t border-[hsl(var(--border))] text-sm text-[hsl(var(--muted-foreground))]">
-              Pronto para dar o proximo passo? Explore os cursos e certificados da MAEXTRIA.
+            <div className="grid lg:grid-cols-[1fr_0.4fr] gap-10">
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--primary))]">{post.autor}</p>
+                  <h1 className="headline-font text-3xl md:text-4xl">{post.titulo}</h1>
+                  {post.publicado_em && (
+                    <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                      Publicado em {new Date(post.publicado_em).toLocaleDateString('pt-BR')}
+                    </p>
+                  )}
+                </div>
+                {post.imagem_capa_url && (
+                  <img
+                    src={post.imagem_capa_url}
+                    alt={post.titulo}
+                    className="w-full rounded-[20px] object-cover max-h-[420px]"
+                  />
+                )}
+                <div
+                  className="prose prose-neutral max-w-none"
+                  dangerouslySetInnerHTML={{ __html: sanitized }}
+                />
+              </div>
+              <aside className="space-y-4">
+                <div className="card p-5 bg-[hsl(var(--muted))]">
+                  <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--primary))]">Proximo passo</p>
+                  <h3 className="text-lg font-semibold mt-2">Cursos + Certificados</h3>
+                  <p className="text-sm text-[hsl(var(--muted-foreground))] mt-2">
+                    Aprenda com foco, valide com certificado e leve prova real para o mercado.
+                  </p>
+                  <Link to="/courses" className="btn-accent mt-4 w-full text-center">
+                    Ver cursos
+                  </Link>
+                </div>
+                <div className="card p-5">
+                  <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--muted-foreground))]">
+                    Dica rapida
+                  </p>
+                  <p className="text-sm text-[hsl(var(--muted-foreground))] mt-2">
+                    Use o certificado como prova no curriculo, no LinkedIn e nas entrevistas. A clareza acelera convites.
+                  </p>
+                </div>
+              </aside>
             </div>
           </article>
         )}
