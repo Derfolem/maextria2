@@ -17,6 +17,7 @@ const typeLabels: Record<string, string> = {
   certificate_purchased: 'Certificado comprado',
   certificate_issued: 'Certificado emitido',
   course_suggestion: 'Sugestao de curso',
+  moderacao_conteudo: 'Moderacao de conteudo',
 };
 
 export default function AdminNotifications() {
@@ -122,6 +123,16 @@ export default function AdminNotifications() {
                   </div>
                   <p className="font-semibold">{item.titulo}</p>
                   <p className="text-sm text-[hsl(var(--muted-foreground))]">{item.descricao}</p>
+                  {item.tipo === 'moderacao_conteudo' && item.metadata && (
+                    <div className="mt-2 text-xs text-[hsl(var(--muted-foreground))] space-y-1">
+                      <p>Motivos: {(item.metadata.motivos || []).join(', ') || 'nao informado'}</p>
+                      <p>Curso: {item.metadata.curso_titulo || 'nao identificado'}</p>
+                      <p>Professor: {item.metadata.professor_nome || 'nao identificado'}</p>
+                      {item.metadata.trecho && (
+                        <p>Trecho: {item.metadata.trecho}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <span className="text-sm text-[hsl(var(--muted-foreground))] whitespace-nowrap">
                   {formatTimeAgo(item.criado_em)}
