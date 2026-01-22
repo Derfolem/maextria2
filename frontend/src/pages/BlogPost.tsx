@@ -1,0 +1,113 @@
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import DOMPurify from 'dompurify';
+import { supabase } from '../lib/supabase';
+import { createArticleSchema } from '../components/AdvancedSchemas';
+
+type BlogPost = {
+  id: string;
+  titulo: string;
+  slug: string;
+  resumo: string | null;
+  conteudo_html: string;
+  autor: string;
+  imagem_capa_url: string | null;
+  publicado_em: string | null;
+  atualizado_em: string | null;
+};
+
+export default function BlogPost() {
+  const { slug } = useParams();
+  const [post, setPost] = useState<BlogPost | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      if (!slug) return;
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('blog_posts')
+        .select('id, titulo, slug, resumo, conteudo_html, autor, imagem_capa_url, publicado_em, atualizado_em')
+        .eq('slug', slug)
+        .eq('publicado', true)
+        .maybeSingle();
+      if (!error) {
+        setPost(data || null);
+      }
+      setLoading(false);
+    };
+    load();
+  }, [slug]);
+
+  const sanitized = useMemo(() => (
+    post?.conteudo_html ? DOMPurify.sanitize(post.conteudo_html) : ''
+  ), [post?.conteudo_html]);
+
+  const schema = useMemo(() => {
+    if (!post?.publicado_em) return null;
+    return createArticleSchema({
+      headline: post.titulo,
+      image: post.imagem_capa_url || 'https://www.maextria.com.br/maextria-logo.png',
+      datePublished: post.publicado_em,
+      dateModified: post.atualizado_em || post.publicado_em,
+      author: post.autor,
+      description: post.resumo || '',
+    });
+  }, [post]);
+
+  return (
+    <div className="min-h-[calc(100vh-8rem)] bg-[hsl(var(--background))] py-12 px-[clamp(24px,5vw,80px)]">
+      <div className="max-w-4xl mx-auto">
+        <Link to="/blog" className="text-sm text-[hsl(var(--primary))] hover:text-[hsl(var(--foreground))]">
+          Voltar ao blog
+        </Link>
+
+        {loading ? (
+          <div className="card p-8 mt-6">
+            <div className="h-6 w-2/3 bg-gray-200 rounded mb-3 shimmer" />
+            <div className="h-4 w-1/3 bg-gray-200 rounded mb-6 shimmer" />
+            <div className="h-44 bg-gray-200 rounded mb-6 shimmer" />
+            <div className="h-4 bg-gray-200 rounded mb-2 shimmer" />
+            <div className="h-4 bg-gray-200 rounded mb-2 shimmer" />
+            <div className="h-4 bg-gray-200 rounded shimmer" />
+          </div>
+        ) : !post ? (
+          <div className="card p-8 mt-6 text-[hsl(var(--muted-foreground))]">
+            Artigo nao encontrado.
+          </div>
+        ) : (
+          <article className="card p-8 mt-6 space-y-6">
+            {schema && (
+              <script type="application/ld+json">
+                {JSON.stringify(schema)}
+              </script>
+            )}
+            <div className="space-y-3">
+              <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--primary))]">{post.autor}</p>
+              <h1 className="headline-font text-3xl md:text-4xl">{post.titulo}</h1>
+              {post.publicado_em && (
+                <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                  Publicado em {new Date(post.publicado_em).toLocaleDateString('pt-BR')}
+                </p>
+              )}
+            </div>
+            {post.imagem_capa_url && (
+              <img
+                src={post.imagem_capa_url}
+                alt={post.titulo}
+                className="w-full rounded-[20px] object-cover max-h-[420px]"
+              />
+            )}
+            <div
+              className="prose prose-neutral max-w-none"
+              dangerouslySetInnerHTML={{ __html: sanitized }}
+            />
+            <div className="pt-6 border-t border-[hsl(var(--border))] text-sm text-[hsl(var(--muted-foreground))]">
+              Pronto para dar o proximo passo? Explore os cursos e certificados da MAEXTRIA.
+            </div>
+          </article>
+        )}
+      </div>
+    </div>
+  );
+}

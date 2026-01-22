@@ -10,6 +10,8 @@ const Register = lazy(() => import('./pages/Register'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const Courses = lazy(() => import('./pages/Courses'));
 const CourseDetail = lazy(() => import('./pages/CourseDetail'));
+const Blog = lazy(() => import('./pages/Blog'));
+const BlogPost = lazy(() => import('./pages/BlogPost'));
 const Settings = lazy(() => import('./pages/Settings'));
 const PagamentoCertificado = lazy(() => import('./pages/PagamentoCertificado'));
 const VerificarCertificado = lazy(() => import('./pages/VerificarCertificado'));
@@ -31,6 +33,7 @@ const AdminSettings = lazy(() => import('./pages/admin/Settings'));
 const AdminNotifications = lazy(() => import('./pages/admin/Notifications'));
 const AdminPayments = lazy(() => import('./pages/admin/Payments'));
 const AdminModeracao = lazy(() => import('./pages/admin/Moderacao'));
+const AdminBlog = lazy(() => import('./pages/admin/Blog'));
 const TeacherLanding = lazy(() => import('./pages/TeacherLanding'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
@@ -80,6 +83,8 @@ function App() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/courses" element={<Courses />} />
           <Route path="/courses/:id" element={<CourseDetail />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:slug" element={<BlogPost />} />
           <Route path="/sou-professor" element={<TeacherLanding />} />
           <Route path="/verificar-certificado" element={<VerificarCertificado />} />
           <Route path="/privacidade" element={<PrivacyPolicy />} />
@@ -254,6 +259,14 @@ function App() {
             element={
               <ProtectedRoute roles={['admin']}>
                 <AdminModeracao />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/blog"
+            element={
+              <ProtectedRoute roles={['admin']}>
+                <AdminBlog />
               </ProtectedRoute>
             }
           />

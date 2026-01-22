@@ -376,6 +376,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <FaBook />
                 <span>Cursos</span>
               </Link>
+              <Link to="/blog" className="nav-link">
+                Blog
+              </Link>
               <Link to="/verificar-certificado" className="nav-link">
                 Verificar certificado
               </Link>
@@ -453,6 +456,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <Link to="/courses" className="nav-link" onClick={() => setMobileOpen(false)}>
               Cursos
             </Link>
+            <Link to="/blog" className="nav-link" onClick={() => setMobileOpen(false)}>
+              Blog
+            </Link>
             <Link to="/verificar-certificado" className="nav-link" onClick={() => setMobileOpen(false)}>
               Verificar certificado
             </Link>
@@ -499,6 +505,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <>
                     <Link to="/admin/notifications" className="nav-link" onClick={() => setMobileOpen(false)}>
                       Notificacoes
+                    </Link>
+                    <Link to="/admin/blog" className="nav-link" onClick={() => setMobileOpen(false)}>
+                      Blog
                     </Link>
                     <Link to="/admin/settings" className="nav-link" onClick={() => setMobileOpen(false)}>
                       Sistema
