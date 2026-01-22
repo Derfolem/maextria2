@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
 
-  <!-- Página principal -->
+  <!-- Página Principal -->
   <url>
     <loc>https://www.maextria.com.br/</loc>
     <lastmod>2026-01-22</lastmod>
@@ -10,7 +10,7 @@
     <priority>1.0</priority>
   </url>
 
-  <!-- Catálogo de cursos -->
+  <!-- Catálogo de Cursos -->
   <url>
     <loc>https://www.maextria.com.br/courses</loc>
     <lastmod>2026-01-22</lastmod>
@@ -18,7 +18,7 @@
     <priority>0.9</priority>
   </url>
 
-  <!-- Landing page professores -->
+  <!-- Landing Professores -->
   <url>
     <loc>https://www.maextria.com.br/sou-professor</loc>
     <lastmod>2026-01-22</lastmod>
@@ -26,7 +26,7 @@
     <priority>0.8</priority>
   </url>
 
-  <!-- Verificação de certificados -->
+  <!-- Verificação de Certificados -->
   <url>
     <loc>https://www.maextria.com.br/verificar-certificado</loc>
     <lastmod>2026-01-22</lastmod>
@@ -34,7 +34,7 @@
     <priority>0.6</priority>
   </url>
 
-  <!-- Páginas de autenticação -->
+  <!-- Páginas de Auth -->
   <url>
     <loc>https://www.maextria.com.br/login</loc>
     <lastmod>2026-01-22</lastmod>
@@ -56,6 +56,4 @@
     <priority>0.3</priority>
   </url>
 
-  <!-- NOTA: URLs de cursos individuais devem ser adicionadas dinamicamente
-       quando novos cursos forem criados. Prioridade sugerida: 0.8 -->
 </urlset>
