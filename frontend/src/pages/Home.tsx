@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { Course } from '../types';
 import { normalizeCourse } from '../lib/normalizeCourse';
 import { SEO, createOrganizationSchema, createWebSiteSchema } from '../components/SEO';
+import { createFAQSchema, createHowToSchema } from '../components/AdvancedSchemas';
 
 const HomeBelowFold = lazy(() => import('./home/HomeBelowFold'));
 
@@ -51,13 +52,15 @@ export default function Home() {
 
   const fallbackImages = ['/hero-01.png', '/hero-02.png', '/hero-03.png', '/hero-04.png'];
 
-  // Schema.org para SEO
+  // Schema.org para SEO - Múltiplos schemas para rich snippets
   const organizationSchema = createOrganizationSchema();
   const websiteSchema = createWebSiteSchema();
+  const faqSchema = createFAQSchema();
+  const howToSchema = createHowToSchema();
 
   const schema = {
     '@context': 'https://schema.org',
-    '@graph': [organizationSchema, websiteSchema],
+    '@graph': [organizationSchema, websiteSchema, faqSchema, howToSchema],
   };
 
   return (

@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { initDatabase } from './database/schema';
 import routes from './routes';
+import sitemapRouter from './routes/sitemap';
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -95,6 +96,9 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// Sitemap dinâmico (público, sem rate limit)
+app.use('/', sitemapRouter);
 
 // Rotas da API
 app.use('/api', routes);

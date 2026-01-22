@@ -1,3 +1,63 @@
+# Robots.txt Avançado - MAEXTRIA
+# Otimizado para melhor crawling e indexação
+
+# === GOOGLE BOT (Principal) ===
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+# === GOOGLE BOT MOBILE ===
+User-agent: Googlebot-Mobile
+Allow: /
+Crawl-delay: 0
+
+# === GOOGLE IMAGE ===
+User-agent: Googlebot-Image
+Allow: /
+Disallow: /banners/
+
+# === BING BOT ===
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# === OUTROS BOTS PERMITIDOS ===
+User-agent: Slurp
+User-agent: DuckDuckBot
+User-agent: Baiduspider
+Allow: /
+Crawl-delay: 2
+
+# === BLOQUEAR BOTS MALICIOSOS ===
+User-agent: AhrefsBot
+User-agent: SemrushBot
+User-agent: DotBot
+User-agent: MJ12bot
+Disallow: /
+
+# === TODOS OS OUTROS ===
 User-agent: *
 Allow: /
+
+# === BLOQUEIOS (áreas privadas) ===
+Disallow: /admin/
+Disallow: /teacher/dashboard
+Disallow: /student/dashboard
+Disallow: /api/
+Disallow: /*/settings
+Disallow: /*/payment
+Disallow: /checkout
+
+# === PERMITIR CRAWLING (importante!) ===
+Allow: /
+Allow: /courses
+Allow: /course/
+Allow: /sou-professor
+Allow: /verificar-certificado
+
+# === SITEMAP ===
 Sitemap: https://www.maextria.com.br/sitemap.xml
+Sitemap: https://www.maextria.com.br/api/sitemap.xml
+
+# === HOST (preferência de domínio) ===
+Host: https://www.maextria.com.br
