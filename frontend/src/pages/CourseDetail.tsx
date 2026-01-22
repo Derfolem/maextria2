@@ -6,6 +6,8 @@ import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { FaBook, FaCheckCircle, FaUser } from 'react-icons/fa';
 import { normalizeCourse } from '../lib/normalizeCourse';
+import { SEO, createCourseSchema, createBreadcrumbSchema } from '../components/SEO';
+import { trackCourseView, trackEnrollment } from '../lib/analytics';
 
 export default function CourseDetail() {
   const { id } = useParams();
@@ -66,6 +68,9 @@ export default function CourseDetail() {
       });
 
       setCourse(normalized);
+
+      // Rastrear visualização do curso no Google Analytics
+      trackCourseView(String(normalized.id), normalized.title, normalized.category);
     } catch (error) {
       toast.error('Erro ao carregar curso');
     } finally {
@@ -111,6 +116,12 @@ export default function CourseDetail() {
       }
       toast.success('Inscrição realizada com sucesso!');
       setIsEnrolled(true);
+
+      // Rastrear matrícula como conversão no Google Analytics
+      if (course) {
+        trackEnrollment(String(course.id), course.title, course.price || 0);
+      }
+
       navigate('/student/my-courses');
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao se inscrever');
@@ -140,8 +151,53 @@ export default function CourseDetail() {
     );
   }
 
+  // Preparar dados para SEO
+  const courseUrl = `https://www.maextria.com.br/course/${course.id}`;
+  const courseImage = course.thumbnail || 'https://www.maextria.com.br/maextria-logo.png';
+  const courseDescription = course.description || `Aprenda ${course.title} com certificado reconhecido. Acesso vitalício e suporte especializado.`;
+
+  // Schema.org para o curso
+  const courseSchema = createCourseSchema({
+    name: course.title,
+    description: courseDescription,
+    url: courseUrl,
+    image: courseImage,
+    price: course.price || 0,
+    instructor: 'MAEXTRIA',
+    duration: `${course.duration_hours || 0}h`,
+    level: course.level || 'Iniciante',
+  });
+
+  // Breadcrumb para navegação
+  const breadcrumbSchema = createBreadcrumbSchema([
+    { name: 'Home', url: 'https://www.maextria.com.br/' },
+    { name: 'Cursos', url: 'https://www.maextria.com.br/courses' },
+    { name: course.title, url: courseUrl },
+  ]);
+
+  const schema = {
+    '@context': 'https://schema.org',
+    '@graph': [courseSchema, breadcrumbSchema],
+  };
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-12">
+    <>
+      <SEO
+        title={`${course.title} - Curso Online com Certificado | MAEXTRIA`}
+        description={courseDescription}
+        url={courseUrl}
+        image={courseImage}
+        type="course"
+        schema={schema}
+        keywords={[
+          'curso online',
+          'certificado reconhecido',
+          course.category || 'educação',
+          course.title,
+          'MAEXTRIA'
+        ]}
+      />
+      <div className="max-w-7xl mx-auto px-4 py-12">
       <div className="grid lg:grid-cols-[1.4fr_0.6fr] gap-10">
         <div>
           <div className="w-full aspect-[2/3] rounded-[28px] mb-8 overflow-hidden bg-[hsl(var(--foreground))] text-white flex items-center justify-center text-6xl font-bold">
@@ -245,5 +301,6 @@ export default function CourseDetail() {
         </div>
       </div>
     </div>
+    </>
   );
 }

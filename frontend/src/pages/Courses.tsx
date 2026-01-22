@@ -4,6 +4,7 @@ import { Course } from '../types';
 import { supabase } from '../lib/supabase';
 import { FaSearch } from 'react-icons/fa';
 import { normalizeCourse } from '../lib/normalizeCourse';
+import { SEO } from '../components/SEO';
 
 export default function Courses() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -37,8 +38,24 @@ export default function Courses() {
   );
 
   return (
-    <div>
-      <section className="relative overflow-hidden">
+    <>
+      <SEO
+        title="Cursos Online com Certificado Reconhecido | MAEXTRIA"
+        description="Explore nossa biblioteca com centenas de cursos online. Tecnologia, programação, negócios, design e desenvolvimento pessoal. Certificados reconhecidos e acesso vitalício."
+        url="https://www.maextria.com.br/courses"
+        image="https://www.maextria.com.br/maextria-logo.png"
+        keywords={[
+          'catálogo de cursos',
+          'cursos online certificados',
+          'cursos de tecnologia',
+          'cursos de programação',
+          'cursos online brasil',
+          'plataforma de cursos',
+          'educação online'
+        ]}
+      />
+      <div>
+        <section className="relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-[clamp(24px,5vw,80px)] py-[clamp(80px,10vh,160px)]">
           <div className="flex flex-col items-center text-center gap-6">
             <p className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--primary))]">Catálogo MAEXTRIA</p>
@@ -134,5 +151,6 @@ export default function Courses() {
         )}
       </section>
     </div>
+    </>
   );
 }

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { Course } from '../types';
 import { normalizeCourse } from '../lib/normalizeCourse';
+import { SEO, createOrganizationSchema, createWebSiteSchema } from '../components/SEO';
 
 const HomeBelowFold = lazy(() => import('./home/HomeBelowFold'));
 
@@ -50,8 +51,36 @@ export default function Home() {
 
   const fallbackImages = ['/hero-01.png', '/hero-02.png', '/hero-03.png', '/hero-04.png'];
 
+  // Schema.org para SEO
+  const organizationSchema = createOrganizationSchema();
+  const websiteSchema = createWebSiteSchema();
+
+  const schema = {
+    '@context': 'https://schema.org',
+    '@graph': [organizationSchema, websiteSchema],
+  };
+
   return (
-    <div>
+    <>
+      <SEO
+        title="MAEXTRIA - Plataforma de Cursos Online | Aprenda com Certificado Reconhecido"
+        description="Aprenda com os melhores cursos online do Brasil. Certificados reconhecidos, conteúdo atualizado, suporte com IA e acesso vitalício. Comece grátis hoje!"
+        url="https://www.maextria.com.br/"
+        image="https://www.maextria.com.br/maextria-logo.png"
+        schema={schema}
+        keywords={[
+          'cursos online',
+          'educação a distância',
+          'certificados reconhecidos',
+          'plataforma de ensino',
+          'cursos de tecnologia',
+          'programação',
+          'inteligência artificial',
+          'desenvolvimento pessoal',
+          'cursos profissionalizantes'
+        ]}
+      />
+      <div>
       <section className="hero-gradient text-white">
         <div className="hero-grid">
           <div className="max-w-7xl mx-auto px-[clamp(24px,5vw,80px)] py-[clamp(80px,10vh,160px)] lg:py-[clamp(120px,14vh,200px)]">
@@ -230,5 +259,6 @@ export default function Home() {
         />
       </Suspense>
     </div>
+    </>
   );
 }

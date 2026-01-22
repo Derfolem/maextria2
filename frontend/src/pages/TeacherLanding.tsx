@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaArrowRight, FaChartLine, FaHandshake, FaShieldAlt, FaStar } from 'react-icons/fa';
 import { supabase } from '../lib/supabase';
+import { SEO } from '../components/SEO';
 
 export default function TeacherLanding() {
   const [teacherBanner, setTeacherBanner] = useState({
@@ -62,8 +63,33 @@ export default function TeacherLanding() {
     loadTeacherBanner();
   }, []);
 
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    'name': 'Seja um Professor na MAEXTRIA',
+    'description': 'Compartilhe seu conhecimento e ganhe dinheiro ensinando online. Junte-se a milhares de professores na MAEXTRIA.',
+    'url': 'https://www.maextria.com.br/sou-professor',
+  };
+
   return (
-    <div>
+    <>
+      <SEO
+        title="Seja um Professor | Ensine Online e Ganhe Dinheiro | MAEXTRIA"
+        description="Compartilhe seu conhecimento e ganhe dinheiro ensinando online. Plataforma completa, suporte técnico e milhares de alunos esperando por você. Cadastre-se grátis!"
+        url="https://www.maextria.com.br/sou-professor"
+        image="https://www.maextria.com.br/maextria-logo.png"
+        schema={schema}
+        keywords={[
+          'ser professor online',
+          'ensinar online',
+          'criar cursos online',
+          'ganhar dinheiro ensinando',
+          'plataforma para professores',
+          'vender cursos online',
+          'monetizar conhecimento'
+        ]}
+      />
+      <div>
       {teacherBanner.enabled && teacherBanner.imageUrl && (
         <section className="w-full">
           {teacherBanner.linkUrl ? (
@@ -311,5 +337,6 @@ export default function TeacherLanding() {
         </div>
       </section>
     </div>
+    </>
   );
 }
