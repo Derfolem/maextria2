@@ -121,7 +121,13 @@ export const createCourseSchema = (course: {
   'timeRequired': course.duration,
 });
 
-export const createOrganizationSchema = () => ({
+export const createOrganizationSchema = (socialLinks?: {
+  instagram?: string;
+  linkedin?: string;
+  youtube?: string;
+  facebook?: string;
+  twitter?: string;
+}) => ({
   '@context': 'https://schema.org',
   '@type': 'EducationalOrganization',
   'name': 'MAEXTRIA',
@@ -132,12 +138,16 @@ export const createOrganizationSchema = () => ({
     '@type': 'PostalAddress',
     'addressCountry': 'BR',
   },
+  'contactPoint': {
+    '@type': 'ContactPoint',
+    'contactType': 'customer service',
+    'availableLanguage': 'Portuguese',
+  },
   'sameAs': [
-    // Adicione suas redes sociais aqui
-    // 'https://www.facebook.com/maextria',
-    // 'https://www.instagram.com/maextria',
-    // 'https://www.linkedin.com/company/maextria',
-  ],
+    socialLinks?.instagram || 'https://www.instagram.com/maextria.cursos',
+    socialLinks?.linkedin || 'https://www.linkedin.com/company/maextria',
+    socialLinks?.youtube || 'https://www.youtube.com/@maextria',
+  ].filter(Boolean),
 });
 
 export const createWebSiteSchema = () => ({

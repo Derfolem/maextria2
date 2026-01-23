@@ -8,6 +8,7 @@ import { FaBook, FaCheckCircle, FaUser } from 'react-icons/fa';
 import { normalizeCourse } from '../lib/normalizeCourse';
 import { SEO, createCourseSchema, createBreadcrumbSchema } from '../components/SEO';
 import { trackCourseView, trackEnrollment } from '../lib/analytics';
+import { Breadcrumb } from '../components/Breadcrumb';
 
 export default function CourseDetail() {
   const { id } = useParams();
@@ -198,6 +199,15 @@ export default function CourseDetail() {
         ]}
       />
       <div className="max-w-7xl mx-auto px-4 py-12">
+      {/* Breadcrumb visual */}
+      <Breadcrumb
+        items={[
+          { label: 'Cursos', href: '/courses' },
+          { label: course.title },
+        ]}
+        className="mb-6"
+      />
+
       <div className="grid lg:grid-cols-[1.4fr_0.6fr] gap-10">
         <div>
           <div className="w-full aspect-[2/3] rounded-[28px] mb-8 overflow-hidden bg-[hsl(var(--foreground))] text-white flex items-center justify-center text-6xl font-bold">
@@ -205,6 +215,7 @@ export default function CourseDetail() {
               <img
                 src={course.thumbnail}
                 alt={course.title}
+                loading="lazy"
                 decoding="async"
                 width={1280}
                 height={720}

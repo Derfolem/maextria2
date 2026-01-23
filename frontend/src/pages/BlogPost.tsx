@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import DOMPurify from 'dompurify';
 import { supabase } from '../lib/supabase';
 import { createArticleSchema } from '../components/AdvancedSchemas';
+import { Breadcrumb } from '../components/Breadcrumb';
+import { Link } from 'react-router-dom';
 
 type BlogPost = {
   id: string;
@@ -58,9 +60,14 @@ export default function BlogPost() {
   return (
     <div className="min-h-[calc(100vh-8rem)] bg-[hsl(var(--background))] py-12 px-[clamp(24px,5vw,80px)]">
       <div className="max-w-6xl mx-auto">
-        <Link to="/blog" className="text-sm text-[hsl(var(--primary))] hover:text-[hsl(var(--foreground))]">
-          Voltar ao blog
-        </Link>
+        {/* Breadcrumb visual */}
+        <Breadcrumb
+          items={[
+            { label: 'Blog', href: '/blog' },
+            { label: post?.titulo || 'Artigo' },
+          ]}
+          className="mb-6"
+        />
 
         {loading ? (
           <div className="card p-8 mt-6">
@@ -97,6 +104,10 @@ export default function BlogPost() {
                   <img
                     src={post.imagem_capa_url}
                     alt={post.titulo}
+                    loading="lazy"
+                    decoding="async"
+                    width={800}
+                    height={420}
                     className="w-full rounded-[20px] object-cover max-h-[420px]"
                   />
                 )}

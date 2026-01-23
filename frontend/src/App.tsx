@@ -37,6 +37,7 @@ const AdminBlog = lazy(() => import('./pages/admin/Blog'));
 const TeacherLanding = lazy(() => import('./pages/TeacherLanding'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 
 function ProtectedRoute({ children, roles }: { children: React.ReactNode; roles?: string[] }) {
   const { isAuthenticated, user, isLoading } = useAuthStore();
@@ -270,6 +271,9 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* Rota 404 - deve ser a ultima */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
     </Layout>

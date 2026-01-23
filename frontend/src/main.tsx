@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import App from './App';
 import './index.css';
 import { initGA } from './lib/analytics';
+import { reportWebVitals } from './lib/webVitals';
 
 const rootElement = document.getElementById('root');
 
@@ -16,6 +17,9 @@ if (!rootElement) {
 if (import.meta.env.PROD && import.meta.env.VITE_GA_MEASUREMENT_ID) {
   initGA();
 }
+
+// Rastrear Core Web Vitals (FCP, LCP, CLS, FID, TTFB, INP)
+reportWebVitals();
 
 const app = (
   <React.StrictMode>

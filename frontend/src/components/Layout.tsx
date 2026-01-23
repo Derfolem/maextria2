@@ -353,6 +353,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <img
               src="/hero-10.png"
               alt="Pessoa trabalhando na manutencao"
+              loading="lazy"
+              decoding="async"
+              width={600}
+              height={400}
               className="w-full rounded-[20px]"
             />
           </div>
@@ -423,6 +427,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <img
                   src={banner.imageUrl}
                   alt={banner.alt}
+                  loading="lazy"
+                  decoding="async"
                   className="block h-auto w-full"
                 />
               </a>
@@ -430,6 +436,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <img
                 src={banner.imageUrl}
                 alt={banner.alt}
+                loading="lazy"
+                decoding="async"
                 className="block h-auto w-full"
               />
             )}
