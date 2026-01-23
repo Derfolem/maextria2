@@ -101,21 +101,21 @@ export default function Blog() {
                   to={`/blog/${featured.slug}`}
                   className="card p-0 overflow-hidden grid md:grid-cols-[1.15fr_0.85fr] group"
                 >
-                  <div className="relative p-8 space-y-4 text-[hsl(var(--foreground))] overflow-hidden">
+                  <div className="relative p-8 space-y-4 overflow-hidden text-slate-900">
                     <div
-                      className="absolute inset-0 bg-cover bg-center opacity-20"
+                      className="absolute inset-0 bg-cover bg-center opacity-25"
                       style={{ backgroundImage: `url(${featured.imagem_capa_url || '/og-maextria.png'})` }}
                     />
-                    <div className="absolute inset-0 bg-white/70 backdrop-blur-xl" />
+                    <div className="absolute inset-0 bg-white/85 backdrop-blur-xl" />
                     <div className="relative space-y-4">
-                      <p className="text-xs uppercase tracking-[0.25em] text-[hsl(var(--foreground))]/70">
-                      Destaque editorial
+                      <p className="text-xs uppercase tracking-[0.25em] text-slate-500">
+                        Destaque editorial
                       </p>
                       <h2 className="headline-font text-3xl md:text-4xl group-hover:text-[hsl(var(--primary))] transition">
                         {featured.titulo}
                       </h2>
-                      <p className="text-[hsl(var(--foreground))]/80 text-lg">{featured.resumo}</p>
-                      <div className="flex items-center gap-4 text-xs uppercase tracking-[0.2em] text-[hsl(var(--foreground))]/70">
+                      <p className="text-slate-700 text-lg">{featured.resumo}</p>
+                      <div className="flex items-center gap-4 text-xs uppercase tracking-[0.2em] text-slate-500">
                         <span>{featured.autor}</span>
                         {featured.publicado_em && (
                           <span>{new Date(featured.publicado_em).toLocaleDateString('pt-BR')}</span>
@@ -135,22 +135,24 @@ export default function Blog() {
                     />
                   </div>
                 </Link>
-                <div className="card p-6 space-y-4">
-                  <img
-                    src="/blog/trilha-futuro.svg"
-                    alt="Trilha guiada"
-                    loading="lazy"
-                    decoding="async"
-                    width={480}
-                    height={240}
-                    className="w-full h-32 rounded-[16px] object-cover"
-                  />
-                  <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--primary))]">Leitura guiada</p>
+                <div
+                  className="card relative overflow-hidden p-6 space-y-4"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(135deg, rgba(15,23,42,0.92), rgba(30,41,59,0.9)), url('/blog/trilha-futuro.svg')",
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                  }}
+                >
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.25),_transparent_55%)]" />
+                  <div className="relative space-y-4 text-white">
+                    <p className="text-xs uppercase tracking-[0.3em] text-white/70">Leitura guiada</p>
                   <p className="text-lg font-semibold">Sua proxima habilidade em 30 dias</p>
-                  <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                  <p className="text-sm text-white/80">
                     Descubra como escolher a trilha certa, criar prova pratica e acelerar sua entrada em vagas reais.
                   </p>
                   <Link to="/courses" className="btn-accent w-full text-center">Explorar trilhas</Link>
+                  </div>
                 </div>
               </section>
             )}
