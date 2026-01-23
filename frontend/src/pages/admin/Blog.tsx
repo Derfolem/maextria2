@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
+import { createClient } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
+import { useAuthStore } from '../../lib/store';
 
 type BlogPost = {
   id: string;
@@ -41,6 +43,20 @@ export default function AdminBlog() {
   const [current, setCurrent] = useState<BlogPost>(emptyPost);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const token = useAuthStore((state) => state.token);
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  const adminClient = useMemo(() => {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return supabase;
+    }
+    if (!token) {
+      return supabase;
+    }
+    return createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    });
+  }, [token, supabaseUrl, supabaseAnonKey]);
 
   useEffect(() => {
     loadPosts();
@@ -48,7 +64,7 @@ export default function AdminBlog() {
 
   const loadPosts = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await adminClient
       .from('blog_posts')
       .select('id, titulo, slug, resumo, conteudo_html, autor, imagem_capa_url, publicado, publicado_em, atualizado_em')
       .order('criado_em', { ascending: false });
@@ -109,14 +125,14 @@ export default function AdminBlog() {
       };
 
       if (hasCurrent) {
-        const { error } = await supabase
+        const { error } = await adminClient
           .from('blog_posts')
           .update(payload)
           .eq('id', current.id);
         if (error) throw error;
         toast.success('Post atualizado.');
       } else {
-        const { data, error } = await supabase
+        const { data, error } = await adminClient
           .from('blog_posts')
           .insert(payload)
           .select('id')
