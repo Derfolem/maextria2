@@ -101,19 +101,26 @@ export default function Blog() {
                   to={`/blog/${featured.slug}`}
                   className="card p-0 overflow-hidden grid md:grid-cols-[1.15fr_0.85fr] group"
                 >
-                  <div className="p-8 space-y-4">
-                    <p className="text-xs uppercase tracking-[0.25em] text-[hsl(var(--muted-foreground))]">
+                  <div className="relative p-8 space-y-4 text-[hsl(var(--foreground))] overflow-hidden">
+                    <div
+                      className="absolute inset-0 bg-cover bg-center opacity-20"
+                      style={{ backgroundImage: `url(${featured.imagem_capa_url || '/og-maextria.png'})` }}
+                    />
+                    <div className="absolute inset-0 bg-white/70 backdrop-blur-xl" />
+                    <div className="relative space-y-4">
+                      <p className="text-xs uppercase tracking-[0.25em] text-[hsl(var(--foreground))]/70">
                       Destaque editorial
-                    </p>
-                    <h2 className="headline-font text-3xl md:text-4xl group-hover:text-[hsl(var(--primary))] transition">
-                      {featured.titulo}
-                    </h2>
-                    <p className="text-[hsl(var(--muted-foreground))] text-lg">{featured.resumo}</p>
-                    <div className="flex items-center gap-4 text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))]">
-                      <span>{featured.autor}</span>
-                      {featured.publicado_em && (
-                        <span>{new Date(featured.publicado_em).toLocaleDateString('pt-BR')}</span>
-                      )}
+                      </p>
+                      <h2 className="headline-font text-3xl md:text-4xl group-hover:text-[hsl(var(--primary))] transition">
+                        {featured.titulo}
+                      </h2>
+                      <p className="text-[hsl(var(--foreground))]/80 text-lg">{featured.resumo}</p>
+                      <div className="flex items-center gap-4 text-xs uppercase tracking-[0.2em] text-[hsl(var(--foreground))]/70">
+                        <span>{featured.autor}</span>
+                        {featured.publicado_em && (
+                          <span>{new Date(featured.publicado_em).toLocaleDateString('pt-BR')}</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="min-h-[260px] bg-[hsl(var(--muted))]">
@@ -129,6 +136,15 @@ export default function Blog() {
                   </div>
                 </Link>
                 <div className="card p-6 space-y-4">
+                  <img
+                    src="/blog/trilha-futuro.svg"
+                    alt="Trilha guiada"
+                    loading="lazy"
+                    decoding="async"
+                    width={480}
+                    height={240}
+                    className="w-full h-32 rounded-[16px] object-cover"
+                  />
                   <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--primary))]">Leitura guiada</p>
                   <p className="text-lg font-semibold">Sua proxima habilidade em 30 dias</p>
                   <p className="text-sm text-[hsl(var(--muted-foreground))]">
