@@ -35,24 +35,46 @@ export default function Blog() {
   }, []);
 
   return (
-    <div className="min-h-[calc(100vh-8rem)] bg-[hsl(var(--background))] py-12 px-[clamp(24px,5vw,80px)]">
-      <div className="max-w-6xl mx-auto space-y-12">
-        <section className="relative overflow-hidden rounded-[28px] bg-[hsl(var(--foreground))] text-[hsl(var(--background))]">
-          <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--primary))]/60 via-transparent to-[hsl(var(--accent))]/40" />
-          <div className="relative p-10 md:p-14 grid gap-6 md:grid-cols-[1.2fr_0.8fr] items-center">
-            <div className="space-y-4">
-              <p className="text-xs uppercase tracking-[0.35em] text-white/70">Blog MAEXTRIA</p>
-              <h1 className="headline-font text-4xl md:text-5xl">Insights que viram movimento de carreira</h1>
-              <p className="text-white/80">
-                Conteudos densos e aplicaveis sobre mercado, certificacoes e habilidades que aceleram sua evolucao.
+    <div className="relative min-h-[calc(100vh-8rem)] bg-[hsl(var(--background))] py-12 px-[clamp(24px,5vw,80px)] overflow-hidden">
+      <div className="pointer-events-none absolute -top-20 right-[-10%] h-80 w-80 rounded-full bg-[hsl(var(--primary))]/20 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-24 left-[-10%] h-96 w-96 rounded-full bg-[hsl(var(--accent))]/20 blur-3xl" />
+      <div className="relative max-w-6xl mx-auto space-y-12">
+        <section className="relative overflow-hidden rounded-[32px] bg-[hsl(var(--foreground))] text-[hsl(var(--background))]">
+          <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--primary))]/65 via-transparent to-[hsl(var(--accent))]/45" />
+          <div className="relative p-10 md:p-14 grid gap-8 lg:grid-cols-[1.15fr_0.85fr] items-center">
+            <div className="space-y-5">
+              <p className="text-xs uppercase tracking-[0.4em] text-white/70">Blog MAEXTRIA</p>
+              <h1 className="headline-font text-4xl md:text-5xl leading-tight">
+                Insights que viram movimento de carreira
+              </h1>
+              <p className="text-white/80 text-lg">
+                Conteudos densos, com decisao clara. Mercado, certificacoes e habilidades que aceleram sua evolucao.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link to="/courses" className="btn-accent">Ver cursos</Link>
                 <Link to="/blog" className="btn-outline text-white border-white/40">Ler blog</Link>
               </div>
+              <div className="grid grid-cols-2 gap-4 pt-4 text-sm text-white/70">
+                <div className="rounded-2xl bg-white/10 p-4">
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/60">Trilhas</p>
+                  <p className="text-lg font-semibold">Certificadas</p>
+                </div>
+                <div className="rounded-2xl bg-white/10 p-4">
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/60">Foco</p>
+                  <p className="text-lg font-semibold">Aplicacao real</p>
+                </div>
+              </div>
             </div>
-            <div className="hidden md:block">
-              <img src="/og-maextria.png" alt="Blog MAEXTRIA" loading="lazy" decoding="async" width={600} height={400} className="w-full rounded-[22px] shadow-2xl" />
+            <div className="hidden lg:block">
+              <img
+                src="/og-maextria.png"
+                alt="Blog MAEXTRIA"
+                loading="lazy"
+                decoding="async"
+                width={600}
+                height={400}
+                className="w-full rounded-[24px] shadow-2xl border border-white/10"
+              />
             </div>
           </div>
         </section>
@@ -74,38 +96,58 @@ export default function Blog() {
         ) : (
           <>
             {featured && (
-              <Link
-                to={`/blog/${featured.slug}`}
-                className="card p-0 overflow-hidden grid md:grid-cols-[1.1fr_0.9fr] group"
-              >
-                <div className="p-8 space-y-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))]">
-                    Destaque
-                  </p>
-                  <h2 className="headline-font text-3xl md:text-4xl group-hover:text-[hsl(var(--primary))] transition">
-                    {featured.titulo}
-                  </h2>
-                  <p className="text-[hsl(var(--muted-foreground))]">{featured.resumo}</p>
-                  <div className="flex items-center gap-4 text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))]">
-                    <span>{featured.autor}</span>
-                    {featured.publicado_em && (
-                      <span>{new Date(featured.publicado_em).toLocaleDateString('pt-BR')}</span>
-                    )}
+              <section className="grid lg:grid-cols-[1.4fr_0.6fr] gap-6">
+                <Link
+                  to={`/blog/${featured.slug}`}
+                  className="card p-0 overflow-hidden grid md:grid-cols-[1.15fr_0.85fr] group"
+                >
+                  <div className="p-8 space-y-4">
+                    <p className="text-xs uppercase tracking-[0.25em] text-[hsl(var(--muted-foreground))]">
+                      Destaque editorial
+                    </p>
+                    <h2 className="headline-font text-3xl md:text-4xl group-hover:text-[hsl(var(--primary))] transition">
+                      {featured.titulo}
+                    </h2>
+                    <p className="text-[hsl(var(--muted-foreground))] text-lg">{featured.resumo}</p>
+                    <div className="flex items-center gap-4 text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))]">
+                      <span>{featured.autor}</span>
+                      {featured.publicado_em && (
+                        <span>{new Date(featured.publicado_em).toLocaleDateString('pt-BR')}</span>
+                      )}
+                    </div>
                   </div>
+                  <div className="min-h-[260px] bg-[hsl(var(--muted))]">
+                    <img
+                      src={featured.imagem_capa_url || '/og-maextria.png'}
+                      alt={featured.titulo}
+                      loading="lazy"
+                      decoding="async"
+                      width={640}
+                      height={420}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </Link>
+                <div className="card p-6 space-y-4">
+                  <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--primary))]">Leitura guiada</p>
+                  <p className="text-lg font-semibold">Sua proxima habilidade em 30 dias</p>
+                  <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                    Descubra como escolher a trilha certa, criar prova pratica e acelerar sua entrada em vagas reais.
+                  </p>
+                  <Link to="/courses" className="btn-accent w-full text-center">Explorar trilhas</Link>
                 </div>
-                <div className="min-h-[240px] bg-[hsl(var(--muted))]">
-                  <img
-                    src={featured.imagem_capa_url || '/og-maextria.png'}
-                    alt={featured.titulo}
-                    loading="lazy"
-                    decoding="async"
-                    width={640}
-                    height={400}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              </Link>
+              </section>
             )}
+
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--muted-foreground))]">Arquivo</p>
+                <h2 className="headline-font text-2xl md:text-3xl">Todos os artigos</h2>
+              </div>
+              <Link to="/courses" className="text-sm font-semibold text-[hsl(var(--primary))]">
+                Ver cursos
+              </Link>
+            </div>
 
             <div className="grid md:grid-cols-3 gap-8">
               {rest.map((post) => (
@@ -114,7 +156,7 @@ export default function Blog() {
                   to={`/blog/${post.slug}`}
                   className="card p-6 group hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(0,0,0,0.12)] transition"
                 >
-                  <div className="w-full h-44 rounded-[16px] mb-4 overflow-hidden bg-[hsl(var(--muted))]">
+                  <div className="w-full h-44 rounded-[18px] mb-4 overflow-hidden bg-[hsl(var(--muted))]">
                     {post.imagem_capa_url ? (
                       <img
                         src={post.imagem_capa_url}
@@ -122,7 +164,7 @@ export default function Blog() {
                         loading="lazy"
                         decoding="async"
                         width={400}
-                        height={250}
+                        height={260}
                         className="w-full h-full object-cover transition duration-300 group-hover:scale-105"
                       />
                     ) : (

@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import DOMPurify from 'dompurify';
 import { supabase } from '../lib/supabase';
 import { createArticleSchema } from '../components/AdvancedSchemas';
 import { Breadcrumb } from '../components/Breadcrumb';
-import { Link } from 'react-router-dom';
 
 type BlogPost = {
   id: string;
@@ -45,6 +44,15 @@ export default function BlogPost() {
     post?.conteudo_html ? DOMPurify.sanitize(post.conteudo_html) : ''
   ), [post?.conteudo_html]);
 
+  const readingTime = useMemo(() => {
+    if (!post?.conteudo_html) return null;
+    const text = post.conteudo_html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!text) return null;
+    const words = text.split(' ').length;
+    const minutes = Math.max(1, Math.round(words / 220));
+    return `${minutes} min de leitura`;
+  }, [post?.conteudo_html]);
+
   const schema = useMemo(() => {
     if (!post?.publicado_em) return null;
     return createArticleSchema({
@@ -83,59 +91,70 @@ export default function BlogPost() {
             Artigo nao encontrado.
           </div>
         ) : (
-          <article className="card p-8 mt-6 space-y-8">
+          <article className="card relative mt-6 overflow-hidden">
             {schema && (
               <script type="application/ld+json">
                 {JSON.stringify(schema)}
               </script>
             )}
-            <div className="grid lg:grid-cols-[1fr_0.4fr] gap-10">
-              <div className="space-y-6">
-                <div className="space-y-3">
-                  <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--primary))]">{post.autor}</p>
-                  <h1 className="headline-font text-3xl md:text-4xl">{post.titulo}</h1>
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.16),_transparent_55%)]" />
+            <div className="relative p-8 space-y-10">
+              <header className="space-y-4">
+                <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--primary))]">{post.autor}</p>
+                <h1 className="headline-font text-3xl md:text-4xl leading-tight">{post.titulo}</h1>
+                <div className="flex flex-wrap gap-4 text-xs uppercase tracking-[0.25em] text-[hsl(var(--muted-foreground))]">
                   {post.publicado_em && (
-                    <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                      Publicado em {new Date(post.publicado_em).toLocaleDateString('pt-BR')}
-                    </p>
+                    <span>{new Date(post.publicado_em).toLocaleDateString('pt-BR')}</span>
                   )}
+                  {readingTime && <span>{readingTime}</span>}
                 </div>
-                {post.imagem_capa_url && (
-                  <img
-                    src={post.imagem_capa_url}
-                    alt={post.titulo}
-                    loading="lazy"
-                    decoding="async"
-                    width={800}
-                    height={420}
-                    className="w-full rounded-[20px] object-cover max-h-[420px]"
-                  />
+                {post.resumo && (
+                  <div className="rounded-[18px] bg-[hsl(var(--muted))] p-5 text-sm text-[hsl(var(--muted-foreground))]">
+                    {post.resumo}
+                  </div>
                 )}
-                <div
-                  className="prose prose-neutral max-w-none"
-                  dangerouslySetInnerHTML={{ __html: sanitized }}
+              </header>
+
+              {post.imagem_capa_url && (
+                <img
+                  src={post.imagem_capa_url}
+                  alt={post.titulo}
+                  loading="lazy"
+                  decoding="async"
+                  width={960}
+                  height={520}
+                  className="w-full rounded-[22px] object-cover max-h-[480px]"
                 />
+              )}
+
+              <div className="grid lg:grid-cols-[1fr_0.4fr] gap-10">
+                <div className="space-y-6">
+                  <div
+                    className="prose prose-lg prose-neutral max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-figcaption:text-sm prose-figcaption:text-[hsl(var(--muted-foreground))] prose-img:rounded-[20px]"
+                    dangerouslySetInnerHTML={{ __html: sanitized }}
+                  />
+                </div>
+                <aside className="space-y-4 lg:sticky lg:top-24 self-start">
+                  <div className="card p-5 bg-[hsl(var(--muted))]">
+                    <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--primary))]">Proximo passo</p>
+                    <h3 className="text-lg font-semibold mt-2">Cursos + Certificados</h3>
+                    <p className="text-sm text-[hsl(var(--muted-foreground))] mt-2">
+                      Aprenda com foco, valide com certificado e leve prova real para o mercado.
+                    </p>
+                    <Link to="/courses" className="btn-accent mt-4 w-full text-center">
+                      Ver cursos
+                    </Link>
+                  </div>
+                  <div className="card p-5">
+                    <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--muted-foreground))]">
+                      Dica rapida
+                    </p>
+                    <p className="text-sm text-[hsl(var(--muted-foreground))] mt-2">
+                      Use o certificado como prova no curriculo, no LinkedIn e nas entrevistas. A clareza acelera convites.
+                    </p>
+                  </div>
+                </aside>
               </div>
-              <aside className="space-y-4">
-                <div className="card p-5 bg-[hsl(var(--muted))]">
-                  <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--primary))]">Proximo passo</p>
-                  <h3 className="text-lg font-semibold mt-2">Cursos + Certificados</h3>
-                  <p className="text-sm text-[hsl(var(--muted-foreground))] mt-2">
-                    Aprenda com foco, valide com certificado e leve prova real para o mercado.
-                  </p>
-                  <Link to="/courses" className="btn-accent mt-4 w-full text-center">
-                    Ver cursos
-                  </Link>
-                </div>
-                <div className="card p-5">
-                  <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--muted-foreground))]">
-                    Dica rapida
-                  </p>
-                  <p className="text-sm text-[hsl(var(--muted-foreground))] mt-2">
-                    Use o certificado como prova no curriculo, no LinkedIn e nas entrevistas. A clareza acelera convites.
-                  </p>
-                </div>
-              </aside>
             </div>
           </article>
         )}
