@@ -68,7 +68,7 @@ export default function Blog() {
             </div>
             <div className="hidden lg:block">
               <img
-                src="/og-maextria.png"
+                src="/hero-01.webp"
                 alt="Blog MAEXTRIA"
                 loading="lazy"
                 decoding="async"
@@ -100,23 +100,23 @@ export default function Blog() {
               <section className="grid lg:grid-cols-[1.4fr_0.6fr] gap-6">
                 <Link
                   to={`/blog/${featured.slug}`}
-                  className="card p-0 overflow-hidden grid md:grid-cols-[1.15fr_0.85fr] group"
+                  className="card p-0 overflow-hidden grid md:grid-cols-[1.15fr_0.85fr] group bg-slate-950 text-white"
                 >
-                  <div className="relative p-8 space-y-4 overflow-hidden text-slate-900">
+                  <div className="relative p-8 space-y-4 overflow-hidden">
                     <div
-                      className="absolute inset-0 bg-cover bg-center opacity-25"
-                      style={{ backgroundImage: `url(${featured.imagem_capa_url || '/og-maextria.png'})` }}
+                      className="absolute inset-0 bg-cover bg-center opacity-20"
+                      style={{ backgroundImage: `url(${featured.imagem_capa_url || '/hero-01.webp'})` }}
                     />
-                    <div className="absolute inset-0 bg-white/85 backdrop-blur-xl" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900/85 to-slate-950" />
                     <div className="relative space-y-4">
-                      <p className="text-xs uppercase tracking-[0.25em] text-slate-500">
+                      <p className="text-xs uppercase tracking-[0.25em] text-white/70">
                         Destaque editorial
                       </p>
                       <h2 className="headline-font text-3xl md:text-4xl group-hover:text-[hsl(var(--primary))] transition">
                         {featured.titulo}
                       </h2>
-                      <p className="text-slate-700 text-lg">{featured.resumo}</p>
-                      <div className="flex items-center gap-4 text-xs uppercase tracking-[0.2em] text-slate-500">
+                      <p className="text-white/80 text-lg">{featured.resumo}</p>
+                      <div className="flex items-center gap-4 text-xs uppercase tracking-[0.2em] text-white/60">
                         <span>{featured.autor}</span>
                         {featured.publicado_em && (
                           <span>{new Date(featured.publicado_em).toLocaleDateString('pt-BR')}</span>
@@ -126,7 +126,7 @@ export default function Blog() {
                   </div>
                   <div className="min-h-[260px] bg-[hsl(var(--muted))]">
                     <img
-                      src={featured.imagem_capa_url || '/og-maextria.png'}
+                      src={featured.imagem_capa_url || '/hero-01.webp'}
                       alt={featured.titulo}
                       loading="lazy"
                       decoding="async"
