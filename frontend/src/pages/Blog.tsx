@@ -39,8 +39,9 @@ export default function Blog() {
       <div className="pointer-events-none absolute -top-20 right-[-10%] h-80 w-80 rounded-full bg-[hsl(var(--primary))]/20 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-24 left-[-10%] h-96 w-96 rounded-full bg-[hsl(var(--accent))]/20 blur-3xl" />
       <div className="relative max-w-6xl mx-auto space-y-12">
-        <section className="relative overflow-hidden rounded-[32px] bg-[hsl(var(--foreground))] text-[hsl(var(--background))]">
-          <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--primary))]/65 via-transparent to-[hsl(var(--accent))]/45" />
+        <section className="relative overflow-hidden rounded-[32px] bg-slate-950 text-white">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.22),_transparent_55%)]" />
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900/80 to-slate-950" />
           <div className="relative p-10 md:p-14 grid gap-8 lg:grid-cols-[1.15fr_0.85fr] items-center">
             <div className="space-y-5">
               <p className="text-xs uppercase tracking-[0.4em] text-white/70">Blog MAEXTRIA</p>
