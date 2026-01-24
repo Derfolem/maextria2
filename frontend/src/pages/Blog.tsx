@@ -42,18 +42,20 @@ export default function Blog() {
         <section className="relative overflow-hidden rounded-[32px] bg-slate-950 text-white">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.22),_transparent_55%)]" />
           <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900/80 to-slate-950" />
-          <div className="relative p-10 md:p-14 grid gap-8 lg:grid-cols-[1.15fr_0.85fr] items-center">
+          <div className="relative p-8 sm:p-10 md:p-14 grid gap-8 lg:grid-cols-[1.15fr_0.85fr] items-center">
             <div className="space-y-5">
               <p className="text-xs uppercase tracking-[0.4em] text-white/70">Blog MAEXTRIA</p>
-              <h1 className="headline-font text-4xl md:text-5xl leading-tight">
+              <h1 className="headline-font text-3xl sm:text-4xl md:text-5xl leading-tight">
                 Insights que viram movimento de carreira
               </h1>
               <p className="text-white/80 text-lg">
                 Conteudos densos, com decisao clara. Mercado, certificacoes e habilidades que aceleram sua evolucao.
               </p>
-              <div className="flex flex-wrap gap-3">
-                <Link to="/courses" className="btn-accent">Ver cursos</Link>
-                <Link to="/blog" className="btn-outline text-white border-white/40">Ler blog</Link>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link to="/courses" className="btn-accent w-full sm:w-auto text-center">Ver cursos</Link>
+                <Link to="/blog" className="btn-outline text-white border-white/40 w-full sm:w-auto text-center">
+                  Ler blog
+                </Link>
               </div>
               <div className="grid grid-cols-2 gap-4 pt-4 text-sm text-white/70">
                 <div className="rounded-2xl bg-white/10 p-4">
@@ -97,10 +99,10 @@ export default function Blog() {
         ) : (
           <>
             {featured && (
-              <section className="grid lg:grid-cols-[1.4fr_0.6fr] gap-6">
+              <section className="grid grid-cols-[1.1fr_0.9fr] gap-4 sm:gap-6">
                 <Link
                   to={`/blog/${featured.slug}`}
-                  className="card p-0 overflow-hidden grid md:grid-cols-[1.15fr_0.85fr] group bg-slate-950 text-white"
+                  className="card p-0 overflow-hidden grid grid-cols-[1.1fr_0.9fr] group bg-slate-950 text-white"
                 >
                   <div className="relative p-8 space-y-4 overflow-hidden">
                     <div
