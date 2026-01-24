@@ -14,7 +14,6 @@ export default function TeacherDashboard() {
   const [loading, setLoading] = useState(true);
   const [revenueData, setRevenueData] = useState<Array<{ month: string; revenue: number }>>([]);
   const [revenueByCourse, setRevenueByCourse] = useState<Array<{ name: string; revenue: number }>>([]);
-  const [recentPayments, setRecentPayments] = useState<Array<{ title: string; amount: number; date: string }>>([]);
   const [financeSnapshot, setFinanceSnapshot] = useState({
     totalRevenue: 0,
     revenue30d: 0,
@@ -34,6 +33,15 @@ export default function TeacherDashboard() {
   });
   const [bankSaving, setBankSaving] = useState(false);
   const [comissoesPendentes, setComissoesPendentes] = useState({ total: 0, valor: 0 });
+  const [comissoesRecentes, setComissoesRecentes] = useState<Array<{
+    id: string;
+    curso_titulo: string;
+    valor_venda: number;
+    percentual: number;
+    valor_comissao: number;
+    status: string;
+    data: string;
+  }>>([]);
 
   useEffect(() => {
     loadDashboard();
@@ -73,17 +81,47 @@ export default function TeacherDashboard() {
   const loadComissoesPendentes = async () => {
     if (!user?.id) return;
     try {
-      const { data, error } = await supabase
+      // Carregar total pendente
+      const { data: pendentesData, error: pendentesError } = await supabase
         .from('comissoes_professores')
         .select('valor_comissao')
         .eq('professor_id', user.id)
         .eq('status', 'pendente');
 
-      if (error) throw error;
+      if (pendentesError) throw pendentesError;
 
-      const total = data?.length || 0;
-      const valor = data?.reduce((sum, row) => sum + Number(row.valor_comissao || 0), 0) || 0;
+      const total = pendentesData?.length || 0;
+      const valor = pendentesData?.reduce((sum, row) => sum + Number(row.valor_comissao || 0), 0) || 0;
       setComissoesPendentes({ total, valor });
+
+      // Carregar comissões recentes (todas, não só pendentes)
+      const { data: recentesData, error: recentesError } = await supabase
+        .from('comissoes_professores')
+        .select(`
+          id,
+          valor_venda,
+          percentual_professor,
+          valor_comissao,
+          status,
+          criado_em,
+          cursos!comissoes_professores_curso_id_fkey(titulo)
+        `)
+        .eq('professor_id', user.id)
+        .order('criado_em', { ascending: false })
+        .limit(6);
+
+      if (recentesError) throw recentesError;
+
+      const mapped = (recentesData || []).map((row: any) => ({
+        id: row.id,
+        curso_titulo: row.cursos?.titulo || 'Curso',
+        valor_venda: Number(row.valor_venda || 0),
+        percentual: Number(row.percentual_professor || 0),
+        valor_comissao: Number(row.valor_comissao || 0),
+        status: row.status,
+        data: row.criado_em,
+      }));
+      setComissoesRecentes(mapped);
     } catch (error) {
       console.error('Erro ao carregar comissões:', error);
     }
@@ -212,17 +250,6 @@ export default function TeacherDashboard() {
         .sort((a, b) => b.revenue - a.revenue)
         .slice(0, 5);
       setRevenueByCourse(revenueByCourseRows);
-
-      const recent = [...paymentsData]
-        .filter((row) => row.criado_em)
-        .sort((a, b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime())
-        .slice(0, 6)
-        .map((row) => ({
-          title: courseTitleById[String(row.curso_id)] || 'Curso',
-          amount: Number(row.valor || 0),
-          date: row.criado_em,
-        }));
-      setRecentPayments(recent);
 
       setFinanceSnapshot({
         totalRevenue,
@@ -483,26 +510,40 @@ export default function TeacherDashboard() {
 
         <div className="card">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Pagamentos recentes</h2>
+            <h2 className="text-xl font-semibold">Minhas comissoes</h2>
             <span className="text-sm text-[hsl(var(--muted-foreground))]">
               Ultimos registros
             </span>
           </div>
-          {recentPayments.length === 0 ? (
-            <p className="text-sm text-[hsl(var(--muted-foreground))]">Sem pagamentos registrados.</p>
+          {comissoesRecentes.length === 0 ? (
+            <p className="text-sm text-[hsl(var(--muted-foreground))]">Nenhuma comissao registrada ainda.</p>
           ) : (
             <div className="space-y-3">
-              {recentPayments.map((item) => (
-                <div key={`${item.title}-${item.date}`} className="flex items-center justify-between p-3 border border-[hsl(var(--border))] rounded-[12px]">
-                  <div>
-                    <p className="font-semibold">{item.title}</p>
-                    <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                      {new Date(item.date).toLocaleDateString('pt-BR')}
-                    </p>
+              {comissoesRecentes.map((item) => (
+                <div key={item.id} className="p-3 border border-[hsl(var(--border))] rounded-[12px]">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-semibold">{item.curso_titulo}</p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                        {new Date(item.data).toLocaleDateString('pt-BR')}
+                      </p>
+                    </div>
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      item.status === 'pago'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {item.status === 'pago' ? 'Pago' : 'Pendente'}
+                    </span>
                   </div>
-                  <span className="text-sm font-semibold text-[hsl(var(--primary))]">
-                    R$ {item.amount.toFixed(2)}
-                  </span>
+                  <div className="mt-2 flex items-center justify-between text-sm">
+                    <span className="text-[hsl(var(--muted-foreground))]">
+                      Venda: R$ {item.valor_venda.toFixed(2)} × {item.percentual}%
+                    </span>
+                    <span className="font-bold text-[hsl(var(--primary))]">
+                      R$ {item.valor_comissao.toFixed(2)}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>

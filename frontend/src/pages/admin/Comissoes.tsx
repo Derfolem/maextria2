@@ -26,6 +26,7 @@ type RelatorioProfessor = {
   valor_pendente: number;
   valor_pago: number;
   valor_total: number;
+  dados_bancarios?: DadosBancarios | null;
 };
 
 type DadosBancarios = {
@@ -46,9 +47,6 @@ export default function AdminComissoes() {
   const [filterProfessor, setFilterProfessor] = useState<string>('');
   const [selectedComissoes, setSelectedComissoes] = useState<Set<string>>(new Set());
   const [markingAsPaid, setMarkingAsPaid] = useState(false);
-  const [showBankModal, setShowBankModal] = useState(false);
-  const [bankData, setBankData] = useState<DadosBancarios | null>(null);
-  const [bankLoading, setBankLoading] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -111,8 +109,41 @@ export default function AdminComissoes() {
 
       if (relatorioError) {
         console.error('Erro ao carregar relatório:', relatorioError);
+        setRelatorio([]);
       } else {
-        setRelatorio(relatorioData || []);
+        // Carregar dados bancários de todos os professores
+        const professorIds = (relatorioData || []).map((r: any) => r.professor_id);
+        let dadosBancariosMap: Record<string, DadosBancarios> = {};
+
+        if (professorIds.length > 0) {
+          const { data: bankDataList } = await supabase
+            .from('professor_dados_bancarios')
+            .select('usuario_id, titular, documento, banco, agencia, conta, tipo_conta, chave_pix')
+            .in('usuario_id', professorIds);
+
+          if (bankDataList) {
+            dadosBancariosMap = bankDataList.reduce((acc: Record<string, DadosBancarios>, item: any) => {
+              acc[item.usuario_id] = {
+                titular: item.titular,
+                documento: item.documento,
+                banco: item.banco,
+                agencia: item.agencia,
+                conta: item.conta,
+                tipo_conta: item.tipo_conta,
+                chave_pix: item.chave_pix,
+              };
+              return acc;
+            }, {});
+          }
+        }
+
+        // Juntar dados bancários com o relatório
+        const relatorioComBanco = (relatorioData || []).map((r: any) => ({
+          ...r,
+          dados_bancarios: dadosBancariosMap[r.professor_id] || null,
+        }));
+
+        setRelatorio(relatorioComBanco);
       }
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao carregar comissões.');
@@ -167,28 +198,6 @@ export default function AdminComissoes() {
       toast.error(error?.message || 'Erro ao marcar como pago.');
     } finally {
       setMarkingAsPaid(false);
-    }
-  };
-
-  const handleViewBankData = async (professorId: string) => {
-    setBankLoading(true);
-    setShowBankModal(true);
-    setBankData(null);
-
-    try {
-      const { data, error } = await supabase
-        .from('professor_dados_bancarios')
-        .select('titular, documento, banco, agencia, conta, tipo_conta, chave_pix')
-        .eq('usuario_id', professorId)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      setBankData(data);
-    } catch (error: any) {
-      toast.error(error?.message || 'Erro ao carregar dados bancários.');
-    } finally {
-      setBankLoading(false);
     }
   };
 
@@ -269,10 +278,26 @@ export default function AdminComissoes() {
               </thead>
               <tbody>
                 {relatorio.map((r) => (
-                  <tr key={r.professor_id} className="border-b border-[hsl(var(--border))]">
+                  <tr key={r.professor_id} className="border-b border-[hsl(var(--border))] align-top">
                     <td className="py-3 px-2">
                       <p className="font-semibold">{r.professor_nome}</p>
                       <p className="text-xs text-[hsl(var(--muted-foreground))]">{r.professor_email}</p>
+                      {r.dados_bancarios ? (
+                        <div className="mt-2 p-2 bg-[hsl(var(--muted))] rounded-lg text-xs space-y-1">
+                          <div className="flex items-center gap-1 text-[hsl(var(--primary))] font-medium">
+                            <FaUniversity />
+                            Dados para repasse:
+                          </div>
+                          {r.dados_bancarios.chave_pix && (
+                            <p><span className="text-[hsl(var(--muted-foreground))]">PIX:</span> <strong>{r.dados_bancarios.chave_pix}</strong></p>
+                          )}
+                          <p><span className="text-[hsl(var(--muted-foreground))]">Titular:</span> {r.dados_bancarios.titular}</p>
+                          <p><span className="text-[hsl(var(--muted-foreground))]">CPF/CNPJ:</span> {r.dados_bancarios.documento}</p>
+                          <p><span className="text-[hsl(var(--muted-foreground))]">Banco:</span> {r.dados_bancarios.banco} | Ag: {r.dados_bancarios.agencia} | Conta: {r.dados_bancarios.conta} ({r.dados_bancarios.tipo_conta})</p>
+                        </div>
+                      ) : (
+                        <p className="mt-2 text-xs text-yellow-600">Dados bancários não cadastrados</p>
+                      )}
                     </td>
                     <td className="text-right py-3 px-2 text-yellow-600 font-semibold">
                       R$ {r.valor_pendente.toFixed(2)}
@@ -284,23 +309,13 @@ export default function AdminComissoes() {
                       R$ {r.valor_total.toFixed(2)}
                     </td>
                     <td className="text-center py-3 px-2">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          type="button"
-                          className="text-xs text-[hsl(var(--primary))] hover:underline flex items-center gap-1"
-                          onClick={() => handleViewBankData(r.professor_id)}
-                        >
-                          <FaUniversity />
-                          Ver dados bancários
-                        </button>
-                        <button
-                          type="button"
-                          className="text-xs text-[hsl(var(--muted-foreground))] hover:underline"
-                          onClick={() => setFilterProfessor(r.professor_id)}
-                        >
-                          Filtrar
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        className="text-xs text-[hsl(var(--muted-foreground))] hover:underline"
+                        onClick={() => setFilterProfessor(r.professor_id)}
+                      >
+                        Filtrar comissões
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -415,67 +430,6 @@ export default function AdminComissoes() {
         )}
       </div>
 
-      {/* Modal de dados bancários */}
-      {showBankModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setShowBankModal(false)}
-            aria-label="Fechar modal"
-          />
-          <div className="relative bg-[hsl(var(--background))] rounded-[20px] p-6 max-w-md w-full mx-4 shadow-xl">
-            <h3 className="text-xl font-semibold mb-4">Dados bancarios do professor</h3>
-            {bankLoading ? (
-              <p className="text-sm text-[hsl(var(--muted-foreground))]">Carregando...</p>
-            ) : !bankData ? (
-              <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                Professor ainda nao cadastrou os dados bancarios.
-              </p>
-            ) : (
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-[hsl(var(--muted-foreground))]">Titular:</span>
-                  <span className="font-semibold">{bankData.titular}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[hsl(var(--muted-foreground))]">CPF/CNPJ:</span>
-                  <span className="font-semibold">{bankData.documento}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[hsl(var(--muted-foreground))]">Banco:</span>
-                  <span className="font-semibold">{bankData.banco}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[hsl(var(--muted-foreground))]">Agencia:</span>
-                  <span className="font-semibold">{bankData.agencia}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[hsl(var(--muted-foreground))]">Conta:</span>
-                  <span className="font-semibold">{bankData.conta}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[hsl(var(--muted-foreground))]">Tipo:</span>
-                  <span className="font-semibold">{bankData.tipo_conta}</span>
-                </div>
-                {bankData.chave_pix && (
-                  <div className="flex justify-between pt-2 border-t border-[hsl(var(--border))]">
-                    <span className="text-[hsl(var(--muted-foreground))]">Chave PIX:</span>
-                    <span className="font-semibold text-[hsl(var(--primary))]">{bankData.chave_pix}</span>
-                  </div>
-                )}
-              </div>
-            )}
-            <button
-              type="button"
-              className="btn-outline w-full mt-6"
-              onClick={() => setShowBankModal(false)}
-            >
-              Fechar
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+      </div>
   );
 }
