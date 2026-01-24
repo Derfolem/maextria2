@@ -99,10 +99,10 @@ export default function Blog() {
         ) : (
           <>
             {featured && (
-              <section className="grid grid-cols-[1.1fr_0.9fr] gap-4 sm:gap-6">
+              <section className="grid gap-6 lg:grid-cols-[1.5fr_0.5fr]">
                 <Link
                   to={`/blog/${featured.slug}`}
-                  className="card p-0 overflow-hidden grid grid-cols-[1.1fr_0.9fr] group bg-slate-950 text-white"
+                  className="card p-0 overflow-hidden grid md:grid-cols-[1.1fr_0.9fr] group bg-slate-950 text-white"
                 >
                   <div className="relative p-8 space-y-4 overflow-hidden">
                     <div
@@ -126,7 +126,7 @@ export default function Blog() {
                       </div>
                     </div>
                   </div>
-                  <div className="min-h-[260px] bg-[hsl(var(--muted))]">
+                  <div className="min-h-[240px] md:min-h-[260px] bg-[hsl(var(--muted))]">
                     <img
                       src={featured.imagem_capa_url || '/hero-01.webp'}
                       alt={featured.titulo}
@@ -139,7 +139,7 @@ export default function Blog() {
                   </div>
                 </Link>
                 <div
-                  className="card relative overflow-hidden p-6 space-y-4"
+                  className="card relative overflow-hidden p-6 space-y-4 min-h-[240px] md:min-h-[260px]"
                   style={{
                     backgroundImage:
                       "linear-gradient(135deg, rgba(15,23,42,0.92), rgba(30,41,59,0.9)), url('/blog/trilha-futuro.svg')",
