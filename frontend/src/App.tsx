@@ -34,6 +34,7 @@ const AdminNotifications = lazy(() => import('./pages/admin/Notifications'));
 const AdminPayments = lazy(() => import('./pages/admin/Payments'));
 const AdminModeracao = lazy(() => import('./pages/admin/Moderacao'));
 const AdminBlog = lazy(() => import('./pages/admin/Blog'));
+const AdminComissoes = lazy(() => import('./pages/admin/Comissoes'));
 const TeacherLanding = lazy(() => import('./pages/TeacherLanding'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
@@ -268,6 +269,14 @@ function App() {
             element={
               <ProtectedRoute roles={['admin']}>
                 <AdminBlog />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/comissoes"
+            element={
+              <ProtectedRoute roles={['admin']}>
+                <AdminComissoes />
               </ProtectedRoute>
             }
           />

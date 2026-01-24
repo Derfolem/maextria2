@@ -144,10 +144,12 @@ serve(async (req) => {
       .eq("curso_id", cursoId)
       .maybeSingle();
 
+    let certificadoId: string | undefined;
+
     if (!existingCert) {
       const codigoValidacao = `MAEX-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
-      await supabaseAdmin
+      const { data: newCert } = await supabaseAdmin
         .from("certificados")
         .insert({
           usuario_id: usuarioId,
@@ -155,12 +157,85 @@ serve(async (req) => {
           pago: true,
           codigo_validacao: codigoValidacao,
           emitido_em: new Date().toISOString(),
-        });
+        })
+        .select("id")
+        .single();
+
+      certificadoId = newCert?.id;
     } else if (!existingCert.pago) {
       await supabaseAdmin
         .from("certificados")
         .update({ pago: true })
         .eq("id", existingCert.id);
+
+      certificadoId = existingCert.id;
+    } else {
+      // Certificado ja existe e ja esta pago - nao criar comissao duplicada
+      return new Response(JSON.stringify({ success: true, preco }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    // === SISTEMA DE COMISSOES ===
+    // Buscar dados do curso (professor e preco)
+    const { data: cursoData } = await supabaseAdmin
+      .from("cursos")
+      .select("professor_id, preco_certificado")
+      .eq("id", cursoId)
+      .single();
+
+    if (cursoData?.professor_id) {
+      // Buscar percentual de comissao configurado pelo admin
+      const { data: configData } = await supabaseAdmin
+        .from("configuracoes_site")
+        .select("valor")
+        .eq("chave", "admin_profit_share")
+        .maybeSingle();
+
+      // admin_profit_share e o percentual que FICA com o admin (ex: 30 = admin fica 30%, professor 70%)
+      const adminShare = Number(configData?.valor ?? 30);
+      const professorShare = 100 - adminShare;
+
+      // Valor da venda
+      const valorVenda = cursoData.preco_certificado ?? (preco ? Number(preco) : 39);
+
+      // Calcular comissao do professor
+      const valorComissao = (valorVenda * professorShare) / 100;
+
+      // Buscar transacao_id
+      let transacaoId: string | undefined;
+      if (stripePaymentIntentId) {
+        const { data: transacao } = await supabaseAdmin
+          .from("transacoes_pagamento")
+          .select("id")
+          .eq("stripe_payment_intent_id", stripePaymentIntentId)
+          .maybeSingle();
+        transacaoId = transacao?.id;
+      }
+
+      // Verificar se ja existe comissao para esta transacao (evitar duplicatas)
+      const { data: existingComissao } = await supabaseAdmin
+        .from("comissoes_professores")
+        .select("id")
+        .eq("certificado_id", certificadoId)
+        .maybeSingle();
+
+      if (!existingComissao) {
+        // Criar registro de comissao
+        await supabaseAdmin
+          .from("comissoes_professores")
+          .insert({
+            professor_id: cursoData.professor_id,
+            curso_id: cursoId,
+            certificado_id: certificadoId,
+            transacao_id: transacaoId,
+            valor_venda: valorVenda,
+            percentual_professor: professorShare,
+            valor_comissao: valorComissao,
+            status: "pendente",
+          });
+      }
     }
 
     return new Response(JSON.stringify({ success: true, preco }), {

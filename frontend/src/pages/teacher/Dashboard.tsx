@@ -31,10 +31,61 @@ export default function TeacherDashboard() {
     account: '',
     accountType: '',
   });
+  const [bankSaving, setBankSaving] = useState(false);
+  const [comissoesPendentes, setComissoesPendentes] = useState({ total: 0, valor: 0 });
 
   useEffect(() => {
     loadDashboard();
+    if (user?.id) {
+      loadBankData();
+      loadComissoesPendentes();
+    }
   }, [user?.id, user?.role]);
+
+  const loadBankData = async () => {
+    if (!user?.id) return;
+    try {
+      const { data, error } = await supabase
+        .from('professor_dados_bancarios')
+        .select('*')
+        .eq('usuario_id', user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data) {
+        setBankForm({
+          holder: data.titular || '',
+          document: data.documento || '',
+          bank: data.banco || '',
+          agency: data.agencia || '',
+          account: data.conta || '',
+          accountType: data.tipo_conta || '',
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados bancários:', error);
+    }
+  };
+
+  const loadComissoesPendentes = async () => {
+    if (!user?.id) return;
+    try {
+      const { data, error } = await supabase
+        .from('comissoes_professores')
+        .select('valor_comissao')
+        .eq('professor_id', user.id)
+        .eq('status', 'pendente');
+
+      if (error) throw error;
+
+      const total = data?.length || 0;
+      const valor = data?.reduce((sum, row) => sum + Number(row.valor_comissao || 0), 0) || 0;
+      setComissoesPendentes({ total, valor });
+    } catch (error) {
+      console.error('Erro ao carregar comissões:', error);
+    }
+  };
 
   const resolveCourseOwnerId = (course: Record<string, any>) =>
     course.professor_id ?? course.teacher_id ?? course.autor_id ?? course.criado_por ?? course.user_id;
@@ -215,9 +266,38 @@ export default function TeacherDashboard() {
     setBankForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleBankSubmit = (event: React.FormEvent) => {
+  const handleBankSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    toast.success('Dados financeiros registrados. Envio real sera configurado na producao.');
+    if (!user?.id) {
+      toast.error('Usuário não autenticado.');
+      return;
+    }
+
+    setBankSaving(true);
+    try {
+      const payload = {
+        usuario_id: user.id,
+        titular: bankForm.holder,
+        documento: bankForm.document,
+        banco: bankForm.bank,
+        agencia: bankForm.agency,
+        conta: bankForm.account,
+        tipo_conta: bankForm.accountType,
+        atualizado_em: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from('professor_dados_bancarios')
+        .upsert(payload, { onConflict: 'usuario_id' });
+
+      if (error) throw error;
+
+      toast.success('Dados bancários salvos com sucesso!');
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao salvar dados bancários.');
+    } finally {
+      setBankSaving(false);
+    }
   };
 
   return (
@@ -428,6 +508,33 @@ export default function TeacherDashboard() {
 
         <div className="card">
           <div className="flex items-center gap-3 mb-4">
+            <div className="h-12 w-12 rounded-full bg-[hsl(var(--accent))] flex items-center justify-center text-white">
+              <FaDollarSign />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold">Comissoes pendentes</h2>
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">Aguardando repasse</p>
+            </div>
+          </div>
+          <div className="bg-[hsl(var(--muted))] rounded-[12px] p-4 space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-[hsl(var(--muted-foreground))]">Total de vendas pendentes:</span>
+              <span className="font-semibold">{comissoesPendentes.total}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-[hsl(var(--muted-foreground))]">Valor a receber:</span>
+              <span className="text-xl font-bold text-[hsl(var(--primary))]">
+                R$ {comissoesPendentes.valor.toFixed(2)}
+              </span>
+            </div>
+          </div>
+          <p className="text-xs text-[hsl(var(--muted-foreground))] mt-3">
+            O repasse e realizado periodicamente pela administracao da plataforma.
+          </p>
+        </div>
+
+        <div className="card">
+          <div className="flex items-center gap-3 mb-4">
             <div className="h-12 w-12 rounded-full bg-[hsl(var(--muted))] flex items-center justify-center text-[hsl(var(--primary))]">
               <FaUniversity />
             </div>
@@ -487,12 +594,12 @@ export default function TeacherDashboard() {
               className="input-field"
               required
             />
-            <button type="submit" className="btn-accent inline-flex items-center gap-2">
-              Salvar dados
-              <FaArrowRight />
+            <button type="submit" className="btn-accent inline-flex items-center gap-2" disabled={bankSaving}>
+              {bankSaving ? 'Salvando...' : 'Salvar dados'}
+              {!bankSaving && <FaArrowRight />}
             </button>
             <p className="text-xs text-[hsl(var(--muted-foreground))]">
-              Os dados serao enviados para validacao quando a integracao estiver ativa.
+              Estes dados serao utilizados para o repasse das suas comissoes.
             </p>
           </form>
         </div>
