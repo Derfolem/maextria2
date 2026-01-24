@@ -287,17 +287,18 @@ export default function AdminComissoes() {
                       <div className="flex items-center justify-center gap-2">
                         <button
                           type="button"
-                          className="text-xs text-[hsl(var(--primary))] hover:underline"
-                          onClick={() => setFilterProfessor(r.professor_id)}
+                          className="text-xs text-[hsl(var(--primary))] hover:underline flex items-center gap-1"
+                          onClick={() => handleViewBankData(r.professor_id)}
                         >
-                          Ver detalhes
+                          <FaUniversity />
+                          Ver dados bancários
                         </button>
                         <button
                           type="button"
                           className="text-xs text-[hsl(var(--muted-foreground))] hover:underline"
-                          onClick={() => handleViewBankData(r.professor_id)}
+                          onClick={() => setFilterProfessor(r.professor_id)}
                         >
-                          <FaUniversity />
+                          Filtrar
                         </button>
                       </div>
                     </td>
