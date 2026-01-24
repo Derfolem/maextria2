@@ -35,6 +35,7 @@ type DadosBancarios = {
   agencia: string;
   conta: string;
   tipo_conta: string;
+  chave_pix: string | null;
 };
 
 export default function AdminComissoes() {
@@ -177,7 +178,7 @@ export default function AdminComissoes() {
     try {
       const { data, error } = await supabase
         .from('professor_dados_bancarios')
-        .select('titular, documento, banco, agencia, conta, tipo_conta')
+        .select('titular, documento, banco, agencia, conta, tipo_conta, chave_pix')
         .eq('usuario_id', professorId)
         .maybeSingle();
 
@@ -456,6 +457,12 @@ export default function AdminComissoes() {
                   <span className="text-[hsl(var(--muted-foreground))]">Tipo:</span>
                   <span className="font-semibold">{bankData.tipo_conta}</span>
                 </div>
+                {bankData.chave_pix && (
+                  <div className="flex justify-between pt-2 border-t border-[hsl(var(--border))]">
+                    <span className="text-[hsl(var(--muted-foreground))]">Chave PIX:</span>
+                    <span className="font-semibold text-[hsl(var(--primary))]">{bankData.chave_pix}</span>
+                  </div>
+                )}
               </div>
             )}
             <button

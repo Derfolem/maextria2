@@ -30,6 +30,7 @@ export default function TeacherDashboard() {
     agency: '',
     account: '',
     accountType: '',
+    pixKey: '',
   });
   const [bankSaving, setBankSaving] = useState(false);
   const [comissoesPendentes, setComissoesPendentes] = useState({ total: 0, valor: 0 });
@@ -61,6 +62,7 @@ export default function TeacherDashboard() {
           agency: data.agencia || '',
           account: data.conta || '',
           accountType: data.tipo_conta || '',
+          pixKey: data.chave_pix || '',
         });
       }
     } catch (error) {
@@ -283,6 +285,7 @@ export default function TeacherDashboard() {
         agencia: bankForm.agency,
         conta: bankForm.account,
         tipo_conta: bankForm.accountType,
+        chave_pix: bankForm.pixKey,
         atualizado_em: new Date().toISOString(),
       };
 
@@ -593,6 +596,13 @@ export default function TeacherDashboard() {
               placeholder="Tipo de conta (corrente, poupanca)"
               className="input-field"
               required
+            />
+            <input
+              name="pixKey"
+              value={bankForm.pixKey}
+              onChange={handleBankChange}
+              placeholder="Chave PIX (CPF, email, telefone ou aleatoria)"
+              className="input-field"
             />
             <button type="submit" className="btn-accent inline-flex items-center gap-2" disabled={bankSaving}>
               {bankSaving ? 'Salvando...' : 'Salvar dados'}
