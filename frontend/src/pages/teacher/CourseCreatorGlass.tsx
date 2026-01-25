@@ -26,7 +26,6 @@ export default function CourseCreatorGlass() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
-  const [category, setCategory] = useState('');
   const [level, setLevel] = useState('');
   const [thumbnail, setThumbnail] = useState(''); // Only editable by admin
   const [teacherName, setTeacherName] = useState(user?.name || '');
@@ -292,7 +291,6 @@ export default function CourseCreatorGlass() {
         // Also populate basic fields from parsed data
         setTitle(parsed.title || '');
         setDescription(parsed.description || '');
-        setCategory('');
         setLevel(parsed.level || '');
         setPrice(String(parsed.price) || ''); // Convert number to string for input
         // Thumbnail and teacherName are not extracted from text directly, so leave them
