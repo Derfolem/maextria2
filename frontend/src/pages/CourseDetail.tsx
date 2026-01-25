@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Course } from '../types';
 import { useAuthStore } from '../lib/store';
 import { supabase } from '../lib/supabase';
@@ -147,7 +147,10 @@ export default function CourseDetail() {
   if (!course) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-12 text-center">
-        <p className="text-gray-500 text-lg">Curso não encontrado</p>
+        <p className="text-gray-500 text-lg mb-4">Curso não encontrado</p>
+        <Link to="/courses" className="btn-accent">
+          Ir para a vitrine de cursos
+        </Link>
       </div>
     );
   }

@@ -46,15 +46,17 @@ export default function StudentDashboard() {
         throw certsRes.error;
       }
 
-      const enrolled = enrollmentsRes.data?.length || 0;
-      const completed = certsRes.data?.length || 0;
+      const filteredEnrollmentsRaw = (enrollmentsRes.data || []).filter((row: any) => row.cursos);
+      const filteredCertsRaw = (certsRes.data || []).filter((row: any) => row.cursos);
+      const enrolled = filteredEnrollmentsRaw.length || 0;
+      const completed = filteredCertsRaw.length || 0;
       const active = Math.max(enrolled - completed, 0);
       setStats({
         in_progress_courses: active,
         completed_courses: completed,
         certificates: completed,
       });
-      const normalizedEnrollments = (enrollmentsRes.data || []).map(normalizeEnrollment);
+      const normalizedEnrollments = filteredEnrollmentsRaw.map(normalizeEnrollment);
       const courseIds = normalizedEnrollments.map((item) => item.course_id).filter(Boolean);
 
       let enrollmentsWithProgress = normalizedEnrollments;
@@ -133,8 +135,8 @@ export default function StudentDashboard() {
       const totalProgress = enrollmentsWithProgress.reduce((sum, item) => sum + (item.progress || 0), 0);
       setAvgProgress(enrollmentsWithProgress.length > 0 ? totalProgress / enrollmentsWithProgress.length : 0);
       setRecentCourses(enrollmentsWithProgress.slice(0, 3));
-        setCertificates(
-        (certsRes.data || []).map((cert: any) => ({
+      setCertificates(
+        filteredCertsRaw.map((cert: any) => ({
           ...cert,
           certificate_url:
             cert.link_pdf ?? cert.certificate_url ?? cert.certificateUrl ?? '',
@@ -334,9 +336,11 @@ export default function StudentDashboard() {
         </div>
         {recentCourses.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-[hsl(var(--muted-foreground))] mb-4">Você ainda não está inscrito em nenhum curso</p>
+            <p className="text-[hsl(var(--muted-foreground))] mb-4">
+              Voce nao possui cursos ativos no momento.
+            </p>
             <Link to="/courses" className="btn-accent">
-              Explorar cursos
+              Ir para a vitrine de cursos
             </Link>
           </div>
         ) : (

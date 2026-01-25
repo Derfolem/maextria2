@@ -27,7 +27,7 @@ export default function MyCourses() {
       if (error) {
         throw error;
       }
-      const normalized = (data || []).map(normalizeEnrollment);
+      const normalized = (data || []).filter((row: any) => row.cursos).map(normalizeEnrollment);
       const courseIds = normalized.map((item) => item.course_id);
 
       if (courseIds.length === 0) {
@@ -186,9 +186,11 @@ export default function MyCourses() {
 
       {filteredEnrollments.length === 0 ? (
         <div className="card text-center py-12">
-          <p className="text-[hsl(var(--muted-foreground))] mb-4">Nenhum curso encontrado</p>
+          <p className="text-[hsl(var(--muted-foreground))] mb-4">
+            Voce nao possui cursos ativos no momento.
+          </p>
           <Link to="/courses" className="btn-accent">
-            Explorar Cursos
+            Ir para a vitrine de cursos
           </Link>
         </div>
       ) : (

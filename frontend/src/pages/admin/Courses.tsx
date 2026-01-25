@@ -186,7 +186,10 @@ export default function AdminCourses() {
 
       {filteredCourses.length === 0 && (
         <div className="card text-center py-12">
-          <p className="text-[hsl(var(--muted-foreground))]">Nenhum curso encontrado</p>
+          <p className="text-[hsl(var(--muted-foreground))] mb-4">Nenhum curso encontrado</p>
+          <Link to="/courses" className="btn-accent">
+            Ir para a vitrine de cursos
+          </Link>
         </div>
       )}
 

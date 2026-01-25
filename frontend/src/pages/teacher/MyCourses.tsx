@@ -113,9 +113,14 @@ export default function TeacherMyCourses() {
       {courses.length === 0 ? (
         <div className="card text-center py-12">
           <p className="text-[hsl(var(--muted-foreground))] mb-4">Você ainda não criou nenhum curso</p>
-          <Link to="/teacher/course/new-glass" className="btn-accent">
-            Criar primeiro curso
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link to="/teacher/course/new-glass" className="btn-accent">
+              Criar primeiro curso
+            </Link>
+            <Link to="/courses" className="btn-outline">
+              Ir para a vitrine de cursos
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="space-y-6">
@@ -150,13 +155,15 @@ export default function TeacherMyCourses() {
                     <FaEdit />
                     <span>Editar</span>
                   </Link>
-                  <button
-                    onClick={() => deleteCourse(course.id)}
-                    className="btn-outline flex items-center space-x-1 border-red-400 text-red-500 hover:bg-red-500 hover:text-white"
-                  >
-                    <FaTrash />
-                    <span>Excluir</span>
-                  </button>
+                  {!course.is_published && (
+                    <button
+                      onClick={() => deleteCourse(course.id)}
+                      className="btn-outline flex items-center space-x-1 border-red-400 text-red-500 hover:bg-red-500 hover:text-white"
+                    >
+                      <FaTrash />
+                      <span>Excluir</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
