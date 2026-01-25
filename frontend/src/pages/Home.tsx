@@ -85,7 +85,7 @@ export default function Home() {
       />
       <div>
       <section className="hero-gradient text-white">
-        <div className="hero-grid">
+        <div className="hero-grid min-h-[100svh]">
           <div className="max-w-7xl mx-auto px-[clamp(24px,5vw,80px)] py-[clamp(80px,10vh,160px)] lg:py-[clamp(120px,14vh,200px)]">
             <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-14 items-center">
               <motion.div
@@ -195,6 +195,60 @@ export default function Home() {
               </motion.div>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="py-[clamp(60px,8vh,100px)] bg-[hsl(var(--background))]">
+        <div className="max-w-7xl mx-auto px-[clamp(24px,5vw,80px)]">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="mb-8"
+          >
+            <h2 className="headline-font text-3xl md:text-4xl">Vamos começar?</h2>
+          </motion.div>
+
+          {loadingTopCourses ? (
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="flex-shrink-0 w-[180px] md:w-[220px]">
+                  <div className="aspect-[2/3] rounded-xl bg-[hsl(var(--muted))] shimmer" />
+                </div>
+              ))}
+            </div>
+          ) : topCourses.length > 0 ? (
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory">
+              {topCourses.map((course, index) => (
+                <Link
+                  key={course.id}
+                  to={`/courses/${course.id}`}
+                  className="flex-shrink-0 w-[180px] md:w-[220px] group snap-start"
+                >
+                  <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-[hsl(var(--foreground))] shadow-lg transition-transform duration-300 group-hover:scale-105 group-hover:shadow-2xl">
+                    {course.thumbnail ? (
+                      <img
+                        src={course.thumbnail}
+                        alt={course.title}
+                        loading="lazy"
+                        decoding="async"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[hsl(var(--primary))] via-[hsl(var(--foreground))] to-[hsl(var(--accent))]">
+                        <span className="text-4xl font-bold text-white">{course.title.charAt(0)}</span>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+                      <p className="text-white text-sm font-semibold line-clamp-2">{course.title}</p>
+                      <p className="text-white/70 text-xs mt-1">{course.teacher_name || 'MAEXTRIA'}</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : null}
         </div>
       </section>
 
