@@ -273,7 +273,7 @@ export default function AdminComissoes() {
                   <th className="text-right py-3 px-2">Pendente</th>
                   <th className="text-right py-3 px-2">Pago</th>
                   <th className="text-right py-3 px-2">Total</th>
-                  <th className="text-center py-3 px-2">Ações</th>
+                  <th className="text-center py-3 px-2">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -309,13 +309,19 @@ export default function AdminComissoes() {
                       R$ {r.valor_total.toFixed(2)}
                     </td>
                     <td className="text-center py-3 px-2">
-                      <button
-                        type="button"
-                        className="text-xs text-[hsl(var(--muted-foreground))] hover:underline"
-                        onClick={() => setFilterProfessor(r.professor_id)}
-                      >
-                        Filtrar comissões
-                      </button>
+                      {r.valor_pendente > 0 ? (
+                        <span className="inline-block px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">
+                          Pendente
+                        </span>
+                      ) : r.valor_total > 0 ? (
+                        <span className="inline-block px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
+                          Pago
+                        </span>
+                      ) : (
+                        <span className="inline-block px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-500">
+                          Sem comissões
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}
