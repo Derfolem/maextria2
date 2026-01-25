@@ -34,17 +34,25 @@ export function parseCourseText(rawText: string, currentUserId: string | number,
   };
 
   for (const line of lines) {
-    // Ignore basic course info (filled manually)
-    if (
-      line.startsWith('Título do Curso:') ||
-      line.startsWith('Descricao do Curso:') ||
-      line.startsWith('Descrição do Curso:') ||
-      line.startsWith('Categoria:') ||
-      line.startsWith('Nível:') ||
-      line.startsWith('Nivel:') ||
-      line.startsWith('Preço:') ||
-      line.startsWith('Preco:')
-    ) {
+    // Course-level parsing (ignore category; filled manually)
+    if (line.startsWith('Título do Curso:')) {
+      course.title = line.substring('Título do Curso:'.length).trim();
+      continue;
+    }
+    if (line.startsWith('Descricao do Curso:') || line.startsWith('Descrição do Curso:')) {
+      course.description = line.replace(/^Descri[cç][aã]o do Curso:\s*/i, '').trim();
+      continue;
+    }
+    if (line.startsWith('Nível:') || line.startsWith('Nivel:')) {
+      course.level = line.replace(/^N[ií]vel:\s*/i, '').trim();
+      continue;
+    }
+    if (line.startsWith('Preço:') || line.startsWith('Preco:')) {
+      const priceStr = line.replace(/^Pre[cç]o:\s*/i, '').trim().replace(',', '.');
+      course.price = parseFloat(priceStr) || 0;
+      continue;
+    }
+    if (line.startsWith('Categoria:')) {
       continue;
     }
 

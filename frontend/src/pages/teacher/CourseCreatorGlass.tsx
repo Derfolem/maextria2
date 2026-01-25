@@ -12,6 +12,12 @@ import { Course as CourseType } from '../../types'; // Alias to avoid confusion 
 // Determine if local auth should be used (copied from store.ts for consistency)
 const USE_LOCAL_AUTH = import.meta.env.VITE_USE_LOCAL_AUTH === 'true';
 
+type Category = {
+  id: string;
+  name: string;
+  description?: string | null;
+};
+
 export default function CourseCreatorGlass() {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
@@ -24,6 +30,13 @@ export default function CourseCreatorGlass() {
   const [level, setLevel] = useState('');
   const [thumbnail, setThumbnail] = useState(''); // Only editable by admin
   const [teacherName, setTeacherName] = useState(user?.name || '');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState('');
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [categoryName, setCategoryName] = useState('');
+  const [categoryDescription, setCategoryDescription] = useState('');
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [savingCategory, setSavingCategory] = useState(false);
 
   // State for the raw text input for the extractor
   const [rawCourseText, setRawCourseText] = useState('');
@@ -35,6 +48,115 @@ export default function CourseCreatorGlass() {
       setTeacherName(user.name);
     }
   }, [user?.name, teacherName]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      loadCategories();
+    }
+  }, [isAdmin]);
+
+  const loadCategories = async () => {
+    try {
+      if (USE_LOCAL_AUTH) {
+        const { data } = await api.get('/categories');
+        setCategories(data || []);
+        return;
+      }
+      const { data, error } = await supabase
+        .from('categories')
+        .select('id, name, description')
+        .order('name', { ascending: true });
+      if (error) throw error;
+      setCategories(data || []);
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao carregar categorias.');
+    }
+  };
+
+  const resetCategoryForm = () => {
+    setCategoryName('');
+    setCategoryDescription('');
+    setEditingCategoryId(null);
+  };
+
+  const handleOpenCategoryModal = () => {
+    if (!isAdmin) return;
+    setCategoryModalOpen(true);
+    loadCategories();
+  };
+
+  const handleSaveCategory = async () => {
+    if (!categoryName.trim()) {
+      toast.error('Nome da categoria e obrigatorio.');
+      return;
+    }
+    setSavingCategory(true);
+    try {
+      if (USE_LOCAL_AUTH) {
+        if (editingCategoryId) {
+          toast.error('Edicao de categoria nao suportada no modo local.');
+          return;
+        }
+        await api.post('/categories', {
+          name: categoryName.trim(),
+          description: categoryDescription.trim() || null,
+        });
+      } else if (editingCategoryId) {
+        const { error } = await supabase
+          .from('categories')
+          .update({
+            name: categoryName.trim(),
+            description: categoryDescription.trim() || null,
+          })
+          .eq('id', editingCategoryId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('categories')
+          .insert({
+            name: categoryName.trim(),
+            description: categoryDescription.trim() || null,
+            created_by: user?.id,
+          });
+        if (error) throw error;
+      }
+      toast.success('Categoria salva.');
+      resetCategoryForm();
+      await loadCategories();
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao salvar categoria.');
+    } finally {
+      setSavingCategory(false);
+    }
+  };
+
+  const handleEditCategory = (cat: Category) => {
+    setEditingCategoryId(cat.id);
+    setCategoryName(cat.name);
+    setCategoryDescription(cat.description || '');
+  };
+
+  const handleDeleteCategory = async (catId: string) => {
+    if (!confirm('Deseja excluir esta categoria?')) return;
+    try {
+      if (USE_LOCAL_AUTH) {
+        await api.delete(`/categories/${catId}`);
+      } else {
+        const { error } = await supabase
+          .from('categories')
+          .delete()
+          .eq('id', catId);
+        if (error) throw error;
+      }
+      toast.success('Categoria excluida.');
+      if (selectedCategoryId === catId) {
+        setSelectedCategoryId('');
+      }
+      await loadCategories();
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao excluir categoria.');
+    }
+  };
 
   const handleSaveCourse = async () => {
     if (!parsedCourse) {
@@ -51,25 +173,8 @@ export default function CourseCreatorGlass() {
     }
 
     try {
-      let finalCategoryId = null;
-      if (parsedCourse.category) {
-        // Fetch categories to get the ID from the name
-        let categoryData: { id: string, name: string }[] = [];
-        if (USE_LOCAL_AUTH) {
-          const { data } = await api.get('/categories'); // Assuming GET /api/categories exists
-          categoryData = data;
-        } else {
-          const { data } = await supabase.from('categories').select('id, name');
-          categoryData = data || [];
-        }
-        const existingCategory = categoryData.find((cat: any) => cat.name.toLowerCase() === parsedCourse.category?.toLowerCase());
-        if (existingCategory) {
-          finalCategoryId = existingCategory.id;
-        } else {
-          toast.error(`Categoria '${parsedCourse.category}' não encontrada. Crie-a ou use uma existente.`);
-          return;
-        }
-      }
+      const finalCategoryId = isAdmin ? selectedCategoryId || null : null;
+      const finalThumbnail = isAdmin ? parsedCourse.thumbnail || thumbnail || null : null;
 
       // 1. Insert Course
       let newCourseId: string | number;
@@ -78,7 +183,7 @@ export default function CourseCreatorGlass() {
           title: parsedCourse.title,
           description: parsedCourse.description,
           category_id: finalCategoryId,
-          cover_image: parsedCourse.thumbnail || null, // If thumbnail is ever extracted
+          cover_image: finalThumbnail,
           duration_hours: parsedCourse.duration_hours || null,
           difficulty: parsedCourse.level || 'beginner',
           certificate_price: parsedCourse.price,
@@ -97,7 +202,7 @@ export default function CourseCreatorGlass() {
             nivel: parsedCourse.level || 'beginner',
             professor_id: user.id,
             professor_nome: user.name,
-            imagem_capa_url: parsedCourse.thumbnail || null,
+            imagem_capa_url: finalThumbnail,
             is_published: false,
           })
           .select('id')
@@ -187,7 +292,7 @@ export default function CourseCreatorGlass() {
         // Also populate basic fields from parsed data
         setTitle(parsed.title || '');
         setDescription(parsed.description || '');
-        setCategory(parsed.category || '');
+        setCategory('');
         setLevel(parsed.level || '');
         setPrice(String(parsed.price) || ''); // Convert number to string for input
         // Thumbnail and teacherName are not extracted from text directly, so leave them
@@ -309,8 +414,42 @@ export default function CourseCreatorGlass() {
 
             <div>
               <label className="block text-sm font-medium text-white/70 mb-1">Categoria</label>
-              <input type="text" value={category} onChange={(e) => setCategory(e.target.value)}
-                     className="input-glass" placeholder="Ex: Programação" />
+              {isAdmin ? (
+                <div className="space-y-2">
+                  <select
+                    value={selectedCategoryId}
+                    onChange={(e) => setSelectedCategoryId(e.target.value)}
+                    className="input-glass"
+                  >
+                    <option value="">Sem categoria</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={handleOpenCategoryModal}
+                    className="btn-outline text-white/80"
+                  >
+                    Gerenciar categorias
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <input
+                    type="text"
+                    value=""
+                    className="input-glass"
+                    placeholder="Definida pelo admin"
+                    disabled
+                  />
+                  <p className="text-xs text-white/50 mt-1">
+                    Categoria somente o admin pode definir.
+                  </p>
+                </>
+              )}
             </div>
 
             <div>
@@ -343,13 +482,13 @@ export default function CourseCreatorGlass() {
             <div className="pt-4">
               <h3 className="text-lg font-semibold text-white mb-2">Cole o Texto do Curso Aqui</h3>
               <p className="text-sm text-white/70 mb-3">
-                Use o formato: `Título do Curso:`, `## Módulo:`, `### Aula:`, `URL do Vídeo:`, etc.
+                Use o formato simples: `Título do Curso:`, `Módulo 1:`, `Aula 1:`, `Conteúdo da Aula:`.
               </p>
               <textarea
                 value={rawCourseText}
                 onChange={(e) => setRawCourseText(e.target.value)}
                 className="input-glass w-full h-64 resize-y"
-                placeholder="Ex: Título do Curso: Meu Curso&#10;Descrição do Curso: ...&#10;## Módulo: Introdução&#10;### Aula: Boas Vindas&#10;URL do Vídeo: ..."
+                placeholder="Ex: Título do Curso: Meu Curso&#10;Descrição do Curso: ...&#10;Módulo 1: Introdução&#10;Descrição do Módulo: ...&#10;Aula 1: Boas Vindas&#10;Conteúdo da Aula: ..."
               />
             </div>
           </div>
@@ -362,7 +501,10 @@ export default function CourseCreatorGlass() {
             <div className="text-white/80 space-y-4">
               <p><span className="font-semibold">Título:</span> {parsedCourse.title}</p>
               <p><span className="font-semibold">Descrição:</span> {parsedCourse.description}</p>
-              <p><span className="font-semibold">Categoria:</span> {parsedCourse.category}</p>
+              <p><span className="font-semibold">Categoria:</span> {isAdmin
+                ? (categories.find((cat) => cat.id === selectedCategoryId)?.name || 'Sem categoria')
+                : 'Definida pelo admin'}
+              </p>
               <p><span className="font-semibold">Nível:</span> {parsedCourse.level}</p>
               <p><span className="font-semibold">Preço:</span> R$ {parsedCourse.price?.toFixed(2)}</p>
 
@@ -412,6 +554,101 @@ export default function CourseCreatorGlass() {
           )}
         </div>
       </div>
+      {categoryModalOpen && isAdmin && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-2xl rounded-[20px] bg-[#0f172a] p-6 text-white shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold">Gerenciar categorias</h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setCategoryModalOpen(false);
+                  resetCategoryForm();
+                }}
+                className="text-white/70 hover:text-white"
+              >
+                Fechar
+              </button>
+            </div>
+            <div className="grid md:grid-cols-[1.1fr_0.9fr] gap-6">
+              <div className="space-y-3">
+                <h4 className="text-sm uppercase tracking-[0.25em] text-white/60">Categorias</h4>
+                <div className="space-y-2 max-h-[320px] overflow-y-auto pr-2">
+                  {categories.length === 0 && (
+                    <p className="text-sm text-white/60">Nenhuma categoria criada.</p>
+                  )}
+                  {categories.map((cat) => (
+                    <div key={cat.id} className="flex items-center justify-between rounded-lg border border-white/10 p-3">
+                      <div>
+                        <p className="font-semibold">{cat.name}</p>
+                        {cat.description && <p className="text-xs text-white/60">{cat.description}</p>}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleEditCategory(cat)}
+                          className="text-xs text-white/70 hover:text-white"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCategory(cat.id)}
+                          className="text-xs text-red-300 hover:text-red-200"
+                        >
+                          Excluir
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-3">
+                <h4 className="text-sm uppercase tracking-[0.25em] text-white/60">
+                  {editingCategoryId ? 'Editar categoria' : 'Nova categoria'}
+                </h4>
+                <input
+                  type="text"
+                  value={categoryName}
+                  onChange={(e) => setCategoryName(e.target.value)}
+                  className="input-glass"
+                  placeholder="Nome da categoria"
+                />
+                <textarea
+                  value={categoryDescription}
+                  onChange={(e) => setCategoryDescription(e.target.value)}
+                  className="input-glass h-24 resize-none"
+                  placeholder="Descricao (opcional)"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSaveCategory}
+                    className="btn-accent"
+                    disabled={savingCategory}
+                  >
+                    {savingCategory ? 'Salvando...' : 'Salvar'}
+                  </button>
+                  {editingCategoryId && (
+                    <button
+                      type="button"
+                      onClick={resetCategoryForm}
+                      className="btn-outline text-white/80"
+                    >
+                      Cancelar edicao
+                    </button>
+                  )}
+                </div>
+                {USE_LOCAL_AUTH && editingCategoryId && (
+                  <p className="text-xs text-white/50">
+                    Edicao de categoria nao suportada no modo local.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
