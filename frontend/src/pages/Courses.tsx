@@ -134,7 +134,8 @@ export default function Courses() {
                   <h3 className="text-xl font-semibold group-hover:text-[hsl(var(--primary))] transition">
                     {course.title}
                   </h3>
-                  <p className="text-[hsl(var(--muted-foreground))] line-clamp-2">{course.description}</p>
+                  <p className="text-[hsl(var(--muted-foreground))] line-clamp-3">{course.description}</p>
+                  <span className="text-sm text-[hsl(var(--primary))] font-medium">...ler mais</span>
                   <div className="flex items-center justify-between text-sm text-[hsl(var(--muted-foreground))]">
                     <span>{course.teacher_name || 'Instrutor MAEXTRIA'}</span>
                   </div>

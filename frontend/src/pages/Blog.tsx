@@ -201,9 +201,10 @@ export default function Blog() {
                     <h3 className="text-xl font-semibold group-hover:text-[hsl(var(--primary))] transition">
                       {post.titulo}
                     </h3>
-                    <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                    <p className="text-sm text-[hsl(var(--muted-foreground))] line-clamp-3">
                       {post.resumo}
                     </p>
+                    <span className="text-sm text-[hsl(var(--primary))] font-medium">...ler mais</span>
                     {post.publicado_em && (
                       <p className="text-xs text-[hsl(var(--muted-foreground))]">
                         {new Date(post.publicado_em).toLocaleDateString('pt-BR')}
