@@ -158,7 +158,7 @@ export default function AdminCourses() {
 
               <div className="flex flex-wrap gap-2">
                 <Link
-                  to={`/courses/${course.id}`}
+                  to={`/preview/course/${course.id}`}
                   className="btn-outline flex items-center gap-2"
                 >
                   <FaEye />

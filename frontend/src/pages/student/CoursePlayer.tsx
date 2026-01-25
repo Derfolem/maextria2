@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Course, Lesson, Progress } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
@@ -37,8 +37,9 @@ export default function CoursePlayer() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const { user } = useAuthStore();
-  const isPreview = searchParams.get('preview') === '1';
+  const isPreview = searchParams.get('preview') === '1' || location.pathname.startsWith('/preview/course/');
   const canPreview = Boolean(isPreview && (user?.role === 'admin' || user?.role === 'teacher'));
   const [course, setCourse] = useState<Course | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);

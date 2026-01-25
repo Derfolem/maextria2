@@ -149,7 +149,7 @@ export default function TeacherMyCourses() {
 
                 <div className="flex flex-wrap gap-2">
                   <Link
-                    to={`/courses/${course.id}?preview=1`}
+                    to={`/preview/course/${course.id}`}
                     className="btn-outline flex items-center space-x-1"
                   >
                     <FaEye />

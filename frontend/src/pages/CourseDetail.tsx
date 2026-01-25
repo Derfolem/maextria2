@@ -105,7 +105,7 @@ export default function CourseDetail() {
     }
 
     if (canPreview) {
-      navigate(`/student/course/${course?.id}?preview=1`);
+      navigate(`/preview/course/${course?.id}`);
       return;
     }
 
@@ -325,7 +325,7 @@ export default function CourseDetail() {
               </button>
             ) : canPreview ? (
               <button
-                onClick={() => navigate(`/student/course/${course.id}?preview=1`)}
+                onClick={() => navigate(`/preview/course/${course.id}`)}
                 className="w-full btn-accent py-3"
               >
                 Visualizar aulas

@@ -135,6 +135,14 @@ function App() {
             }
           />
           <Route
+            path="/preview/course/:id"
+            element={
+              <ProtectedRoute roles={['teacher', 'admin']}>
+                <CoursePlayer />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/student/notifications"
             element={
               <ProtectedRoute roles={['student']}>
