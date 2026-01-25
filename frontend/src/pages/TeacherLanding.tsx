@@ -124,11 +124,14 @@ export default function TeacherLanding() {
                   reputacao para você ensinar com autoridade e receber pelo impacto que gera.
                 </p>
                 <div className="flex flex-wrap gap-4">
-                  <a href="#formulario" className="flex items-center gap-2 rounded-full bg-[#F59E0B] px-5 py-2 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(245,158,11,0.35)] transition hover:bg-[#E98B04]">
+                  <a
+                    href="#formulario"
+                    className="flex items-center gap-2 rounded-full bg-[#F59E0B] px-5 py-2 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(245,158,11,0.35)] transition hover:bg-[#E98B04] w-full sm:w-auto justify-center text-center"
+                  >
                     Quero me candidatar
                     <FaArrowRight />
                   </a>
-                  <Link to="/" className="btn-outline text-white border-white/60 hover:border-white">
+                  <Link to="/" className="btn-outline text-white border-white/60 hover:border-white w-full sm:w-auto justify-center text-center">
                     Conhecer a MAEXTRIA
                   </Link>
                 </div>
@@ -326,7 +329,7 @@ export default function TeacherLanding() {
             />
             <button
               type="submit"
-              className="rounded-full bg-[#F59E0B] px-5 py-2 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(245,158,11,0.35)] transition hover:bg-[#E98B04]"
+              className="rounded-full bg-[#F59E0B] px-5 py-2 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(245,158,11,0.35)] transition hover:bg-[#E98B04] w-full sm:w-auto"
             >
               Enviar candidatura
             </button>

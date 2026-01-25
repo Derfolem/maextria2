@@ -437,7 +437,7 @@ export default function AdminSettings() {
           <button
             type="submit"
             disabled={saving}
-            className="btn-accent flex items-center space-x-2"
+            className="btn-accent flex items-center space-x-2 w-full sm:w-auto justify-center"
           >
             <FaSave />
             <span>{saving ? 'Salvando...' : 'Salvar Configurações'}</span>
@@ -461,14 +461,14 @@ export default function AdminSettings() {
         <div className="space-y-4">
           <button
             type="button"
-            className="btn-accent"
+            className="btn-accent w-full sm:w-auto"
             onClick={() => window.open('https://platform.openai.com/usage', '_blank', 'noopener')}
           >
             Abrir painel OpenAI
           </button>
           <button
             type="button"
-            className="btn-outline"
+            className="btn-outline w-full sm:w-auto"
             onClick={() => window.location.assign('/admin/payments')}
           >
             Abrir painel de pagamentos
@@ -492,10 +492,10 @@ export default function AdminSettings() {
                 placeholder="Ex: 5"
               />
             </div>
-            <div className="flex items-end gap-2">
+            <div className="flex flex-wrap items-end gap-2">
               <button
                 type="button"
-                className="btn-outline"
+                className="btn-outline w-full sm:w-auto"
                 onClick={handleSaveAiDefaultLimit}
                 disabled={aiDefaultSaving}
               >
@@ -503,7 +503,7 @@ export default function AdminSettings() {
               </button>
               <button
                 type="button"
-                className="btn-accent"
+                className="btn-accent w-full sm:w-auto"
                 onClick={loadAiUsage}
                 disabled={aiUsageLoading}
               >
@@ -542,7 +542,7 @@ export default function AdminSettings() {
                       />
                       <button
                         type="button"
-                        className="btn-outline"
+                        className="btn-outline w-full sm:w-auto"
                         onClick={() => handleSaveUserLimit(row.userId)}
                         disabled={aiLimitSaving[row.userId]}
                       >
@@ -560,7 +560,7 @@ export default function AdminSettings() {
       <div className="card mt-8">
         <h2 className="text-xl font-semibold mb-4">Outras configuracoes</h2>
         <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-[hsl(var(--muted))] rounded-lg">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-[hsl(var(--muted))] rounded-lg">
             <div>
               <h3 className="font-semibold">Modo de Manutenção</h3>
               <p className="text-sm text-[hsl(var(--muted-foreground))]">Desabilitar acesso temporariamente</p>
@@ -577,7 +577,7 @@ export default function AdminSettings() {
             </label>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-[hsl(var(--muted))] rounded-lg">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-[hsl(var(--muted))] rounded-lg">
             <div>
               <h3 className="font-semibold">Novos Cadastros</h3>
               <p className="text-sm text-[hsl(var(--muted-foreground))]">Permitir registro de novos usuários</p>
@@ -657,7 +657,7 @@ export default function AdminSettings() {
               <p>Evite texto nas bordas. Use fundo transparente se possivel.</p>
             </div>
 
-            <button type="submit" className="btn-accent inline-flex items-center gap-2" disabled={marketingSaving}>
+            <button type="submit" className="btn-accent inline-flex items-center gap-2 w-full sm:w-auto justify-center" disabled={marketingSaving}>
               <FaSave />
               <span>{marketingSaving ? 'Salvando...' : 'Salvar marketing'}</span>
             </button>
@@ -723,7 +723,7 @@ export default function AdminSettings() {
             <p>Evite texto nas bordas. Use fundo transparente se possivel.</p>
           </div>
 
-          <button type="submit" className="btn-accent inline-flex items-center gap-2" disabled={marketingSaving}>
+          <button type="submit" className="btn-accent inline-flex items-center gap-2 w-full sm:w-auto justify-center" disabled={marketingSaving}>
             <FaSave />
             <span>{marketingSaving ? 'Salvando...' : 'Salvar banner professores'}</span>
           </button>
@@ -758,7 +758,7 @@ export default function AdminSettings() {
             placeholder="Codigo para inserir no <body>"
             className="input-field min-h-[140px] font-mono text-xs"
           />
-          <button type="submit" className="btn-accent inline-flex items-center gap-2" disabled={marketingSaving}>
+          <button type="submit" className="btn-accent inline-flex items-center gap-2 w-full sm:w-auto justify-center" disabled={marketingSaving}>
             <FaSave />
             <span>{marketingSaving ? 'Salvando...' : 'Salvar pixels'}</span>
           </button>
@@ -823,7 +823,7 @@ export default function AdminSettings() {
             placeholder="Backlinks (um por linha ou anotações)"
             className="input-field min-h-[140px]"
           />
-          <button type="submit" className="btn-accent inline-flex items-center gap-2" disabled={marketingSaving}>
+          <button type="submit" className="btn-accent inline-flex items-center gap-2 w-full sm:w-auto justify-center" disabled={marketingSaving}>
             <FaSave />
             <span>{marketingSaving ? 'Salvando...' : 'Salvar SEO'}</span>
           </button>

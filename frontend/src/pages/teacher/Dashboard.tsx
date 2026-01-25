@@ -337,8 +337,8 @@ export default function TeacherDashboard() {
           <p className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--primary))]">Painel do professor</p>
           <h1 className="headline-font text-4xl md:text-5xl">Gestao com criterio</h1>
         </div>
-        <div className="flex gap-3"> {/* Added a div to contain both buttons */}
-          <Link to="/teacher/course/new-glass" className="btn-glass flex items-center gap-2"> {/* New button */}
+        <div className="flex flex-wrap gap-3 w-full lg:w-auto">
+          <Link to="/teacher/course/new-glass" className="btn-glass flex items-center gap-2 w-full sm:w-auto justify-center">
             <FaPlus />
             Novo Curso
           </Link>
@@ -468,7 +468,7 @@ export default function TeacherDashboard() {
 
       <div className="grid lg:grid-cols-3 gap-8 mb-12">
         <div className="card">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
             <h2 className="text-xl font-semibold">Meus cursos</h2>
             <Link to="/teacher/my-courses" className="text-[hsl(var(--primary))] hover:text-[hsl(var(--accent))]">
               Ver todos
@@ -489,7 +489,7 @@ export default function TeacherDashboard() {
                   <p className="text-[hsl(var(--muted-foreground))] text-sm mb-3 line-clamp-2">
                     {course.description}
                   </p>
-                  <div className="flex justify-between items-center text-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm">
                     <span className={`px-2 py-1 rounded-full ${
                       course.is_published ? 'bg-[hsl(var(--muted))] text-[hsl(var(--primary))]' : 'bg-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]'
                     }`}>
@@ -521,7 +521,7 @@ export default function TeacherDashboard() {
             <div className="space-y-3">
               {comissoesRecentes.map((item) => (
                 <div key={item.id} className="p-3 border border-[hsl(var(--border))] rounded-[12px]">
-                  <div className="flex items-start justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                     <div>
                       <p className="font-semibold">{item.curso_titulo}</p>
                       <p className="text-xs text-[hsl(var(--muted-foreground))]">
@@ -536,7 +536,7 @@ export default function TeacherDashboard() {
                       {item.status === 'pago' ? 'Pago' : 'Pendente'}
                     </span>
                   </div>
-                  <div className="mt-2 flex items-center justify-between text-sm">
+                  <div className="mt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm">
                     <span className="text-[hsl(var(--muted-foreground))]">
                       Venda: R$ {item.valor_venda.toFixed(2)} × {item.percentual}%
                     </span>
@@ -561,11 +561,11 @@ export default function TeacherDashboard() {
             </div>
           </div>
           <div className="bg-[hsl(var(--muted))] rounded-[12px] p-4 space-y-2">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <span className="text-sm text-[hsl(var(--muted-foreground))]">Total de vendas pendentes:</span>
               <span className="font-semibold">{comissoesPendentes.total}</span>
             </div>
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <span className="text-sm text-[hsl(var(--muted-foreground))]">Valor a receber:</span>
               <span className="text-xl font-bold text-[hsl(var(--primary))]">
                 R$ {comissoesPendentes.valor.toFixed(2)}

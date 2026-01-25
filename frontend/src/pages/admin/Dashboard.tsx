@@ -439,7 +439,7 @@ export default function AdminDashboard() {
       </div>
 
       <div className="card mb-8">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div className="flex items-center gap-3">
             <div className="h-11 w-11 rounded-2xl bg-[hsl(var(--muted))] flex items-center justify-center text-[hsl(var(--primary))]">
               <FaBullhorn />
@@ -482,7 +482,7 @@ export default function AdminDashboard() {
       </div>
 
       <div className="card">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <h2 className="text-xl font-semibold">Atividade recente</h2>
           <Link to="/admin/notifications" className="text-sm text-[hsl(var(--primary))] hover:underline">
             Ver todas
@@ -495,7 +495,7 @@ export default function AdminDashboard() {
             <p className="text-sm text-[hsl(var(--muted-foreground))]">Sem atividades recentes.</p>
           ) : (
             recentNotifications.map((item) => (
-              <div key={item.id} className="flex items-center justify-between gap-6 p-3 border border-[hsl(var(--border))] rounded-[12px]">
+              <div key={item.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 border border-[hsl(var(--border))] rounded-[12px]">
                 <div>
                   <p className="font-semibold">{item.titulo}</p>
                   <p className="text-sm text-[hsl(var(--muted-foreground))]">{item.descricao}</p>
@@ -510,22 +510,22 @@ export default function AdminDashboard() {
       </div>
 
       <div className="card mt-8">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <FaBullhorn />
             Notificacoes
           </h2>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap gap-2 w-full lg:w-auto">
             <button
               type="button"
-              className={activeTab === 'sent' ? 'btn-accent' : 'btn-outline'}
+              className={`${activeTab === 'sent' ? 'btn-accent' : 'btn-outline'} w-full sm:w-auto`}
               onClick={() => setActiveTab('sent')}
             >
               Enviadas
             </button>
             <button
               type="button"
-              className={activeTab === 'new' ? 'btn-accent' : 'btn-outline'}
+              className={`${activeTab === 'new' ? 'btn-accent' : 'btn-outline'} w-full sm:w-auto`}
               onClick={() => setActiveTab('new')}
             >
               Nova notificacao
@@ -552,7 +552,7 @@ export default function AdminDashboard() {
                       : 'border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]'
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <p className="text-sm font-semibold">{thread.subject}</p>
                     <span className="text-[10px] uppercase tracking-[0.2em] px-2 py-1 rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--foreground))]">
                       Notificacao

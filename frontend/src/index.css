@@ -123,6 +123,29 @@
     color: hsl(var(--primary-foreground));
   }
 
+  .btn-primary,
+  .btn-secondary,
+  .btn-accent,
+  .btn-outline,
+  .btn-glass,
+  .btn-glass-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-width: 0;
+    flex-shrink: 1;
+    max-width: 100%;
+    text-align: center;
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.2;
+    min-height: 44px;
+    padding: clamp(10px, 2.2vw, 14px) clamp(16px, 4.5vw, 28px);
+    font-size: clamp(11px, 2.6vw, 13px);
+    letter-spacing: clamp(0.02em, 0.35vw, 0.08em);
+  }
+
   .card {
     @apply transition duration-200;
     background: hsl(var(--card));

@@ -107,7 +107,7 @@ export default function Home() {
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-4">
-                  <Link to="/courses" className="btn-accent text-base md:text-lg flex items-center gap-2">
+                  <Link to="/courses" className="btn-accent text-base md:text-lg flex items-center gap-2 w-full sm:w-auto justify-center">
                     Explorar Cursos
                     <FaArrowRight />
                   </Link>
