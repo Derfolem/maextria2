@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Course, Lesson, Progress } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
@@ -36,7 +36,10 @@ const getVideoData = (rawUrl: string) => {
 export default function CoursePlayer() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuthStore();
+  const isPreview = searchParams.get('preview') === '1';
+  const canPreview = Boolean(isPreview && (user?.role === 'admin' || user?.role === 'teacher'));
   const [course, setCourse] = useState<Course | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [progress, setProgress] = useState<Progress[]>([]);
@@ -105,23 +108,31 @@ export default function CoursePlayer() {
         return;
       }
 
-      const { data: enrollment, error: enrollmentError } = await supabase
-        .from('matriculas')
-        .select('*')
-        .eq('curso_id', id)
-        .eq('usuario_id', user.id)
-        .maybeSingle();
-
-      if (enrollmentError) {
-        throw enrollmentError;
-      }
-
-      if (!enrollment) {
-        toast.error('Você não está matriculado neste curso');
-        navigate('/student/my-courses');
+      if (isPreview && !canPreview) {
+        toast.error('Pre-visualizacao restrita a professores e admin.');
+        navigate('/courses');
         return;
       }
-      setEnrollmentId(enrollment.id);
+
+      if (!canPreview) {
+        const { data: enrollment, error: enrollmentError } = await supabase
+          .from('matriculas')
+          .select('*')
+          .eq('curso_id', id)
+          .eq('usuario_id', user.id)
+          .maybeSingle();
+
+        if (enrollmentError) {
+          throw enrollmentError;
+        }
+
+        if (!enrollment) {
+          toast.error('Você não está matriculado neste curso');
+          navigate('/student/my-courses');
+          return;
+        }
+        setEnrollmentId(enrollment.id);
+      }
 
       const { data: courseData, error: courseError } = await supabase
         .from('cursos')
@@ -274,6 +285,10 @@ export default function CoursePlayer() {
   };
 
   const markLessonComplete = async (lessonId: string | number) => {
+    if (canPreview) {
+      toast('Modo pre-visualizacao: progresso nao sera salvo.');
+      return;
+    }
     if (!enrollmentId) return;
     try {
       if (!user) return;
@@ -315,6 +330,10 @@ export default function CoursePlayer() {
   };
 
   const getCertificate = async () => {
+    if (canPreview) {
+      toast('Pre-visualizacao nao gera certificado.');
+      return;
+    }
     if (!enrollmentId) return;
     if (!course?.id) {
       toast.error('Curso nao encontrado para emitir certificado.');
@@ -399,7 +418,7 @@ export default function CoursePlayer() {
 
   const goToNextLesson = () => {
     if (!selectedLesson || !nextLesson) return;
-    if (!isLessonCompleted(selectedLesson.id)) {
+    if (!canPreview && !isLessonCompleted(selectedLesson.id)) {
       toast.error('Conclua a aula atual antes de avançar.');
       return;
     }
@@ -411,7 +430,7 @@ export default function CoursePlayer() {
       ? String(currentModule.lessons?.[currentModule.lessons.length - 1]?.id) === String(selectedLesson.id)
       : false;
 
-    if (currentModule && isLastLessonInModule) {
+    if (!canPreview && currentModule && isLastLessonInModule) {
       const moduleQuiz = moduleQuizzes[String(currentModule.id)];
       if (moduleQuiz && !quizResponses[String(moduleQuiz.id)]) {
         openQuiz(moduleQuiz);
@@ -425,7 +444,7 @@ export default function CoursePlayer() {
       return;
     }
 
-    if (currentModule) {
+    if (!canPreview && currentModule) {
       const moduleQuiz = moduleQuizzes[String(currentModule.id)];
       const isEnteringNewModule = currentModule.id !== nextLesson.module_id;
       if (moduleQuiz && isEnteringNewModule && !quizResponses[String(moduleQuiz.id)]) {
@@ -462,6 +481,10 @@ export default function CoursePlayer() {
   };
 
   const submitQuiz = async () => {
+    if (canPreview) {
+      toast('Pre-visualizacao nao envia provas.');
+      return;
+    }
     if (!user || !selectedQuiz) return;
     const questions = selectedQuiz.questoes || [];
     if (!questions.length) {
@@ -530,13 +553,28 @@ export default function CoursePlayer() {
   return (
     <div className="min-h-screen bg-[hsl(var(--background))]">
       <div className="max-w-[1400px] mx-auto px-[clamp(24px,5vw,80px)] py-[clamp(40px,6vh,80px)]">
+        {canPreview && (
+          <div className="card mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.25em] text-[hsl(var(--muted-foreground))]">
+                Pre-visualizacao
+              </p>
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                Voce esta visualizando o curso como professor. Progresso nao sera salvo.
+              </p>
+            </div>
+            <Link to={`/teacher/course/${course.id}/edit`} className="btn-outline">
+              Voltar para edicoes
+            </Link>
+          </div>
+        )}
         <div className="flex flex-col gap-6 mb-8">
           <button
-            onClick={() => navigate('/student/my-courses')}
+            onClick={() => navigate(canPreview ? `/teacher/course/${course.id}/edit` : '/student/my-courses')}
             className="text-sm uppercase tracking-[0.3em] text-[hsl(var(--muted-foreground))] flex items-center gap-2 hover:text-[hsl(var(--primary))] transition"
           >
             <FaArrowLeft />
-            Voltar aos cursos
+            {canPreview ? 'Voltar para edicoes' : 'Voltar aos cursos'}
           </button>
           <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
             <div>

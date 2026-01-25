@@ -50,6 +50,13 @@ export default function AdminCourses() {
   };
 
   const togglePublish = async (courseId: string | number, currentStatus: boolean) => {
+    if (currentStatus) {
+      const confirmed = confirm(
+        'Tem certeza que deseja recolher? O aluno perdera todos os dados salvos e comecara tudo de novo.'
+      );
+      if (!confirmed) return;
+    }
+
     try {
       const { error } = await supabase
         .from('cursos')

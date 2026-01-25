@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Course } from '../types';
 import { useAuthStore } from '../lib/store';
 import { supabase } from '../lib/supabase';
@@ -13,6 +13,7 @@ import { Breadcrumb } from '../components/Breadcrumb';
 export default function CourseDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { isAuthenticated, user } = useAuthStore();
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
@@ -103,6 +104,16 @@ export default function CourseDetail() {
       return;
     }
 
+    if (canPreview) {
+      navigate(`/student/course/${course?.id}?preview=1`);
+      return;
+    }
+
+    if (course && !course.is_published) {
+      toast.error('Este curso ainda não pode receber matrículas.');
+      return;
+    }
+
     setEnrolling(true);
     try {
       if (!user) {
@@ -184,6 +195,9 @@ export default function CourseDetail() {
     '@graph': [courseSchema, breadcrumbSchema],
   };
 
+  const isPreview = searchParams.get('preview') === '1';
+  const canPreview = Boolean(isPreview && (user?.role === 'admin' || user?.role === 'teacher'));
+
   return (
     <>
       <SEO
@@ -211,6 +225,22 @@ export default function CourseDetail() {
         className="mb-6"
       />
 
+      {canPreview && (
+        <div className="card mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.25em] text-[hsl(var(--muted-foreground))]">
+              Pre-visualizacao
+            </p>
+            <p className="text-sm text-[hsl(var(--muted-foreground))]">
+              Voce esta visualizando como professor. Matriculas nao sao criadas.
+            </p>
+          </div>
+          <Link to={`/teacher/course/${course.id}/edit`} className="btn-outline">
+            Voltar para edicoes
+          </Link>
+        </div>
+      )}
+
       <div className="grid lg:grid-cols-[1.4fr_0.6fr] gap-10">
         <div>
           <div className="w-full aspect-[2/3] rounded-[28px] mb-8 overflow-hidden bg-[hsl(var(--foreground))] text-white flex items-center justify-center text-6xl font-bold">
@@ -235,6 +265,11 @@ export default function CourseDetail() {
             <div className="flex flex-wrap items-center gap-4 text-sm text-[hsl(var(--muted-foreground))]">
               <span className="uppercase tracking-[0.2em]">{course.category || 'Trilha'}</span>
               <span>{course.enrollment_count || 0} alunos</span>
+              {!course.is_published && (
+                <span className="rounded-full bg-[hsl(var(--muted))] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[hsl(var(--primary))]">
+                  Em breve
+                </span>
+              )}
             </div>
             <h1 className="headline-font text-4xl md:text-5xl">{course.title}</h1>
             <p className="text-[hsl(var(--muted-foreground))] text-lg">{course.description}</p>
@@ -288,14 +323,29 @@ export default function CourseDetail() {
               >
                 Acessar Meus Cursos
               </button>
+            ) : canPreview ? (
+              <button
+                onClick={() => navigate(`/student/course/${course.id}?preview=1`)}
+                className="w-full btn-accent py-3"
+              >
+                Visualizar aulas
+              </button>
             ) : (
               <button
                 onClick={handleEnroll}
-                disabled={enrolling}
+                disabled={enrolling || !course.is_published}
                 className="w-full btn-accent py-3"
               >
-                {enrolling ? 'Inscrevendo...' : 'Matricule-se grátis'}
+                {course.is_published
+                  ? (enrolling ? 'Inscrevendo...' : 'Matricule-se gratis')
+                  : 'Em breve'}
               </button>
+            )}
+
+            {!course.is_published && !canPreview && (
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                Este curso esta em modo teste e ainda nao aceita matriculas.
+              </p>
             )}
 
             <div className="space-y-3 text-sm text-[hsl(var(--muted-foreground))]">

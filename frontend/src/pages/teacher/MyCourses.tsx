@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Course } from '../../types';
 import toast from 'react-hot-toast';
-import { FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
+import { FaEye, FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
 import { normalizeCourse } from '../../lib/normalizeCourse';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
@@ -148,6 +148,13 @@ export default function TeacherMyCourses() {
                 </div>
 
                 <div className="flex flex-wrap gap-2">
+                  <Link
+                    to={`/courses/${course.id}?preview=1`}
+                    className="btn-outline flex items-center space-x-1"
+                  >
+                    <FaEye />
+                    <span>Visualizar</span>
+                  </Link>
                   <Link
                     to={`/teacher/course/${course.id}/edit`}
                     className="btn-outline flex items-center space-x-1"
