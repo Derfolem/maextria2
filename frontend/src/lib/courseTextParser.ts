@@ -34,26 +34,8 @@ export function parseCourseText(rawText: string, currentUserId: string | number,
   };
 
   for (const line of lines) {
-    // Course-level parsing
-    if (line.startsWith('Título do Curso:')) {
-      flushContentBuffer(course, 'description'); // Flush any pending course description
-      course.title = line.substring('Título do Curso:'.length).trim();
-    } else if (line.startsWith('Descrição do Curso:')) {
-      flushContentBuffer(course, 'description'); // Flush any pending course description
-      course.description = line.substring('Descrição do Curso:'.length).trim();
-    } else if (line.startsWith('Categoria:')) {
-      flushContentBuffer(course, 'description'); // Flush any pending course description
-      course.category = line.substring('Categoria:'.length).trim();
-    } else if (line.startsWith('Nível:')) {
-      flushContentBuffer(course, 'description'); // Flush any pending course description
-      course.level = line.substring('Nível:'.length).trim();
-    } else if (line.startsWith('Preço:')) {
-      flushContentBuffer(course, 'description'); // Flush any pending course description
-      const priceStr = line.substring('Preço:'.length).trim().replace(',', '.');
-      course.price = parseFloat(priceStr) || 0;
-    }
-    // Module-level parsing
-    else if (line.startsWith('## Módulo:')) {
+    // Module-level parsing (ignore basic course info; user fills manually)
+    if (line.startsWith('## Módulo:') || line.startsWith('## Módulo ')) {
       // Flush previous lesson's content or module description
       if (currentLesson) {
         flushContentBuffer(currentLesson, 'content');
@@ -64,7 +46,9 @@ export function parseCourseText(rawText: string, currentUserId: string | number,
       currentModule = {
         id: uuidv4(),
         course_id: course.id,
-        title: line.substring('## Módulo:'.length).trim(),
+        title: line
+          .replace(/^##\s*M[oó]dulo\s*:?/i, '')
+          .trim(),
         description: '',
         order_index: course.modules!.length,
         lessons: [],
@@ -76,7 +60,7 @@ export function parseCourseText(rawText: string, currentUserId: string | number,
       currentModule.description = line.substring('Descrição do Módulo:'.length).trim();
     }
     // Lesson-level parsing
-    else if (line.startsWith('### Aula:')) {
+    else if (line.startsWith('### Aula:') || line.startsWith('### Aula ')) {
       // Flush previous lesson's content
       if (currentLesson) {
         flushContentBuffer(currentLesson, 'content');
@@ -98,7 +82,9 @@ export function parseCourseText(rawText: string, currentUserId: string | number,
       currentLesson = {
         id: uuidv4(),
         module_id: currentModule.id,
-        title: line.substring('### Aula:'.length).trim(),
+        title: line
+          .replace(/^###\s*Aula\s*:?/i, '')
+          .trim(),
         content: '',
         order_index: currentModule.lessons!.length,
       };
@@ -109,11 +95,9 @@ export function parseCourseText(rawText: string, currentUserId: string | number,
     }
     // General content/description accumulation
     else {
-      // If no specific tag, it's either course description, module description, or lesson content
-      if (!course.title) { // If course title not yet found, assume it's part of course description
-        currentContentBuffer.push(line);
-      } else if (!currentModule) { // If no module yet, add to course description
-        currentContentBuffer.push(line);
+      // Only collect module/lesson text. Ignore top-level course fields.
+      if (!currentModule) {
+        continue;
       } else if (!currentLesson) { // If no lesson yet, add to module description
         currentContentBuffer.push(line);
       } else { // Otherwise, it's lesson content
@@ -138,8 +122,8 @@ export function parseCourseText(rawText: string, currentUserId: string | number,
     m.lessons = m.lessons?.filter(l => l.title || l.content || l.video_url);
   });
 
-  if (!course.title) {
-    return null; // A course must have a title
+  if (!course.modules || course.modules.length === 0) {
+    return null; // Require at least one module to consider extraction valid
   }
 
   return course;
