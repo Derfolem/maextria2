@@ -111,7 +111,7 @@ export default function TeacherLanding() {
       )}
 
       <section className="hero-gradient text-white">
-        <div className="hero-grid">
+        <div className="hero-grid min-h-[100svh]">
           <div className="max-w-7xl mx-auto px-[clamp(24px,5vw,80px)] py-[clamp(32px,6vh,96px)] lg:py-[clamp(120px,14vh,200px)]">
             <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-14 items-center">
               <div className="space-y-6">

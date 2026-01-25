@@ -172,13 +172,13 @@ export default function AdminBlog() {
           ) : posts.length === 0 ? (
             <p className="text-sm text-[hsl(var(--muted-foreground))]">Nenhum post ainda.</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {posts.map((post) => (
                 <button
                   key={post.id}
                   type="button"
                   onClick={() => handleEdit(post)}
-                  className="w-full text-left p-3 border border-[hsl(var(--border))] rounded-[12px] hover:border-[hsl(var(--primary))] transition"
+                  className="w-full text-left p-2 sm:p-3 border border-[hsl(var(--border))] rounded-[12px] hover:border-[hsl(var(--primary))] transition"
                 >
                   <p className="text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))]">
                     {post.publicado ? 'Publicado' : 'Rascunho'}

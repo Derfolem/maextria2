@@ -57,14 +57,14 @@ export default function Blog() {
                   Ler blog
                 </Link>
               </div>
-              <div className="grid grid-cols-2 gap-4 pt-4 text-sm text-white/70">
-                <div className="rounded-2xl bg-white/10 p-4">
-                  <p className="text-xs uppercase tracking-[0.3em] text-white/60">Trilhas</p>
-                  <p className="text-lg font-semibold">Certificadas</p>
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 pt-4 text-xs sm:text-sm text-white/70">
+                <div className="rounded-2xl bg-white/10 p-4 text-center">
+                  <p className="text-[10px] sm:text-xs uppercase tracking-[0.3em] text-white/60">Trilhas</p>
+                  <p className="text-base sm:text-lg font-semibold">Certificadas</p>
                 </div>
-                <div className="rounded-2xl bg-white/10 p-4">
-                  <p className="text-xs uppercase tracking-[0.3em] text-white/60">Foco</p>
-                  <p className="text-lg font-semibold">Aplicacao real</p>
+                <div className="rounded-2xl bg-white/10 p-4 text-center">
+                  <p className="text-[10px] sm:text-xs uppercase tracking-[0.3em] text-white/60">Foco</p>
+                  <p className="text-base sm:text-lg font-semibold">Aplicacao real</p>
                 </div>
               </div>
             </div>
