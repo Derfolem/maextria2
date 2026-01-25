@@ -68,9 +68,7 @@ export default function AdminCourses() {
 
     try {
       const { error } = await supabase
-        .from('cursos')
-        .delete()
-        .eq('id', String(courseId));
+        .rpc('delete_course_full', { curso_id: String(courseId) });
       if (error) throw error;
       toast.success('Curso excluído com sucesso!');
       loadCourses();
