@@ -1,5 +1,12 @@
 # 🎓 MAEXTRIA - Plataforma Completa de Cursos Online
 
+## Estado do frontend (para manter clareza)
+
+Frontend ativo (deploy Vercel / root directory): `frontend/`  
+Frontend obsoleto (arquivado): `legacy/root-frontend/` (usa Supabase direto)
+
+Se for mexer no site em producao, **use apenas** `frontend/`.
+
 Uma plataforma moderna e completa de cursos online com **área de alunos, professores e administradores**, desenvolvida com **React, Node.js, TypeScript e SQLite**.
 
 ---

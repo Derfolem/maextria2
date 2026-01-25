@@ -1,5 +1,10 @@
 # MAEXTRIA - Frontend
 
+## Status
+
+Este e o frontend ativo em producao (Vercel root directory = `frontend/`).  
+O frontend antigo foi arquivado em `legacy/root-frontend/` e esta obsoleto.
+
 Frontend completo da plataforma MAEXTRIA de cursos online desenvolvido com React, TypeScript e TailwindCSS.
 
 ## Tecnologias Utilizadas
