@@ -34,8 +34,27 @@ export function parseCourseText(rawText: string, currentUserId: string | number,
   };
 
   for (const line of lines) {
-    // Module-level parsing (ignore basic course info; user fills manually)
-    if (line.startsWith('## Módulo:') || line.startsWith('## Módulo ')) {
+    // Ignore basic course info (filled manually)
+    if (
+      line.startsWith('Título do Curso:') ||
+      line.startsWith('Descricao do Curso:') ||
+      line.startsWith('Descrição do Curso:') ||
+      line.startsWith('Categoria:') ||
+      line.startsWith('Nível:') ||
+      line.startsWith('Nivel:') ||
+      line.startsWith('Preço:') ||
+      line.startsWith('Preco:')
+    ) {
+      continue;
+    }
+
+    // Module-level parsing (accept simple text or markdown style)
+    if (
+      line.startsWith('## Módulo') ||
+      line.startsWith('## Módulo:') ||
+      line.startsWith('Módulo ') ||
+      line.startsWith('Modulo ')
+    ) {
       // Flush previous lesson's content or module description
       if (currentLesson) {
         flushContentBuffer(currentLesson, 'content');
@@ -46,21 +65,26 @@ export function parseCourseText(rawText: string, currentUserId: string | number,
       currentModule = {
         id: uuidv4(),
         course_id: course.id,
-        title: line
-          .replace(/^##\s*M[oó]dulo\s*:?/i, '')
-          .trim(),
+        title: line.replace(/^##?\s*M[oó]dulo\s*:?\s*/i, '').trim(),
         description: '',
         order_index: course.modules!.length,
         lessons: [],
       };
       course.modules!.push(currentModule);
       currentLesson = null; // Reset lesson context
-    } else if (line.startsWith('Descrição do Módulo:') && currentModule) {
+    } else if (
+      (line.startsWith('Descrição do Módulo:') || line.startsWith('Descricao do Modulo:')) &&
+      currentModule
+    ) {
       flushContentBuffer(currentModule, 'description'); // Flush any pending module description
-      currentModule.description = line.substring('Descrição do Módulo:'.length).trim();
+      currentModule.description = line.replace(/^Descri[cç][aã]o do M[oó]dulo:\s*/i, '').trim();
     }
     // Lesson-level parsing
-    else if (line.startsWith('### Aula:') || line.startsWith('### Aula ')) {
+    else if (
+      line.startsWith('### Aula') ||
+      line.startsWith('### Aula:') ||
+      line.startsWith('Aula ')
+    ) {
       // Flush previous lesson's content
       if (currentLesson) {
         flushContentBuffer(currentLesson, 'content');
@@ -82,9 +106,7 @@ export function parseCourseText(rawText: string, currentUserId: string | number,
       currentLesson = {
         id: uuidv4(),
         module_id: currentModule.id,
-        title: line
-          .replace(/^###\s*Aula\s*:?/i, '')
-          .trim(),
+        title: line.replace(/^###?\s*Aula\s*:?\s*/i, '').trim(),
         content: '',
         order_index: currentModule.lessons!.length,
       };
