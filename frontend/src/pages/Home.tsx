@@ -219,7 +219,7 @@ export default function Home() {
             </div>
           ) : topCourses.length > 0 ? (
             <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory">
-              {topCourses.map((course, index) => (
+              {topCourses.map((course) => (
                 <Link
                   key={course.id}
                   to={`/courses/${course.id}`}
