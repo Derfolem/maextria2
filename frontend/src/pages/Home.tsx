@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaArrowRight, FaCompass, FaLayerGroup, FaShieldAlt, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { Course } from '../types';
 import { normalizeCourse } from '../lib/normalizeCourse';
@@ -14,6 +14,17 @@ export default function Home() {
   const [topCourses, setTopCourses] = useState<Course[]>([]);
   const [loadingTopCourses, setLoadingTopCourses] = useState(true);
   const [carouselIndex, setCarouselIndex] = useState(0);
+  const [slideDirection, setSlideDirection] = useState(0);
+
+  const nextSlide = () => {
+    setSlideDirection(1);
+    setCarouselIndex((prev) => (prev === topCourses.length - 1 ? 0 : prev + 1));
+  };
+
+  const prevSlide = () => {
+    setSlideDirection(-1);
+    setCarouselIndex((prev) => (prev === 0 ? topCourses.length - 1 : prev - 1));
+  };
 
   useEffect(() => {
     const loadTopCourses = async () => {
@@ -222,7 +233,7 @@ export default function Home() {
             <div className="relative group/carousel">
               {/* Seta esquerda */}
               <button
-                onClick={() => setCarouselIndex((prev) => (prev === 0 ? topCourses.length - 1 : prev - 1))}
+                onClick={prevSlide}
                 className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 items-center justify-center rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white opacity-0 group-hover/carousel:opacity-100 hover:bg-white/20 transition-all duration-300 -translate-x-2 group-hover/carousel:translate-x-0"
                 aria-label="Anterior"
               >
@@ -231,7 +242,7 @@ export default function Home() {
 
               {/* Carrossel */}
               <div
-                className="flex justify-center items-center gap-4 md:gap-8 touch-pan-x"
+                className="flex justify-center items-center gap-4 md:gap-8 touch-pan-x overflow-hidden"
                 onTouchStart={(e) => {
                   const touch = e.touches[0];
                   (e.currentTarget as HTMLElement).dataset.touchStartX = String(touch.clientX);
@@ -242,62 +253,86 @@ export default function Home() {
                   const diff = startX - endX;
                   if (Math.abs(diff) > 50) {
                     if (diff > 0) {
-                      setCarouselIndex((prev) => (prev === topCourses.length - 1 ? 0 : prev + 1));
+                      nextSlide();
                     } else {
-                      setCarouselIndex((prev) => (prev === 0 ? topCourses.length - 1 : prev - 1));
+                      prevSlide();
                     }
                   }
                 }}
               >
-                {[-1, 0, 1].map((offset) => {
-                  const index = (carouselIndex + offset + topCourses.length) % topCourses.length;
-                  const course = topCourses[index];
-                  const isCenter = offset === 0;
+                <AnimatePresence initial={false} mode="popLayout">
+                  {[-1, 0, 1].map((offset) => {
+                    const index = (carouselIndex + offset + topCourses.length) % topCourses.length;
+                    const course = topCourses[index];
+                    const isCenter = offset === 0;
 
-                  return (
-                    <Link
-                      key={`${course.id}-${offset}`}
-                      to={`/courses/${course.id}`}
-                      className={`flex-shrink-0 transition-all duration-500 ${
-                        isCenter
-                          ? 'w-[200px] md:w-[280px] scale-100 z-10'
-                          : 'w-[140px] md:w-[200px] scale-90 opacity-70'
-                      }`}
-                    >
-                      <div
-                        className={`relative aspect-[2/3] rounded-xl overflow-hidden shadow-lg transition-all duration-500 ${
+                    return (
+                      <motion.div
+                        key={`${carouselIndex}-${offset}`}
+                        initial={{
+                          x: slideDirection * 100,
+                          opacity: 0,
+                          scale: 0.8
+                        }}
+                        animate={{
+                          x: 0,
+                          opacity: isCenter ? 1 : 0.7,
+                          scale: isCenter ? 1 : 0.9
+                        }}
+                        exit={{
+                          x: slideDirection * -100,
+                          opacity: 0,
+                          scale: 0.8
+                        }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 300,
+                          damping: 30,
+                          duration: 0.5
+                        }}
+                        className={`flex-shrink-0 ${
                           isCenter
-                            ? 'shadow-2xl shadow-[hsl(var(--primary))]/20'
-                            : 'grayscale'
+                            ? 'w-[200px] md:w-[280px] z-10'
+                            : 'w-[140px] md:w-[200px]'
                         }`}
                       >
-                        {course.thumbnail ? (
-                          <img
-                            src={course.thumbnail}
-                            alt={course.title}
-                            loading="lazy"
-                            decoding="async"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[hsl(var(--primary))] via-[hsl(var(--foreground))] to-[hsl(var(--accent))]">
-                            <span className="text-4xl font-bold text-white">{course.title.charAt(0)}</span>
+                        <Link to={`/courses/${course.id}`}>
+                          <div
+                            className={`relative aspect-[2/3] rounded-xl overflow-hidden shadow-lg transition-all duration-300 ${
+                              isCenter
+                                ? 'shadow-2xl shadow-[hsl(var(--primary))]/20'
+                                : 'grayscale'
+                            }`}
+                          >
+                            {course.thumbnail ? (
+                              <img
+                                src={course.thumbnail}
+                                alt={course.title}
+                                loading="lazy"
+                                decoding="async"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[hsl(var(--primary))] via-[hsl(var(--foreground))] to-[hsl(var(--accent))]">
+                                <span className="text-4xl font-bold text-white">{course.title.charAt(0)}</span>
+                              </div>
+                            )}
+                            <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity duration-300 ${isCenter ? 'opacity-100' : 'opacity-0'}`} />
+                            <div className={`absolute bottom-0 left-0 right-0 p-4 transition-all duration-300 ${isCenter ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                              <p className="text-white text-sm font-semibold line-clamp-2">{course.title}</p>
+                              <p className="text-white/70 text-xs mt-1">{course.teacher_name || 'MAEXTRIA'}</p>
+                            </div>
                           </div>
-                        )}
-                        <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity duration-300 ${isCenter ? 'opacity-100' : 'opacity-0'}`} />
-                        <div className={`absolute bottom-0 left-0 right-0 p-4 transition-all duration-300 ${isCenter ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                          <p className="text-white text-sm font-semibold line-clamp-2">{course.title}</p>
-                          <p className="text-white/70 text-xs mt-1">{course.teacher_name || 'MAEXTRIA'}</p>
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
+                        </Link>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
               </div>
 
               {/* Seta direita */}
               <button
-                onClick={() => setCarouselIndex((prev) => (prev === topCourses.length - 1 ? 0 : prev + 1))}
+                onClick={nextSlide}
                 className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 items-center justify-center rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white opacity-0 group-hover/carousel:opacity-100 hover:bg-white/20 transition-all duration-300 translate-x-2 group-hover/carousel:translate-x-0"
                 aria-label="Próximo"
               >
