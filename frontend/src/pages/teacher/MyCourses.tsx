@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Course } from '../../types';
 import toast from 'react-hot-toast';
-import { FaEye, FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
+import { FaEye, FaPlus, FaEdit, FaTrash, FaCopy } from 'react-icons/fa';
 import { normalizeCourse } from '../../lib/normalizeCourse';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
@@ -76,6 +76,115 @@ export default function TeacherMyCourses() {
       loadCourses();
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao excluir curso');
+    }
+  };
+
+  const duplicateCourse = async (courseId: string | number) => {
+    if (!confirm('Deseja duplicar este curso?')) return;
+
+    const toastId = toast.loading('Duplicando curso...');
+
+    try {
+      // 1. Buscar curso original
+      const { data: originalCourse, error: courseError } = await supabase
+        .from('cursos')
+        .select('*')
+        .eq('id', courseId)
+        .single();
+      if (courseError || !originalCourse) throw courseError || new Error('Curso não encontrado');
+
+      // 2. Criar cópia do curso
+      const { id: _id, criado_em: _criado, atualizado_em: _atualizado, ...courseData } = originalCourse;
+      const { data: newCourse, error: newCourseError } = await supabase
+        .from('cursos')
+        .insert({
+          ...courseData,
+          titulo: `Cópia de ${originalCourse.titulo}`,
+          ativo: false,
+          professor_id: user?.id,
+        })
+        .select()
+        .single();
+      if (newCourseError || !newCourse) throw newCourseError || new Error('Erro ao criar curso');
+
+      // 3. Buscar e duplicar módulos
+      const { data: modulos } = await supabase
+        .from('modulos')
+        .select('*')
+        .eq('curso_id', courseId)
+        .order('ordem');
+
+      const moduloIdMap: Record<string, string> = {};
+
+      if (modulos && modulos.length > 0) {
+        for (const modulo of modulos) {
+          const { id: oldModuloId, criado_em: _mc, ...moduloData } = modulo;
+          const { data: newModulo } = await supabase
+            .from('modulos')
+            .insert({ ...moduloData, curso_id: newCourse.id })
+            .select()
+            .single();
+          if (newModulo) {
+            moduloIdMap[oldModuloId] = newModulo.id;
+          }
+        }
+
+        // 4. Buscar e duplicar aulas
+        const oldModuloIds = Object.keys(moduloIdMap);
+        const { data: aulas } = await supabase
+          .from('aulas')
+          .select('*')
+          .in('modulo_id', oldModuloIds)
+          .order('ordem');
+
+        if (aulas && aulas.length > 0) {
+          for (const aula of aulas) {
+            const { id: _aulaId, criado_em: _ac, ...aulaData } = aula;
+            await supabase
+              .from('aulas')
+              .insert({ ...aulaData, modulo_id: moduloIdMap[aula.modulo_id] });
+          }
+        }
+
+        // 5. Buscar e duplicar questionários e questões
+        const { data: questionarios } = await supabase
+          .from('questionarios')
+          .select('*')
+          .eq('curso_id', courseId);
+
+        if (questionarios && questionarios.length > 0) {
+          for (const quiz of questionarios) {
+            const { id: oldQuizId, criado_em: _qc, ...quizData } = quiz;
+            const newModuloId = quiz.modulo_id ? moduloIdMap[quiz.modulo_id] : null;
+            const { data: newQuiz } = await supabase
+              .from('questionarios')
+              .insert({ ...quizData, curso_id: newCourse.id, modulo_id: newModuloId })
+              .select()
+              .single();
+
+            if (newQuiz) {
+              const { data: questoes } = await supabase
+                .from('questoes')
+                .select('*')
+                .eq('questionario_id', oldQuizId);
+
+              if (questoes && questoes.length > 0) {
+                for (const questao of questoes) {
+                  const { id: _qid, ...questaoData } = questao;
+                  await supabase
+                    .from('questoes')
+                    .insert({ ...questaoData, questionario_id: newQuiz.id });
+                }
+              }
+            }
+          }
+        }
+      }
+
+      toast.success('Curso duplicado com sucesso!', { id: toastId });
+      loadCourses();
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao duplicar curso', { id: toastId });
     }
   };
 
@@ -162,6 +271,13 @@ export default function TeacherMyCourses() {
                     <FaEdit />
                     <span>Editar</span>
                   </Link>
+                  <button
+                    onClick={() => duplicateCourse(course.id)}
+                    className="btn-outline flex items-center space-x-1"
+                  >
+                    <FaCopy />
+                    <span>Duplicar</span>
+                  </button>
                   {!course.is_published && (
                     <button
                       onClick={() => deleteCourse(course.id)}
