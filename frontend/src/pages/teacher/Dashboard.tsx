@@ -412,7 +412,7 @@ export default function TeacherDashboard() {
         ))}
       </div>
 
-      <div className="grid md:grid-cols-3 gap-8 mb-12">
+      <div className="grid md:grid-cols-2 gap-8 mb-12">
         <div className="card">
           <h2 className="text-xl font-semibold mb-4">Receita mensal</h2>
           <ResponsiveContainer width="100%" height={250}>
@@ -533,7 +533,9 @@ export default function TeacherDashboard() {
             </div>
           )}
         </div>
+      </div>
 
+      <div className="grid md:grid-cols-2 gap-8 mb-12">
         <div className="card">
           <div className="flex items-center gap-3 mb-4">
             <div className="h-12 w-12 rounded-full bg-[hsl(var(--accent))] flex items-center justify-center text-white">
