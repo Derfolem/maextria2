@@ -43,6 +43,7 @@ export default function AdminBlog() {
   const [current, setCurrent] = useState<BlogPost>(emptyPost);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState('');
   const token = useAuthStore((state) => state.token);
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -77,6 +78,10 @@ export default function AdminBlog() {
   };
 
   const hasCurrent = Boolean(current.id);
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredPosts = normalizedSearch
+    ? posts.filter((post) => post.titulo.toLowerCase().includes(normalizedSearch))
+    : posts;
 
   const handleEdit = (post: BlogPost) => {
     setCurrent({
@@ -166,27 +171,35 @@ export default function AdminBlog() {
 
       <div className="grid lg:grid-cols-[1fr_1.2fr] gap-6 lg:gap-8">
         <div className="card p-4 sm:p-6">
-          <h2 className="text-lg font-semibold mb-4">Publicacoes</h2>
+          <div className="flex flex-col gap-3 mb-4">
+            <h2 className="text-lg font-semibold">Publicacoes</h2>
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              className="input-field"
+              placeholder="Buscar por titulo"
+            />
+            <p className="text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))]">
+              {filteredPosts.length} resultado{filteredPosts.length === 1 ? '' : 's'}
+            </p>
+          </div>
           {loading ? (
             <p className="text-sm text-[hsl(var(--muted-foreground))]">Carregando...</p>
           ) : posts.length === 0 ? (
             <p className="text-sm text-[hsl(var(--muted-foreground))]">Nenhum post ainda.</p>
+          ) : filteredPosts.length === 0 ? (
+            <p className="text-sm text-[hsl(var(--muted-foreground))]">Nenhum resultado para a busca.</p>
           ) : (
-            <div className="space-y-2 sm:space-y-3">
-              {posts.map((post) => (
+            <div className="space-y-2 sm:space-y-3 max-h-[320px] overflow-y-auto pr-1">
+              {filteredPosts.map((post) => (
                 <button
                   key={post.id}
                   type="button"
                   onClick={() => handleEdit(post)}
-                  className="w-full text-left p-2 sm:p-3 border border-[hsl(var(--border))] rounded-[12px] hover:border-[hsl(var(--primary))] transition"
+                  className="w-full text-left px-3 py-2 sm:px-4 sm:py-2.5 border border-[hsl(var(--border))] rounded-[10px] hover:border-[hsl(var(--primary))] transition"
                 >
-                  <p className="text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))]">
-                    {post.publicado ? 'Publicado' : 'Rascunho'}
-                  </p>
-                  <p className="font-semibold">{post.titulo}</p>
-                  <p className="text-sm text-[hsl(var(--muted-foreground))] line-clamp-2">
-                    {post.resumo || 'Sem resumo'}
-                  </p>
+                  <p className="font-semibold truncate">{post.titulo}</p>
                 </button>
               ))}
             </div>
