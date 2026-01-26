@@ -17,7 +17,7 @@ export function normalizeCourse(raw: RawCourse): Course {
       (typeof raw.category === 'string' ? raw.category : undefined),
     level: raw.difficulty ?? raw.level,
     thumbnail: raw.cover_image ?? raw.imagem_capa_url ?? raw.thumbnail,
-    duration_hours: raw.duration_hours ?? raw.carga_horaria_horas ?? raw.duration ?? raw.durationHours,
+    duration_hours: raw.duration_hours ?? raw.carga_horaria_horas ?? raw.cargaHorariaHoras ?? raw.duration ?? raw.durationHours,
     is_published:
       typeof raw.is_published === 'number'
         ? raw.is_published === 1
