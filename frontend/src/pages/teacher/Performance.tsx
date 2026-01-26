@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaArrowLeft, FaTrophy, FaUsers, FaCertificate, FaSearch, FaBook, FaChartBar } from 'react-icons/fa';
+import { FaArrowLeft, FaUsers, FaCertificate, FaSearch, FaBook, FaChartBar } from 'react-icons/fa';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
 import { normalizeCourse } from '../../lib/normalizeCourse';
