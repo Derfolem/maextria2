@@ -507,6 +507,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     <Link to="/teacher/tutorial" className="nav-link" onClick={() => setMobileOpen(false)}>
                       Tutorial
                     </Link>
+                    <Link to="/teacher/performance" className="nav-link" onClick={() => setMobileOpen(false)}>
+                      Desempenho
+                    </Link>
                     <Link to="/teacher/dashboard" className="nav-link" onClick={() => setMobileOpen(false)}>
                       Painel
                     </Link>
