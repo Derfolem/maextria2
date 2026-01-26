@@ -15,6 +15,7 @@ export function normalizeEnrollment(raw: RawEnrollment): Enrollment {
     difficulty: raw.difficulty ?? rawCourse?.nivel,
         teacher_name: raw.teacher_name ?? rawCourse?.teacher_name ?? rawCourse?.professor_nome,
     is_published: rawCourse?.ativo ?? 1,
+    carga_horaria_horas: rawCourse?.carga_horaria_horas,
     created_at: raw.enrolled_at ?? raw.data_matricula,
     updated_at: raw.enrolled_at ?? raw.data_matricula,
   });
