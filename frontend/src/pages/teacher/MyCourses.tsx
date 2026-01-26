@@ -94,12 +94,15 @@ export default function TeacherMyCourses() {
       if (courseError || !originalCourse) throw courseError || new Error('Curso não encontrado');
 
       // 2. Criar cópia do curso
-      const { id: _id, criado_em: _criado, atualizado_em: _atualizado, ...courseData } = originalCourse;
+      const { id: _id, criado_em: _criado, atualizado_em: _atualizado, slug: _slug, ...courseData } = originalCourse;
+      const timestamp = Date.now();
+      const newSlug = originalCourse.slug ? `${originalCourse.slug}-copia-${timestamp}` : `curso-copia-${timestamp}`;
       const { data: newCourse, error: newCourseError } = await supabase
         .from('cursos')
         .insert({
           ...courseData,
           titulo: `Cópia de ${originalCourse.titulo}`,
+          slug: newSlug,
           ativo: false,
           professor_id: user?.id,
         })
