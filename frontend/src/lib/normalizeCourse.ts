@@ -3,8 +3,7 @@ import { Course } from '../types';
 type RawCourse = Record<string, any>;
 
 export function normalizeCourse(raw: RawCourse): Course {
-  const durationValue = raw.duration_hours ?? raw.carga_horaria_horas ?? raw.cargaHorariaHoras ?? raw.duration ?? raw.durationHours;
-  console.log("NORMALIZE DEBUG:", { raw_carga: raw.carga_horaria_horas, raw_duration: raw.duration_hours, result: durationValue });
+  const durationValue = raw.carga_horaria_horas || raw.cargaHorariaHoras || raw.duration_hours || raw.duration || raw.durationHours || undefined;
     return {
     id: raw.id,
     title: raw.title ?? raw.titulo ?? '',
