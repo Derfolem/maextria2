@@ -4,9 +4,11 @@ import { Course, Lesson, Progress } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
 import toast from 'react-hot-toast';
-import { FaCheckCircle, FaCircle, FaDownload, FaArrowLeft, FaCertificate, FaPlay } from 'react-icons/fa';
+import { FaCheckCircle, FaCircle, FaDownload, FaArrowLeft, FaCertificate, FaPlay, FaStar } from 'react-icons/fa';
 import { normalizeCourse } from '../../lib/normalizeCourse';
 import DOMPurify from 'dompurify';
+import StarRating from '../../components/StarRating';
+import LessonRatingModal from '../../components/LessonRatingModal';
 
 const YOUTUBE_REGEX = /(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{6,})/;
 const VIMEO_REGEX = /vimeo\.com\/(?:video\/)?(\d+)/;
@@ -57,6 +59,8 @@ export default function CoursePlayer() {
   const [quizResult, setQuizResult] = useState<{ percentual: number; aprovado: boolean } | null>(null);
   const [minScore, setMinScore] = useState(60);
   const [quizResponses, setQuizResponses] = useState<Record<string, boolean>>({});
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [pendingRating, setPendingRating] = useState<{ lessonId: string | number; action: 'complete' | 'next' } | null>(null);
 
   useEffect(() => {
     loadCourse();
@@ -274,6 +278,7 @@ export default function CoursePlayer() {
         lesson_id: item.aula_id,
         completed: item.concluido,
         completed_at: item.concluido_em,
+        rating: item.rating,
       }));
       setProgress(mapped);
     } catch (error) {
@@ -285,12 +290,20 @@ export default function CoursePlayer() {
     return progress.some((p) => String(p.lesson_id) === String(lessonId) && p.completed);
   };
 
-  const markLessonComplete = async (lessonId: string | number) => {
+  const markLessonComplete = async (lessonId: string | number, rating?: number) => {
     if (canPreview) {
       toast('Modo pre-visualizacao: progresso nao sera salvo.');
       return;
     }
     if (!enrollmentId) return;
+
+    // Se não tem rating, abrir modal para avaliar
+    if (!rating) {
+      setPendingRating({ lessonId, action: 'complete' });
+      setShowRatingModal(true);
+      return;
+    }
+
     try {
       if (!user) return;
       const { error } = await supabase
@@ -300,6 +313,7 @@ export default function CoursePlayer() {
           aula_id: lessonId,
           concluido: true,
           concluido_em: new Date().toISOString(),
+          rating: rating,
         }, { onConflict: 'usuario_id,aula_id' });
       if (error) {
         throw error;
@@ -309,7 +323,7 @@ export default function CoursePlayer() {
         if (existing) {
           return prev.map((item) =>
             String(item.lesson_id) === String(lessonId)
-              ? { ...item, completed: true, completed_at: new Date().toISOString() }
+              ? { ...item, completed: true, completed_at: new Date().toISOString(), rating }
               : item
           );
         }
@@ -321,13 +335,70 @@ export default function CoursePlayer() {
             user_id: user.id,
             completed: true,
             completed_at: new Date().toISOString(),
+            rating,
           } as Progress,
         ];
       });
-      toast.success('Aula marcada como concluída!');
+      toast.success('Aula avaliada e concluída!');
     } catch (error) {
       toast.error('Erro ao marcar aula como concluída');
     }
+  };
+
+  const handleRatingSubmit = async (rating: number) => {
+    if (!pendingRating) return;
+
+    setShowRatingModal(false);
+
+    if (pendingRating.action === 'complete') {
+      await markLessonComplete(pendingRating.lessonId, rating);
+    } else if (pendingRating.action === 'next') {
+      // Atualizar rating da aula já concluída e avançar
+      if (user) {
+        try {
+          await supabase
+            .from('progresso_aula')
+            .update({ rating })
+            .eq('usuario_id', user.id)
+            .eq('aula_id', pendingRating.lessonId);
+
+          setProgress((prev) =>
+            prev.map((item) =>
+              String(item.lesson_id) === String(pendingRating.lessonId)
+                ? { ...item, rating }
+                : item
+            )
+          );
+        } catch (error) {
+          console.error('Erro ao salvar rating:', error);
+        }
+      }
+
+      // Avançar para próxima aula
+      const lessonList = course?.modules?.flatMap((module) =>
+        (module.lessons || []).map((lesson) => ({
+          ...lesson,
+          moduleTitle: module.title,
+        }))
+      ) || [];
+      const selectedIndex = selectedLesson
+        ? lessonList.findIndex((lesson) => String(lesson.id) === String(selectedLesson.id))
+        : -1;
+      const nextLesson = selectedIndex >= 0 && selectedIndex < lessonList.length - 1
+        ? lessonList[selectedIndex + 1]
+        : null;
+
+      if (nextLesson) {
+        setSelectedLesson(nextLesson);
+      }
+    }
+
+    setPendingRating(null);
+  };
+
+  const getLessonRating = (lessonId: string | number) => {
+    const p = progress.find((item) => String(item.lesson_id) === String(lessonId));
+    return p?.rating;
   };
 
   const getCertificate = async () => {
@@ -419,8 +490,18 @@ export default function CoursePlayer() {
 
   const goToNextLesson = () => {
     if (!selectedLesson || !nextLesson) return;
+
+    // Verificar se aula foi concluída
     if (!canPreview && !isLessonCompleted(selectedLesson.id)) {
-      toast.error('Conclua a aula atual antes de avançar.');
+      toast.error('Conclua e avalie a aula atual antes de avançar.');
+      return;
+    }
+
+    // Verificar se aula foi avaliada (mesmo que concluída)
+    const currentRating = getLessonRating(selectedLesson.id);
+    if (!canPreview && !currentRating) {
+      setPendingRating({ lessonId: selectedLesson.id, action: 'next' });
+      setShowRatingModal(true);
       return;
     }
 
@@ -781,16 +862,25 @@ export default function CoursePlayer() {
                   <div className="mt-8">
                     <div className="flex flex-wrap items-center gap-3">
                       {isLessonCompleted(selectedLesson.id) ? (
-                        <button className="btn-secondary">
-                          <FaCheckCircle className="inline mr-2" />
-                          Aula concluída
-                        </button>
+                        <div className="flex items-center gap-3">
+                          <button className="btn-secondary flex items-center gap-2">
+                            <FaCheckCircle />
+                            Aula concluída
+                          </button>
+                          {getLessonRating(selectedLesson.id) && (
+                            <div className="flex items-center gap-1 text-sm text-[hsl(var(--muted-foreground))]">
+                              <span>Sua avaliação:</span>
+                              <StarRating value={getLessonRating(selectedLesson.id) || 0} readonly size="sm" />
+                            </div>
+                          )}
+                        </div>
                       ) : (
                         <button
                           onClick={() => markLessonComplete(selectedLesson.id)}
-                          className="btn-accent"
+                          className="btn-accent flex items-center gap-2"
                         >
-                          Aula concluída
+                          <FaStar />
+                          Concluir e Avaliar
                         </button>
                       )}
                       <button
@@ -907,6 +997,17 @@ export default function CoursePlayer() {
           </aside>
         </div>
       </div>
+
+      {/* Modal de Avaliação */}
+      <LessonRatingModal
+        isOpen={showRatingModal}
+        lessonTitle={selectedLesson?.title || ''}
+        onSubmit={handleRatingSubmit}
+        onCancel={() => {
+          setShowRatingModal(false);
+          setPendingRating(null);
+        }}
+      />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FaArrowRight, FaBookmark, FaPlayCircle, FaBalanceScale, FaBolt, FaChalkboardTeacher } from 'react-icons/fa';
 import { Course } from '../../types';
+import StarRating from '../../components/StarRating';
 
 type HomeBelowFoldProps = {
   loadingTopCourses: boolean;
@@ -321,6 +322,7 @@ export default function HomeBelowFold({
                     <div className="space-y-3">
                       <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))]">
                         <span>{course.category || 'Trilha'}</span>
+                        <StarRating value={course.rating || 4.3} readonly size="sm" />
                         <span>{course.duration_hours ? `${course.duration_hours}h` : '—'}</span>
                       </div>
                       <h3 className="text-xl font-semibold">{course.title}</h3>

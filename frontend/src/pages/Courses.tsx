@@ -19,6 +19,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { normalizeCourse } from '../lib/normalizeCourse';
 import { SEO } from '../components/SEO';
+import StarRating from '../components/StarRating';
 
 type SortOption = 'popular' | 'recent' | 'az' | 'za';
 type ViewMode = 'grid' | 'list';
@@ -682,10 +683,7 @@ export default function Courses() {
                             {course.description}
                           </p>
                           <div className="flex items-center justify-between text-sm text-[hsl(var(--muted-foreground))]">
-                            <span className="flex items-center gap-1">
-                              <FaUsers className="text-xs" />
-                              {course.enrollment_count || 0}
-                            </span>
+                            <StarRating value={course.rating || 4.3} readonly size="sm" showValue />
                             {course.duration_hours && (
                               <span className="flex items-center gap-1">
                                 <FaClock className="text-xs" />
@@ -746,10 +744,7 @@ export default function Courses() {
                             {course.description}
                           </p>
                           <div className="flex items-center gap-4 mt-3 text-sm text-[hsl(var(--muted-foreground))]">
-                            <span className="flex items-center gap-1">
-                              <FaUsers className="text-xs" />
-                              {course.enrollment_count || 0} alunos
-                            </span>
+                            <StarRating value={course.rating || 4.3} readonly size="sm" showValue />
                             {course.duration_hours && (
                               <span className="flex items-center gap-1">
                                 <FaClock className="text-xs" />

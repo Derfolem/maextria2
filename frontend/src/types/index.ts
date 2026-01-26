@@ -22,6 +22,7 @@ export interface Course {
   created_at: string | number;
   updated_at: string | number;
   enrollment_count?: number;
+  rating?: number;
   modules?: Module[];
 }
 
@@ -70,6 +71,7 @@ export interface Progress {
   lesson_id: string | number;
   completed: boolean;
   completed_at?: string;
+  rating?: number;
 }
 
 export interface Certificate {

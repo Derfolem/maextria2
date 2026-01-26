@@ -29,6 +29,7 @@ export function normalizeCourse(raw: RawCourse): Course {
     enrollment_count: Number(
       raw.student_count ?? raw.enrollment_count ?? raw.total_students ?? 0
     ),
+    rating: raw.rating_medio ?? raw.rating ?? 4.3,
     modules: raw.modules,
   };
 }

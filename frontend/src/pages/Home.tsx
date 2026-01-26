@@ -7,6 +7,7 @@ import { Course } from '../types';
 import { normalizeCourse } from '../lib/normalizeCourse';
 import { SEO, createOrganizationSchema, createWebSiteSchema } from '../components/SEO';
 import { createFAQSchema, createHowToSchema } from '../components/AdvancedSchemas';
+import StarRating from '../components/StarRating';
 
 const HomeBelowFold = lazy(() => import('./home/HomeBelowFold'));
 
@@ -379,6 +380,10 @@ export default function Home() {
                             <div className={`absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent transition-opacity duration-300 ${isCenter ? 'opacity-100' : 'opacity-0'}`} />
                             <div className={`absolute bottom-0 left-0 right-0 p-5 transition-all duration-500 ${isCenter ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
                               <p className="text-white font-bold text-base md:text-lg line-clamp-2 mb-1">{course.title}</p>
+                              <div className="flex items-center gap-2 mb-1">
+                                <StarRating value={course.rating || 4.3} readonly size="sm" />
+                                <span className="text-white/60 text-xs">{(course.rating || 4.3).toFixed(1)}</span>
+                              </div>
                               <p className="text-white/60 text-sm">{course.teacher_name || 'MAEXTRIA'}</p>
                             </div>
                           </div>
