@@ -164,15 +164,15 @@ export default function AdminBlog() {
         </button>
       </div>
 
-      <div className="grid lg:grid-cols-[1fr_1.2fr] gap-8">
-        <div className="card p-6">
+      <div className="grid lg:grid-cols-[1fr_1.2fr] gap-6 lg:gap-8">
+        <div className="card p-4 sm:p-6">
           <h2 className="text-lg font-semibold mb-4">Publicacoes</h2>
           {loading ? (
             <p className="text-sm text-[hsl(var(--muted-foreground))]">Carregando...</p>
           ) : posts.length === 0 ? (
             <p className="text-sm text-[hsl(var(--muted-foreground))]">Nenhum post ainda.</p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2 sm:space-y-3">
               {posts.map((post) => (
                 <button
                   key={post.id}
