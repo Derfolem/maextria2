@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Course } from '../../types';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
-import { FaTrash, FaEye, FaEyeSlash, FaSearch, FaArrowRight, FaEdit } from 'react-icons/fa';
+import { FaTrash, FaEye, FaEyeSlash, FaSearch, FaArrowRight, FaEdit, FaClock } from 'react-icons/fa';
 import { normalizeCourse } from '../../lib/normalizeCourse';
 
 export default function AdminCourses() {
@@ -149,8 +149,12 @@ export default function AdminCourses() {
                 <div className="flex flex-wrap items-center gap-3 text-sm text-[hsl(var(--muted-foreground))]">
                   <span>Professor: {course.teacher_name || 'N/A'}</span>
                   <span>•</span>
-                  <span>•</span>
-                  <span>{course.enrollment_count || 0} alunos</span>
+                  {(course.duration_hours !== undefined && course.duration_hours !== null) && (
+                    <span className="flex items-center gap-1">
+                        <FaClock className="text-xs" />
+                        {course.duration_hours}h
+                    </span>
+                  )}
                   <span>•</span>
                   <span>Criado em {new Date(course.created_at).toLocaleDateString('pt-BR')}</span>
                 </div>

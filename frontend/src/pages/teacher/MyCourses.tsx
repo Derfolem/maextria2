@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Course } from '../../types';
 import toast from 'react-hot-toast';
-import { FaEye, FaPlus, FaEdit, FaTrash, FaCopy } from 'react-icons/fa';
+import { FaEye, FaPlus, FaEdit, FaTrash, FaCopy, FaPaperPlane, FaExclamationTriangle, FaClock } from 'react-icons/fa';
 import { normalizeCourse } from '../../lib/normalizeCourse';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
@@ -76,6 +76,27 @@ export default function TeacherMyCourses() {
       loadCourses();
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao excluir curso');
+    }
+  };
+
+  const toggleCuradoria = async (courseId: string | number, currentStatus: boolean) => {
+    if (currentStatus) return; // Não pode desativar curadoria manualmente
+
+    if (!confirm('Deseja enviar este curso para curadoria? Você não poderá editar enquanto estiver em análise.')) return;
+
+    try {
+      const { error } = await supabase
+        .from('cursos')
+        .update({
+          em_curadoria: true,
+          feedback_curadoria: null // Limpa feedback anterior ao reenviar
+        })
+        .eq('id', String(courseId));
+      if (error) throw error;
+      toast.success('Curso enviado para curadoria!');
+      loadCourses();
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao enviar para curadoria');
     }
   };
 
@@ -245,15 +266,22 @@ export default function TeacherMyCourses() {
                     <span className={`px-3 py-1 rounded-full text-xs uppercase tracking-[0.2em] ${
                       course.is_published
                         ? 'bg-[hsl(var(--muted))] text-[hsl(var(--primary))]'
-                        : 'bg-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]'
+                        : course.em_curadoria
+                          ? 'bg-yellow-100 text-yellow-700'
+                          : 'bg-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]'
                     }`}>
-                      {course.is_published ? 'Publicado' : 'Em análise'}
+                      {course.is_published ? 'Publicado' : course.em_curadoria ? 'Em curadoria' : 'Rascunho'}
                     </span>
                   </div>
                   <p className="text-[hsl(var(--muted-foreground))] mb-3">{course.description}</p>
                   <div className="flex items-center space-x-4 text-sm text-[hsl(var(--muted-foreground))]">
                     <span>•</span>
-                    <span>{course.enrollment_count || 0} alunos</span>
+                    {(course.duration_hours !== undefined && course.duration_hours !== null) && (
+                      <span className="flex items-center gap-1">
+                          <FaClock />
+                          {course.duration_hours}h
+                      </span>
+                    )}
                     <span>•</span>
                     <span>Criado em {new Date(course.created_at).toLocaleDateString('pt-BR')}</span>
                   </div>
@@ -267,13 +295,24 @@ export default function TeacherMyCourses() {
                     <FaEye />
                     <span>Visualizar</span>
                   </Link>
-                  <Link
-                    to={`/teacher/course/${course.id}/edit`}
-                    className="btn-outline flex items-center space-x-1"
-                  >
-                    <FaEdit />
-                    <span>Editar</span>
-                  </Link>
+                  {course.em_curadoria ? (
+                    <button
+                      disabled
+                      className="btn-outline flex items-center space-x-1 opacity-50 cursor-not-allowed"
+                      title="Curso em curadoria - aguarde análise do admin"
+                    >
+                      <FaEdit />
+                      <span>Editar</span>
+                    </button>
+                  ) : (
+                    <Link
+                      to={`/teacher/course/${course.id}/edit`}
+                      className="btn-outline flex items-center space-x-1"
+                    >
+                      <FaEdit />
+                      <span>Editar</span>
+                    </Link>
+                  )}
                   <button
                     onClick={() => duplicateCourse(course.id)}
                     className="btn-outline flex items-center space-x-1"
@@ -281,7 +320,17 @@ export default function TeacherMyCourses() {
                     <FaCopy />
                     <span>Duplicar</span>
                   </button>
-                  {!course.is_published && (
+                  {!course.is_published && !course.em_curadoria && (
+                    <button
+                      onClick={() => toggleCuradoria(course.id, course.em_curadoria || false)}
+                      className="btn-accent flex items-center space-x-1"
+                      title="Enviar para análise do admin"
+                    >
+                      <FaPaperPlane />
+                      <span>Enviar para curadoria</span>
+                    </button>
+                  )}
+                  {!course.is_published && !course.em_curadoria && (
                     <button
                       onClick={() => deleteCourse(course.id)}
                       className="btn-outline flex items-center space-x-1 border-red-400 text-red-500 hover:bg-red-500 hover:text-white"
@@ -292,6 +341,19 @@ export default function TeacherMyCourses() {
                   )}
                 </div>
               </div>
+
+              {/* Feedback de reprovação do admin */}
+              {course.feedback_curadoria && (
+                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <FaExclamationTriangle className="text-red-500 mt-1 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-semibold text-red-700 mb-1">Feedback do Admin:</p>
+                      <p className="text-sm text-red-600">{course.feedback_curadoria}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
