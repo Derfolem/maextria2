@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaArrowRight, FaCompass, FaLayerGroup, FaShieldAlt, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaArrowRight, FaCompass, FaLayerGroup, FaShieldAlt, FaChevronLeft, FaChevronRight } FaClock } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { Course } from '../types';
@@ -385,6 +385,12 @@ export default function Home() {
                                 <span className="text-white/60 text-xs">{(course.rating || 4.3).toFixed(1)}</span>
                               </div>
                               <p className="text-white/60 text-sm">{course.teacher_name || 'MAEXTRIA'}</p>
+                              {course.duration_hours && (
+                                <p className="text-white/60 text-xs flex items-center gap-1 mt-1">
+                                  <FaClock className="text-xs" />
+                                  {course.duration_hours}h
+                                </p>
+                              )}
                             </div>
                           </div>
                         </Link>
