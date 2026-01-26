@@ -8,7 +8,6 @@ import {
   FaThLarge,
   FaList,
   FaClock,
-  FaUsers,
   FaGraduationCap,
   FaChevronDown,
   FaChevronUp,

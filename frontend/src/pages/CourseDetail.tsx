@@ -4,7 +4,7 @@ import { Course } from '../types';
 import { useAuthStore } from '../lib/store';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
-import { FaBook, FaCheckCircle, FaUser } from 'react-icons/fa';
+import { FaBook, FaCheckCircle, FaUser, FaClock } from 'react-icons/fa';
 import { normalizeCourse } from '../lib/normalizeCourse';
 import { SEO, createCourseSchema, createBreadcrumbSchema } from '../components/SEO';
 import { trackCourseView, trackEnrollment } from '../lib/analytics';
@@ -264,7 +264,12 @@ export default function CourseDetail() {
           <div className="space-y-5">
             <div className="flex flex-wrap items-center gap-4 text-sm text-[hsl(var(--muted-foreground))]">
               <span className="uppercase tracking-[0.2em]">{course.category || 'Trilha'}</span>
-              <span>{course.enrollment_count || 0} alunos</span>
+              {course.duration_hours && (
+                <span className="flex items-center gap-1">
+                    <FaClock />
+                    {course.duration_hours}h
+                </span>
+              )}
               {!course.is_published && (
                 <span className="rounded-full bg-[hsl(var(--muted))] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[hsl(var(--primary))]">
                   Em breve
