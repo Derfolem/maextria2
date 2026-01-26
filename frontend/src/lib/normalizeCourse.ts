@@ -3,8 +3,7 @@ import { Course } from '../types';
 type RawCourse = Record<string, any>;
 
 export function normalizeCourse(raw: RawCourse): Course {
-    console.log('DEBUG normalize:', { raw_carga: raw.carga_horaria_horas, raw_duration: raw.duration_hours, result: raw.duration_hours ?? raw.carga_horaria_horas });
-  return {
+    return {
     id: raw.id,
     title: raw.title ?? raw.titulo ?? '',
     description: raw.description ?? raw.descricao ?? '',
