@@ -460,15 +460,15 @@ export default function TeacherDashboard() {
               <p className="text-xs text-[hsl(var(--muted-foreground))]">Publicados</p>
             </div>
             <div className="text-center p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
-              <p className="text-2xl font-bold text-yellow-600">{courses.filter(c => c.status === 'em_curadoria' || c.status === 'pending').length}</p>
+              <p className="text-2xl font-bold text-yellow-600">{courses.filter(c => !c.is_published && c.approval_status === 'pending').length}</p>
               <p className="text-xs text-[hsl(var(--muted-foreground))]">Em Curadoria</p>
             </div>
             <div className="text-center p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
-              <p className="text-2xl font-bold text-blue-600">{courses.filter(c => c.status === 'draft' || c.status === 'em_criacao').length}</p>
+              <p className="text-2xl font-bold text-blue-600">{courses.filter(c => !c.is_published && (!c.approval_status || c.approval_status === 'draft')).length}</p>
               <p className="text-xs text-[hsl(var(--muted-foreground))]">Em Criação</p>
             </div>
             <div className="text-center p-4 rounded-lg bg-red-500/10 border border-red-500/20">
-              <p className="text-2xl font-bold text-red-600">{courses.filter(c => c.status === 'rejected' || c.status === 'rejeitado').length}</p>
+              <p className="text-2xl font-bold text-red-600">{courses.filter(c => c.approval_status === 'rejected').length}</p>
               <p className="text-xs text-[hsl(var(--muted-foreground))]">Rejeitados</p>
             </div>
           </div>
