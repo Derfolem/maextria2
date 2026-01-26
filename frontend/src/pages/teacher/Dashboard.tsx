@@ -444,7 +444,7 @@ export default function TeacherDashboard() {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-8 mb-12">
+      <div className="grid lg:grid-cols-3 gap-8 mb-12">
         <div className="card">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
             <h2 className="text-xl font-semibold">Meus cursos</h2>
@@ -469,6 +469,26 @@ export default function TeacherDashboard() {
               <p className="text-2xl font-bold text-red-600">{courses.filter(c => !c.is_published && !!c.feedback_curadoria).length}</p>
               <p className="text-xs text-[hsl(var(--muted-foreground))]">Rejeitados</p>
             </div>
+          </div>
+        </div>
+
+        <div className="card relative overflow-hidden">
+          <div className="absolute top-3 right-3 bg-[hsl(var(--primary))] text-white text-xs font-bold px-3 py-1 rounded-full">
+            Em breve
+          </div>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--accent))] flex items-center justify-center text-white">
+              <FaChartLine />
+            </div>
+            <h2 className="text-xl font-semibold">Maextria Ads</h2>
+          </div>
+          <p className="text-sm text-[hsl(var(--muted-foreground))] leading-relaxed">
+            Aqui voce tera total controle sobre a visibilidade do seu curso para os alunos e visitantes. 
+            Uma rede de anuncios interno para voce faturar mais.
+          </p>
+          <div className="mt-4 flex items-center gap-2 text-xs text-[hsl(var(--muted-foreground))]">
+            <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
+            Em desenvolvimento
           </div>
         </div>
 
