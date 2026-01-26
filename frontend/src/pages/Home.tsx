@@ -226,7 +226,7 @@ export default function Home() {
                 <img
                   src={topCourses[carouselIndex].thumbnail}
                   alt=""
-                  className="w-full h-full object-cover blur-[0.5px] scale-110"
+                  className="w-full h-full object-cover scale-110"
                 />
               </motion.div>
             )}
