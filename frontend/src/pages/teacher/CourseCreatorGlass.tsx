@@ -202,6 +202,7 @@ export default function CourseCreatorGlass() {
             professor_id: user.id,
             professor_nome: user.name,
             imagem_capa_url: finalThumbnail,
+            carga_horaria_horas: parsedCourse.duration_hours || null,
             is_published: false,
           })
           .select('id')
