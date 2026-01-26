@@ -15,8 +15,93 @@ type BlogPost = {
 export default function Blog() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const featured = useMemo(() => posts[0], [posts]);
-  const rest = useMemo(() => posts.slice(1), [posts]);
+  const [search, setSearch] = useState('');
+
+  const normalize = (value: string) =>
+    value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s/]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  const levenshtein = (a: string, b: string) => {
+    if (a === b) return 0;
+    const aLen = a.length;
+    const bLen = b.length;
+    if (!aLen) return bLen;
+    if (!bLen) return aLen;
+
+    const dp = Array.from({ length: aLen + 1 }, () => new Array(bLen + 1).fill(0));
+    for (let i = 0; i <= aLen; i += 1) dp[i][0] = i;
+    for (let j = 0; j <= bLen; j += 1) dp[0][j] = j;
+
+    for (let i = 1; i <= aLen; i += 1) {
+      for (let j = 1; j <= bLen; j += 1) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        dp[i][j] = Math.min(
+          dp[i - 1][j] + 1,
+          dp[i][j - 1] + 1,
+          dp[i - 1][j - 1] + cost
+        );
+      }
+    }
+    return dp[aLen][bLen];
+  };
+
+  const normalizedQuery = useMemo(() => normalize(search), [search]);
+
+  const results = useMemo(() => {
+    if (!normalizedQuery) return posts;
+    const tokens = normalizedQuery.split(' ').filter(Boolean);
+
+    const scoreField = (field: string) => {
+      if (!field) return 0;
+      const hay = normalize(field);
+      let score = 0;
+      tokens.forEach((token) => {
+        const idx = hay.indexOf(token);
+        if (idx >= 0) {
+          score += 2 + token.length / Math.max(hay.length, 1) + 1 / (idx + 1);
+        } else if (token.length > 3) {
+          const dist = levenshtein(token, hay.slice(0, Math.min(hay.length, token.length + 2)));
+          if (dist <= 2) {
+            score += 0.5;
+          }
+        }
+      });
+      return score;
+    };
+
+    return posts
+      .map((post) => {
+        const dateLabel = post.publicado_em
+          ? new Date(post.publicado_em).toLocaleDateString('pt-BR')
+          : '';
+        const monthLabel = post.publicado_em
+          ? new Date(post.publicado_em).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+          : '';
+        const score = [
+          scoreField(post.titulo),
+          scoreField(post.resumo || ''),
+          scoreField(post.autor),
+          scoreField(dateLabel),
+          scoreField(monthLabel),
+          scoreField(post.slug),
+        ].reduce((acc, value) => acc + value, 0);
+        return { post, score };
+      })
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map((item) => item.post);
+  }, [normalizedQuery, posts]);
+
+  const featured = useMemo(() => (normalizedQuery ? null : results[0]), [normalizedQuery, results]);
+  const rest = useMemo(
+    () => (normalizedQuery ? results : results.slice(1)),
+    [normalizedQuery, results]
+  );
 
   useEffect(() => {
     const load = async () => {
@@ -160,14 +245,42 @@ export default function Blog() {
               </section>
             )}
 
+            <div className="card p-6 space-y-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--muted-foreground))]">Pesquisar</p>
+                  <h2 className="headline-font text-2xl md:text-3xl">Encontre artigos</h2>
+                </div>
+                <Link to="/courses" className="text-sm font-semibold text-[hsl(var(--primary))]">
+                  Ver cursos
+                </Link>
+              </div>
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                className="input-field"
+                placeholder="Pesquisar por nome, categoria, data ou tema"
+              />
+              {normalizedQuery && (
+                <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                  {results.length} resultado{results.length === 1 ? '' : 's'} para "{search}"
+                </p>
+              )}
+            </div>
+
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--muted-foreground))]">Arquivo</p>
-                <h2 className="headline-font text-2xl md:text-3xl">Todos os artigos</h2>
+                <h2 className="headline-font text-2xl md:text-3xl">
+                  {normalizedQuery ? 'Artigos encontrados' : 'Todos os artigos'}
+                </h2>
               </div>
-              <Link to="/courses" className="text-sm font-semibold text-[hsl(var(--primary))]">
-                Ver cursos
-              </Link>
+              {!normalizedQuery && (
+                <Link to="/courses" className="text-sm font-semibold text-[hsl(var(--primary))]">
+                  Ver cursos
+                </Link>
+              )}
             </div>
 
             <div className="grid md:grid-cols-3 gap-8">
