@@ -113,3 +113,5 @@ Veja o arquivo README completo em cada pasta (backend/frontend) para mais detalh
 ---
 
 **Desenvolvido com ❤️ para educação de qualidade**
+
+<!-- deploy-trigger: 2026-01-26T21:37:19.138Z -->
