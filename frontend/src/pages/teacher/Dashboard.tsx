@@ -442,11 +442,9 @@ export default function TeacherDashboard() {
             </ResponsiveContainer>
           )}
         </div>
-
-        
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-8 mb-12">
+      <div className="grid lg:grid-cols-2 gap-8 mb-12">
         <div className="card">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
             <h2 className="text-xl font-semibold">Meus cursos</h2>
