@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaArrowRight, FaCompass, FaLayerGroup, FaShieldAlt, FaChevronLeft, FaChevronRight } FaClock } from 'react-icons/fa';
+import { FaArrowRight, FaCompass, FaLayerGroup, FaShieldAlt, FaChevronLeft, FaChevronRight, FaClock } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { Course } from '../types';
