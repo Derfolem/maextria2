@@ -94,14 +94,14 @@ export default function Home() {
                 transition={{ duration: 0.7 }}
                 className="space-y-8"
               >
-                <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs uppercase tracking-[0.35em] text-white/80">
+                <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-[10px] uppercase tracking-[0.28em] text-white/80 max-[400px]:tracking-[0.22em] sm:text-xs sm:tracking-[0.35em]">
                   Aprender. Aplicar. Expandir
                 </span>
                 <div className="space-y-6">
-                  <h1 className="headline-font text-5xl md:text-6xl leading-tight">
+                  <h1 className="headline-font text-[clamp(2.4rem,7vw,3.75rem)] leading-[1.05]">
                     Mentes Audazes Exponencializam
                   </h1>
-                  <p className="text-lg md:text-xl text-white/80 max-w-xl">
+                  <p className="text-[clamp(1rem,3.8vw,1.25rem)] text-white/80 max-w-xl">
                     Curadoria intelectual, método e aplicação pratica para quem busca crescimento
                     com criterio e consistencia.
                   </p>
@@ -126,15 +126,15 @@ export default function Home() {
                 </div>
                 <div className="flex flex-wrap gap-6 text-sm text-white/70">
                   <div>
-                    <p className="text-2xl font-semibold text-white">+240</p>
+                    <p className="text-[clamp(1.25rem,5.5vw,1.5rem)] font-semibold text-white">+240</p>
                     <p>Horas de conteúdo curado</p>
                   </div>
                   <div>
-                    <p className="text-2xl font-semibold text-white">4.9/5</p>
+                    <p className="text-[clamp(1.25rem,5.5vw,1.5rem)] font-semibold text-white">4.9/5</p>
                     <p>Experiência dos alunos</p>
                   </div>
                   <div>
-                    <p className="text-2xl font-semibold text-white">24/7</p>
+                    <p className="text-[clamp(1.25rem,5.5vw,1.5rem)] font-semibold text-white">24/7</p>
                     <p>Suporte inteligente</p>
                   </div>
                 </div>
