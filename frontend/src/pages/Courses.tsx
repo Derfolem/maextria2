@@ -20,24 +20,47 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { normalizeCourse } from '../lib/normalizeCourse';
 import { SEO } from '../components/SEO';
 
-type SortOption = 'popular' | 'recent' | 'az' | 'za' | 'price-asc' | 'price-desc';
+type SortOption = 'popular' | 'recent' | 'az' | 'za';
 type ViewMode = 'grid' | 'list';
 
+const normalizeText = (value: string) =>
+  value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s/]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const levenshtein = (a: string, b: string) => {
+  if (a === b) return 0;
+  const aLen = a.length;
+  const bLen = b.length;
+  if (!aLen) return bLen;
+  if (!bLen) return aLen;
+
+  const dp = Array.from({ length: aLen + 1 }, () => new Array(bLen + 1).fill(0));
+  for (let i = 0; i <= aLen; i += 1) dp[i][0] = i;
+  for (let j = 0; j <= bLen; j += 1) dp[0][j] = j;
+
+  for (let i = 1; i <= aLen; i += 1) {
+    for (let j = 1; j <= bLen; j += 1) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1,
+        dp[i][j - 1] + 1,
+        dp[i - 1][j - 1] + cost
+      );
+    }
+  }
+  return dp[aLen][bLen];
+};
+
 const SORT_OPTIONS = [
-  { value: 'popular', label: 'Mais populares', icon: FaFire },
+  { value: 'popular', label: 'Mais procurados', icon: FaFire },
   { value: 'recent', label: 'Mais recentes', icon: FaClock },
   { value: 'az', label: 'A - Z', icon: FaBookOpen },
   { value: 'za', label: 'Z - A', icon: FaBookOpen },
-  { value: 'price-asc', label: 'Menor preço', icon: FaStar },
-  { value: 'price-desc', label: 'Maior preço', icon: FaStar },
-];
-
-const PRICE_OPTIONS = [
-  { value: '', label: 'Todos' },
-  { value: 'free', label: 'Gratuito' },
-  { value: '0-50', label: 'Até R$ 50' },
-  { value: '50-100', label: 'R$ 50 - R$ 100' },
-  { value: '100+', label: 'Acima de R$ 100' },
 ];
 
 const DURATION_OPTIONS = [
@@ -68,7 +91,6 @@ export default function Courses() {
   // Filtros
   const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('category') || '');
   const [selectedLevel, setSelectedLevel] = useState<string>(searchParams.get('level') || '');
-  const [priceRange, setPriceRange] = useState<string>(searchParams.get('price') || '');
   const [durationRange, setDurationRange] = useState<string>(searchParams.get('duration') || '');
   const [sortBy, setSortBy] = useState<SortOption>((searchParams.get('sort') as SortOption) || 'popular');
 
@@ -76,7 +98,6 @@ export default function Courses() {
   const [expandedSections, setExpandedSections] = useState({
     category: true,
     level: true,
-    price: true,
     duration: true,
   });
 
@@ -90,11 +111,10 @@ export default function Courses() {
     if (search) params.set('q', search);
     if (selectedCategory) params.set('category', selectedCategory);
     if (selectedLevel) params.set('level', selectedLevel);
-    if (priceRange) params.set('price', priceRange);
     if (durationRange) params.set('duration', durationRange);
     if (sortBy !== 'popular') params.set('sort', sortBy);
     setSearchParams(params, { replace: true });
-  }, [search, selectedCategory, selectedLevel, priceRange, durationRange, sortBy, setSearchParams]);
+  }, [search, selectedCategory, selectedLevel, durationRange, sortBy, setSearchParams]);
 
   const loadCourses = async () => {
     try {
@@ -120,13 +140,13 @@ export default function Courses() {
   // Sugestões de busca
   const suggestions = useMemo(() => {
     if (!search || search.length < 2) return [];
-    const searchLower = search.toLowerCase();
+    const searchLower = normalizeText(search);
     const titleMatches = courses
-      .filter((c) => c.title.toLowerCase().includes(searchLower))
+      .filter((c) => normalizeText(c.title).includes(searchLower))
       .slice(0, 5)
       .map((c) => ({ type: 'course' as const, text: c.title, id: c.id }));
     const categoryMatches = categories
-      .filter((c) => c.toLowerCase().includes(searchLower))
+      .filter((c) => normalizeText(c).includes(searchLower))
       .slice(0, 3)
       .map((c) => ({ type: 'category' as const, text: c }));
     return [...titleMatches, ...categoryMatches];
@@ -134,62 +154,83 @@ export default function Courses() {
 
   // Filtrar e ordenar cursos
   const filteredCourses = useMemo(() => {
-    let result = courses.filter((course) => {
-      const searchLower = search.toLowerCase();
-      const searchMatch =
-        !search ||
-        course.title.toLowerCase().includes(searchLower) ||
-        course.description.toLowerCase().includes(searchLower) ||
-        (course.teacher_name || '').toLowerCase().includes(searchLower) ||
-        (course.category || '').toLowerCase().includes(searchLower);
+    const normalizedQuery = normalizeText(search);
+    const tokens = normalizedQuery ? normalizedQuery.split(' ').filter(Boolean) : [];
 
-      const categoryMatch = !selectedCategory || course.category === selectedCategory;
-      const levelMatch = !selectedLevel || course.level === selectedLevel;
+    const scoreCourse = (course: Course) => {
+      if (!tokens.length) return 0;
+      const fields = [
+        course.title,
+        course.description,
+        course.teacher_name || '',
+        course.category || '',
+      ];
+      let score = 0;
+      fields.forEach((field) => {
+        const hay = normalizeText(field || '');
+        if (!hay) return;
+        tokens.forEach((token) => {
+          const idx = hay.indexOf(token);
+          if (idx >= 0) {
+            score += 2 + token.length / Math.max(hay.length, 1) + 1 / (idx + 1);
+          } else if (token.length > 3) {
+            const dist = levenshtein(token, hay.slice(0, Math.min(hay.length, token.length + 2)));
+            if (dist <= 2) score += 0.5;
+          }
+        });
+      });
+      return score;
+    };
 
-      let priceMatch = true;
-      if (priceRange) {
-        const price = course.price || 0;
-        switch (priceRange) {
-          case 'free': priceMatch = price === 0; break;
-          case '0-50': priceMatch = price > 0 && price <= 50; break;
-          case '50-100': priceMatch = price > 50 && price <= 100; break;
-          case '100+': priceMatch = price > 100; break;
+    let result = courses
+      .map((course) => ({ course, score: scoreCourse(course) }))
+      .filter(({ course, score }) => {
+        if (tokens.length && score <= 0) return false;
+        const categoryMatch = !selectedCategory || course.category === selectedCategory;
+        const levelMatch = !selectedLevel || course.level === selectedLevel;
+
+        let durationMatch = true;
+        if (durationRange) {
+          const hours = course.duration_hours || 0;
+          switch (durationRange) {
+            case '0-5': durationMatch = hours <= 5; break;
+            case '5-10': durationMatch = hours > 5 && hours <= 10; break;
+            case '10-20': durationMatch = hours > 10 && hours <= 20; break;
+            case '20+': durationMatch = hours > 20; break;
+          }
         }
+
+        return categoryMatch && levelMatch && durationMatch;
+      });
+
+    const sortBase = (a: Course, b: Course) => {
+      switch (sortBy) {
+        case 'popular': return (b.enrollment_count || 0) - (a.enrollment_count || 0);
+        case 'recent': return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'az': return a.title.localeCompare(b.title);
+        case 'za': return b.title.localeCompare(a.title);
       }
+      return 0;
+    };
 
-      let durationMatch = true;
-      if (durationRange) {
-        const hours = course.duration_hours || 0;
-        switch (durationRange) {
-          case '0-5': durationMatch = hours <= 5; break;
-          case '5-10': durationMatch = hours > 5 && hours <= 10; break;
-          case '10-20': durationMatch = hours > 10 && hours <= 20; break;
-          case '20+': durationMatch = hours > 20; break;
-        }
-      }
-
-      return searchMatch && categoryMatch && levelMatch && priceMatch && durationMatch;
-    });
-
-    switch (sortBy) {
-      case 'popular': result.sort((a, b) => (b.enrollment_count || 0) - (a.enrollment_count || 0)); break;
-      case 'recent': result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()); break;
-      case 'az': result.sort((a, b) => a.title.localeCompare(b.title)); break;
-      case 'za': result.sort((a, b) => b.title.localeCompare(a.title)); break;
-      case 'price-asc': result.sort((a, b) => (a.price || 0) - (b.price || 0)); break;
-      case 'price-desc': result.sort((a, b) => (b.price || 0) - (a.price || 0)); break;
+    if (tokens.length) {
+      result = result.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return sortBase(a.course, b.course);
+      });
+    } else {
+      result = result.sort((a, b) => sortBase(a.course, b.course));
     }
 
-    return result;
-  }, [courses, search, selectedCategory, selectedLevel, priceRange, durationRange, sortBy]);
+    return result.map((item) => item.course);
+  }, [courses, search, selectedCategory, selectedLevel, durationRange, sortBy]);
 
-  const activeFiltersCount = [selectedCategory, selectedLevel, priceRange, durationRange].filter(Boolean).length;
+  const activeFiltersCount = [selectedCategory, selectedLevel, durationRange].filter(Boolean).length;
 
   const clearFilters = () => {
     setSearch('');
     setSelectedCategory('');
     setSelectedLevel('');
-    setPriceRange('');
     setDurationRange('');
     setSortBy('popular');
   };
@@ -275,44 +316,6 @@ export default function Courses() {
                   onClick={() => setSelectedLevel(opt.value)}
                   className={`w-full text-left px-3 py-2 rounded-lg text-sm transition ${
                     selectedLevel === opt.value
-                      ? 'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]'
-                      : 'hover:bg-[hsl(var(--muted))]'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Preço */}
-      <div className="card p-4">
-        <button
-          onClick={() => toggleSection('price')}
-          className="flex items-center justify-between w-full text-left font-semibold mb-3"
-        >
-          <span className="flex items-center gap-2">
-            <span className="text-[hsl(var(--secondary))]">R$</span>
-            Preço
-          </span>
-          {expandedSections.price ? <FaChevronUp /> : <FaChevronDown />}
-        </button>
-        <AnimatePresence>
-          {expandedSections.price && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="space-y-1 overflow-hidden"
-            >
-              {PRICE_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => setPriceRange(opt.value)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition ${
-                    priceRange === opt.value
                       ? 'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]'
                       : 'hover:bg-[hsl(var(--muted))]'
                   }`}
@@ -418,29 +421,29 @@ export default function Courses() {
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--secondary))] rounded-2xl blur-xl opacity-20" />
                 <div className="relative bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] shadow-2xl">
-                  <div className="flex items-center p-2">
-                    <div className="flex-1 flex items-center">
-                      <FaSearch className="ml-4 text-[hsl(var(--muted-foreground))]" />
-                      <input
-                        ref={searchRef}
-                        type="text"
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 p-2">
+                  <div className="flex-1 flex items-center w-full">
+                    <FaSearch className="ml-4 text-[hsl(var(--muted-foreground))]" />
+                    <input
+                      ref={searchRef}
+                      type="text"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        onFocus={() => setShowSuggestions(true)}
-                        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                        placeholder="O que você quer aprender hoje?"
-                        className="flex-1 bg-transparent border-none outline-none px-4 py-3 text-lg placeholder:text-[hsl(var(--muted-foreground))]"
-                      />
-                      {search && (
-                        <button
-                          onClick={() => setSearch('')}
+                      onFocus={() => setShowSuggestions(true)}
+                      onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                      placeholder="O que você quer aprender hoje?"
+                      className="flex-1 bg-transparent border-none outline-none px-4 py-3 text-base sm:text-lg placeholder:text-[hsl(var(--muted-foreground))]"
+                    />
+                    {search && (
+                      <button
+                        onClick={() => setSearch('')}
                           className="p-2 hover:bg-[hsl(var(--muted))] rounded-full transition mr-2"
                         >
                           <FaTimes />
                         </button>
                       )}
                     </div>
-                    <button className="btn-primary rounded-xl px-6">
+                    <button className="btn-primary rounded-xl px-6 w-full sm:w-auto whitespace-nowrap">
                       Buscar
                     </button>
                   </div>
@@ -590,14 +593,6 @@ export default function Courses() {
                       <FaStar className="text-xs" />
                       {selectedLevel}
                       <button onClick={() => setSelectedLevel('')}>
-                        <FaTimes className="text-xs" />
-                      </button>
-                    </span>
-                  )}
-                  {priceRange && (
-                    <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[hsl(var(--secondary))]/10 text-[hsl(var(--secondary))] text-sm">
-                      R$ {PRICE_OPTIONS.find((p) => p.value === priceRange)?.label}
-                      <button onClick={() => setPriceRange('')}>
                         <FaTimes className="text-xs" />
                       </button>
                     </span>
