@@ -461,13 +461,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <FaTimes />
               </button>
             </div>
-            <Link to="/courses" className="nav-link" onClick={() => setMobileOpen(false)}>
+            <Link to="/courses" className="nav-link md:hidden" onClick={() => setMobileOpen(false)}>
               Cursos
             </Link>
-            <Link to="/blog" className="nav-link" onClick={() => setMobileOpen(false)}>
+            <Link to="/blog" className="nav-link md:hidden" onClick={() => setMobileOpen(false)}>
               Blog
             </Link>
-            <Link to="/verificar-certificado" className="nav-link" onClick={() => setMobileOpen(false)}>
+            <Link to="/verificar-certificado" className="nav-link md:hidden" onClick={() => setMobileOpen(false)}>
               Verificar certificado
             </Link>
             {isHome && (
