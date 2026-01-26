@@ -123,7 +123,6 @@ export default function Courses() {
         .select('*')
         .eq('ativo', true);
       if (error) throw error;
-      console.log("DEBUG RAW:", data); console.log("DEBUG FIRST:", data?.[0]?.carga_horaria_horas);
       setCourses((data || []).map(normalizeCourse));
     } catch (error) {
       console.error('Error loading courses:', error);
