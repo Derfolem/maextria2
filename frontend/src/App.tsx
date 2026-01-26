@@ -51,6 +51,7 @@ const CourseEditor = lazyWithRetry(() => import('./pages/teacher/CourseEditor'))
 const AiAccessPayment = lazyWithRetry(() => import('./pages/teacher/AiAccessPayment'));
 const AiCreator = lazyWithRetry(() => import('./pages/teacher/AiCreator'));
 const TeacherNotifications = lazyWithRetry(() => import('./pages/teacher/Notifications'));
+const TeacherTutorial = lazyWithRetry(() => import('./pages/teacher/Tutorial'));
 const CourseCreatorGlass = lazyWithRetry(() => import('./pages/teacher/CourseCreatorGlass')); // New import
 const AdminDashboard = lazyWithRetry(() => import('./pages/admin/Dashboard'));
 const AdminUsers = lazyWithRetry(() => import('./pages/admin/Users'));
