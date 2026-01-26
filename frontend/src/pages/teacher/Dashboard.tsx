@@ -443,27 +443,7 @@ export default function TeacherDashboard() {
           )}
         </div>
 
-        <div className="card">
-          <h2 className="text-xl font-semibold mb-4">Cursos mais populares</h2>
-          <div className="space-y-3">
-            {courses.slice(0, 5).map((course) => (
-              <div key={course.id} className="flex items-center justify-between p-3 border border-[hsl(var(--border))] rounded-[12px]">
-                <div>
-                  <p className="font-semibold">{course.title}</p>
-                  <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                    {course.enrollment_count || 0} alunos
-                  </p>
-                </div>
-                <Link
-                  to={`/teacher/course/${course.id}/edit`}
-                  className="text-[hsl(var(--primary))] hover:text-[hsl(var(--accent))]"
-                >
-                  Editar
-                </Link>
-              </div>
-            ))}
-          </div>
-        </div>
+        
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8 mb-12">
@@ -474,38 +454,24 @@ export default function TeacherDashboard() {
               Ver todos
             </Link>
           </div>
-          {courses.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-[hsl(var(--muted-foreground))] mb-4">Você ainda nao criou nenhum curso</p>
-              <Link to="/teacher/course/new" className="btn-accent">
-                Criar primeiro curso
-              </Link>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="text-center p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+              <p className="text-2xl font-bold text-green-600">{courses.filter(c => c.is_published).length}</p>
+              <p className="text-xs text-[hsl(var(--muted-foreground))]">Publicados</p>
             </div>
-          ) : (
-            <div className="grid md:grid-cols-2 gap-4">
-              {courses.slice(0, 4).map((course) => (
-                <div key={course.id} className="border border-[hsl(var(--border))] rounded-[12px] p-4 hover:shadow-md transition">
-                  <h3 className="font-semibold mb-2">{course.title}</h3>
-                  <p className="text-[hsl(var(--muted-foreground))] text-sm mb-3 line-clamp-2">
-                    {course.description}
-                  </p>
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm">
-                    <span className={`px-2 py-1 rounded-full ${
-                      course.is_published ? 'bg-[hsl(var(--muted))] text-[hsl(var(--primary))]' : 'bg-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]'
-                    }`}>
-                      {course.is_published ? 'Publicado' : 'Em análise'}
-                    </span>
-                    <Link
-                      to={`/teacher/course/${course.id}/edit`}
-                      className="text-[hsl(var(--primary))] hover:text-[hsl(var(--accent))]"
-                    >
-                      Editar
-                    </Link>
-                  </div>
-                </div>
-              ))}
+            <div className="text-center p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+              <p className="text-2xl font-bold text-yellow-600">{courses.filter(c => c.status === 'em_curadoria' || c.status === 'pending').length}</p>
+              <p className="text-xs text-[hsl(var(--muted-foreground))]">Em Curadoria</p>
             </div>
-          )}
+            <div className="text-center p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+              <p className="text-2xl font-bold text-blue-600">{courses.filter(c => c.status === 'draft' || c.status === 'em_criacao').length}</p>
+              <p className="text-xs text-[hsl(var(--muted-foreground))]">Em Criação</p>
+            </div>
+            <div className="text-center p-4 rounded-lg bg-red-500/10 border border-red-500/20">
+              <p className="text-2xl font-bold text-red-600">{courses.filter(c => c.status === 'rejected' || c.status === 'rejeitado').length}</p>
+              <p className="text-xs text-[hsl(var(--muted-foreground))]">Rejeitados</p>
+            </div>
+          </div>
         </div>
 
         <div className="card">
