@@ -16,6 +16,10 @@ export default function Blog() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [authorFilter, setAuthorFilter] = useState('');
+  const [periodFilter, setPeriodFilter] = useState('');
+  const [sortBy, setSortBy] = useState<'recent' | 'oldest' | 'az'>('recent');
 
   const normalize = (value: string) =>
     value
@@ -25,6 +29,64 @@ export default function Blog() {
       .replace(/[^a-z0-9\s/]/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
+
+  const categorySeeds = [
+    { label: 'Carreira', keywords: ['carreira', 'vaga', 'mercado', 'profissao', 'trabalho'] },
+    { label: 'Certificacoes', keywords: ['certificacao', 'certificado'] },
+    { label: 'IA', keywords: ['ia', 'inteligencia artificial', 'machine learning', 'dados'] },
+    { label: 'Marketing', keywords: ['marketing', 'posicionamento', 'vendas'] },
+    { label: 'Produtividade', keywords: ['produtividade', 'habitos', 'rotina'] },
+    { label: 'Tecnologia', keywords: ['tecnologia', 'produto', 'engenharia', 'software'] },
+  ];
+
+  const getPeriodKey = (dateValue: string | null) => {
+    if (!dateValue) return '';
+    const date = new Date(dateValue);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}`;
+  };
+
+  const getPeriodLabel = (dateValue: string | null) => {
+    if (!dateValue) return '';
+    return new Date(dateValue).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  };
+
+  const categoryById = useMemo(() => {
+    const map = new Map<string, string[]>();
+    posts.forEach((post) => {
+      const haystack = normalize(`${post.titulo} ${post.resumo || ''} ${post.autor} ${post.slug}`);
+      const matches = categorySeeds
+        .filter((seed) => seed.keywords.some((kw) => haystack.includes(normalize(kw))))
+        .map((seed) => seed.label);
+      map.set(post.id, matches.length ? matches : ['Geral']);
+    });
+    return map;
+  }, [posts]);
+
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    categoryById.forEach((values) => values.forEach((value) => set.add(value)));
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [categoryById]);
+
+  const authors = useMemo(() => {
+    const set = new Set<string>();
+    posts.forEach((post) => set.add(post.autor));
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [posts]);
+
+  const periods = useMemo(() => {
+    const map = new Map<string, string>();
+    posts.forEach((post) => {
+      const key = getPeriodKey(post.publicado_em);
+      const label = getPeriodLabel(post.publicado_em);
+      if (key && label) map.set(key, label);
+    });
+    return Array.from(map.entries())
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([value, label]) => ({ value, label }));
+  }, [posts]);
 
   const levenshtein = (a: string, b: string) => {
     if (a === b) return 0;
@@ -82,12 +144,14 @@ export default function Blog() {
         const monthLabel = post.publicado_em
           ? new Date(post.publicado_em).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
           : '';
+        const categoryLabel = (categoryById.get(post.id) || []).join(' ');
         const score = [
           scoreField(post.titulo),
           scoreField(post.resumo || ''),
           scoreField(post.autor),
           scoreField(dateLabel),
           scoreField(monthLabel),
+          scoreField(categoryLabel),
           scoreField(post.slug),
         ].reduce((acc, value) => acc + value, 0);
         return { post, score };
@@ -95,12 +159,45 @@ export default function Blog() {
       .filter((item) => item.score > 0)
       .sort((a, b) => b.score - a.score)
       .map((item) => item.post);
-  }, [normalizedQuery, posts]);
+  }, [normalizedQuery, posts, categoryById]);
 
-  const featured = useMemo(() => (normalizedQuery ? null : results[0]), [normalizedQuery, results]);
+  const filteredResults = useMemo(() => {
+    const base = normalizedQuery ? results : posts;
+    return base.filter((post) => {
+      const categoryMatch = !categoryFilter || (categoryById.get(post.id) || []).includes(categoryFilter);
+      const authorMatch = !authorFilter || post.autor === authorFilter;
+      const periodMatch = !periodFilter || getPeriodKey(post.publicado_em) === periodFilter;
+      return categoryMatch && authorMatch && periodMatch;
+    });
+  }, [results, posts, normalizedQuery, categoryFilter, authorFilter, periodFilter, categoryById]);
+
+  const sortedResults = useMemo(() => {
+    const base = [...filteredResults];
+    switch (sortBy) {
+      case 'oldest':
+        return base.sort((a, b) => {
+          const aDate = a.publicado_em ? new Date(a.publicado_em).getTime() : 0;
+          const bDate = b.publicado_em ? new Date(b.publicado_em).getTime() : 0;
+          return aDate - bDate;
+        });
+      case 'az':
+        return base.sort((a, b) => a.titulo.localeCompare(b.titulo));
+      default:
+        return base.sort((a, b) => {
+          const aDate = a.publicado_em ? new Date(a.publicado_em).getTime() : 0;
+          const bDate = b.publicado_em ? new Date(b.publicado_em).getTime() : 0;
+          return bDate - aDate;
+        });
+    }
+  }, [filteredResults, sortBy]);
+
+  const hasActiveFilters =
+    Boolean(normalizedQuery) || Boolean(categoryFilter) || Boolean(authorFilter) || Boolean(periodFilter) || sortBy !== 'recent';
+
+  const featured = useMemo(() => (!hasActiveFilters ? sortedResults[0] : null), [hasActiveFilters, sortedResults]);
   const rest = useMemo(
-    () => (normalizedQuery ? results : results.slice(1)),
-    [normalizedQuery, results]
+    () => (featured ? sortedResults.slice(1) : sortedResults),
+    [featured, sortedResults]
   );
 
   useEffect(() => {
@@ -255,16 +352,72 @@ export default function Blog() {
                   Ver cursos
                 </Link>
               </div>
-              <input
-                type="search"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                className="input-field"
-                placeholder="Pesquisar por nome, categoria, data ou tema"
-              />
-              {normalizedQuery && (
+              <div className="grid gap-4 md:grid-cols-[1.4fr_0.8fr_0.8fr]">
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  className="input-field"
+                  placeholder="Pesquisar por nome, categoria, data ou tema"
+                />
+                <select
+                  value={categoryFilter}
+                  onChange={(event) => setCategoryFilter(event.target.value)}
+                  className="input-field"
+                >
+                  <option value="">Categoria</option>
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+                <select
+                  value={authorFilter}
+                  onChange={(event) => setAuthorFilter(event.target.value)}
+                  className="input-field"
+                >
+                  <option value="">Autor</option>
+                  {authors.map((author) => (
+                    <option key={author} value={author}>{author}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid gap-4 md:grid-cols-[0.8fr_0.8fr_0.6fr]">
+                <select
+                  value={periodFilter}
+                  onChange={(event) => setPeriodFilter(event.target.value)}
+                  className="input-field"
+                >
+                  <option value="">Periodo</option>
+                  {periods.map((period) => (
+                    <option key={period.value} value={period.value}>{period.label}</option>
+                  ))}
+                </select>
+                <select
+                  value={sortBy}
+                  onChange={(event) => setSortBy(event.target.value as 'recent' | 'oldest' | 'az')}
+                  className="input-field"
+                >
+                  <option value="recent">Mais recentes</option>
+                  <option value="oldest">Mais antigos</option>
+                  <option value="az">A - Z</option>
+                </select>
+                <button
+                  type="button"
+                  className="btn-outline w-full"
+                  onClick={() => {
+                    setSearch('');
+                    setCategoryFilter('');
+                    setAuthorFilter('');
+                    setPeriodFilter('');
+                    setSortBy('recent');
+                  }}
+                >
+                  Limpar filtros
+                </button>
+              </div>
+              {(normalizedQuery || categoryFilter || authorFilter || periodFilter) && (
                 <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                  {results.length} resultado{results.length === 1 ? '' : 's'} para "{search}"
+                  {sortedResults.length} resultado{sortedResults.length === 1 ? '' : 's'} para "{search}"
                 </p>
               )}
             </div>
@@ -273,10 +426,10 @@ export default function Blog() {
               <div>
                 <p className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--muted-foreground))]">Arquivo</p>
                 <h2 className="headline-font text-2xl md:text-3xl">
-                  {normalizedQuery ? 'Artigos encontrados' : 'Todos os artigos'}
+                  {hasActiveFilters ? 'Artigos encontrados' : 'Todos os artigos'}
                 </h2>
               </div>
-              {!normalizedQuery && (
+              {!hasActiveFilters && (
                 <Link to="/courses" className="text-sm font-semibold text-[hsl(var(--primary))]">
                   Ver cursos
                 </Link>
