@@ -210,15 +210,71 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-[clamp(60px,8vh,100px)] bg-[hsl(var(--background))] overflow-hidden">
-        <div className="max-w-7xl mx-auto px-[clamp(24px,5vw,80px)]">
+      <section className="relative py-[clamp(80px,10vh,120px)] overflow-hidden">
+        {/* Fundo dinâmico com imagem do curso */}
+        <div className="absolute inset-0 z-0">
+          <AnimatePresence mode="wait">
+            {topCourses.length > 0 && topCourses[carouselIndex]?.thumbnail && (
+              <motion.div
+                key={carouselIndex}
+                initial={{ opacity: 0, scale: 1.1 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.7 }}
+                className="absolute inset-0"
+              >
+                <img
+                  src={topCourses[carouselIndex].thumbnail}
+                  alt=""
+                  className="w-full h-full object-cover blur-2xl scale-110"
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+          {/* Overlay escuro */}
+          <div className="absolute inset-0 bg-[hsl(var(--background))]/85" />
+          {/* Gradientes decorativos */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[hsl(var(--background))] via-transparent to-[hsl(var(--background))]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_0%,_hsl(var(--background))_70%)]" />
+        </div>
+
+        <div className="relative z-10 max-w-7xl mx-auto px-[clamp(24px,5vw,80px)]">
+          {/* Título estilizado */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="mb-8"
+            transition={{ duration: 0.8 }}
+            className="text-center mb-12"
           >
-            <h2 className="headline-font text-3xl md:text-4xl">Vamos começar?</h2>
+            <motion.p
+              initial={{ opacity: 0, letterSpacing: '0.5em' }}
+              whileInView={{ opacity: 1, letterSpacing: '0.35em' }}
+              transition={{ duration: 1, delay: 0.2 }}
+              className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--primary))] mb-4"
+            >
+              Sua jornada começa aqui
+            </motion.p>
+            <h2 className="headline-font text-4xl md:text-6xl lg:text-7xl">
+              <span className="block text-white/90">Vamos</span>
+              <span className="relative inline-block">
+                <span className="relative z-10 gradient-text">começar</span>
+                <motion.span
+                  initial={{ width: 0 }}
+                  whileInView={{ width: '100%' }}
+                  transition={{ duration: 0.8, delay: 0.5 }}
+                  className="absolute -bottom-2 left-0 h-1 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--secondary))] rounded-full"
+                />
+              </span>
+              <span className="text-white/90">?</span>
+            </h2>
+            <motion.p
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="mt-4 text-[hsl(var(--muted-foreground))] text-lg max-w-md mx-auto"
+            >
+              Os cursos mais procurados para impulsionar sua carreira
+            </motion.p>
           </motion.div>
 
           {loadingTopCourses ? (
@@ -234,15 +290,15 @@ export default function Home() {
               {/* Seta esquerda */}
               <button
                 onClick={prevSlide}
-                className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 items-center justify-center rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white opacity-0 group-hover/carousel:opacity-100 hover:bg-white/20 transition-all duration-300 -translate-x-2 group-hover/carousel:translate-x-0"
+                className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-14 h-14 items-center justify-center rounded-full bg-white/5 backdrop-blur-xl border border-white/10 text-white/50 opacity-0 group-hover/carousel:opacity-100 hover:bg-white/10 hover:text-white hover:border-white/20 transition-all duration-300 -translate-x-4 group-hover/carousel:translate-x-0"
                 aria-label="Anterior"
               >
-                <FaChevronLeft />
+                <FaChevronLeft className="text-lg" />
               </button>
 
               {/* Carrossel */}
               <div
-                className="flex justify-center items-center gap-4 md:gap-8 touch-pan-x overflow-hidden"
+                className="flex justify-center items-center gap-4 md:gap-8 touch-pan-x overflow-hidden py-8"
                 onTouchStart={(e) => {
                   const touch = e.touches[0];
                   (e.currentTarget as HTMLElement).dataset.touchStartX = String(touch.clientX);
@@ -270,38 +326,41 @@ export default function Home() {
                       <motion.div
                         key={`${carouselIndex}-${offset}`}
                         initial={{
-                          x: slideDirection * 100,
+                          x: slideDirection * 120,
                           opacity: 0,
-                          scale: 0.8
+                          scale: 0.7,
+                          rotateY: slideDirection * 15
                         }}
                         animate={{
                           x: 0,
-                          opacity: isCenter ? 1 : 0.7,
-                          scale: isCenter ? 1 : 0.9
+                          opacity: isCenter ? 1 : 0.5,
+                          scale: isCenter ? 1 : 0.85,
+                          rotateY: 0
                         }}
                         exit={{
-                          x: slideDirection * -100,
+                          x: slideDirection * -120,
                           opacity: 0,
-                          scale: 0.8
+                          scale: 0.7,
+                          rotateY: slideDirection * -15
                         }}
                         transition={{
                           type: "spring",
-                          stiffness: 300,
-                          damping: 30,
-                          duration: 0.5
+                          stiffness: 260,
+                          damping: 25
                         }}
                         className={`flex-shrink-0 ${
                           isCenter
-                            ? 'w-[200px] md:w-[280px] z-10'
+                            ? 'w-[220px] md:w-[300px] z-10'
                             : 'w-[140px] md:w-[200px]'
                         }`}
+                        style={{ perspective: 1000 }}
                       >
                         <Link to={`/courses/${course.id}`}>
                           <div
-                            className={`relative aspect-[2/3] rounded-xl overflow-hidden shadow-lg transition-all duration-300 ${
+                            className={`relative aspect-[2/3] rounded-2xl overflow-hidden transition-all duration-500 ${
                               isCenter
-                                ? 'shadow-2xl shadow-[hsl(var(--primary))]/20'
-                                : 'grayscale'
+                                ? 'shadow-[0_20px_60px_rgba(0,0,0,0.5),0_0_40px_rgba(40,210,255,0.15)] ring-2 ring-white/20'
+                                : 'grayscale brightness-50'
                             }`}
                           >
                             {course.thumbnail ? (
@@ -314,13 +373,13 @@ export default function Home() {
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[hsl(var(--primary))] via-[hsl(var(--foreground))] to-[hsl(var(--accent))]">
-                                <span className="text-4xl font-bold text-white">{course.title.charAt(0)}</span>
+                                <span className="text-5xl font-bold text-white">{course.title.charAt(0)}</span>
                               </div>
                             )}
-                            <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity duration-300 ${isCenter ? 'opacity-100' : 'opacity-0'}`} />
-                            <div className={`absolute bottom-0 left-0 right-0 p-4 transition-all duration-300 ${isCenter ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                              <p className="text-white text-sm font-semibold line-clamp-2">{course.title}</p>
-                              <p className="text-white/70 text-xs mt-1">{course.teacher_name || 'MAEXTRIA'}</p>
+                            <div className={`absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent transition-opacity duration-300 ${isCenter ? 'opacity-100' : 'opacity-0'}`} />
+                            <div className={`absolute bottom-0 left-0 right-0 p-5 transition-all duration-500 ${isCenter ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+                              <p className="text-white font-bold text-base md:text-lg line-clamp-2 mb-1">{course.title}</p>
+                              <p className="text-white/60 text-sm">{course.teacher_name || 'MAEXTRIA'}</p>
                             </div>
                           </div>
                         </Link>
@@ -333,10 +392,10 @@ export default function Home() {
               {/* Seta direita */}
               <button
                 onClick={nextSlide}
-                className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 items-center justify-center rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white opacity-0 group-hover/carousel:opacity-100 hover:bg-white/20 transition-all duration-300 translate-x-2 group-hover/carousel:translate-x-0"
+                className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-14 h-14 items-center justify-center rounded-full bg-white/5 backdrop-blur-xl border border-white/10 text-white/50 opacity-0 group-hover/carousel:opacity-100 hover:bg-white/10 hover:text-white hover:border-white/20 transition-all duration-300 translate-x-4 group-hover/carousel:translate-x-0"
                 aria-label="Próximo"
               >
-                <FaChevronRight />
+                <FaChevronRight className="text-lg" />
               </button>
 
               {/* Indicadores */}
