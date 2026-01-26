@@ -4,41 +4,67 @@ import { useAuthStore } from './lib/store';
 import Layout from './components/Layout';
 import { lazy } from 'react';
 
-const Home = lazy(() => import('./pages/Home'));
-const Login = lazy(() => import('./pages/Login'));
-const Register = lazy(() => import('./pages/Register'));
-const ResetPassword = lazy(() => import('./pages/ResetPassword'));
-const Courses = lazy(() => import('./pages/Courses'));
-const CourseDetail = lazy(() => import('./pages/CourseDetail'));
-const Blog = lazy(() => import('./pages/Blog'));
-const BlogPost = lazy(() => import('./pages/BlogPost'));
-const Settings = lazy(() => import('./pages/Settings'));
-const PagamentoCertificado = lazy(() => import('./pages/PagamentoCertificado'));
-const VerificarCertificado = lazy(() => import('./pages/VerificarCertificado'));
-const StudentDashboard = lazy(() => import('./pages/student/Dashboard'));
-const StudentMyCourses = lazy(() => import('./pages/student/MyCourses'));
-const CoursePlayer = lazy(() => import('./pages/student/CoursePlayer'));
-const StudentNotifications = lazy(() => import('./pages/student/Notifications'));
-const TeacherDashboard = lazy(() => import('./pages/teacher/Dashboard'));
-const TeacherMyCourses = lazy(() => import('./pages/teacher/MyCourses'));
-const CourseEditor = lazy(() => import('./pages/teacher/CourseEditor'));
-const AiAccessPayment = lazy(() => import('./pages/teacher/AiAccessPayment'));
-const AiCreator = lazy(() => import('./pages/teacher/AiCreator'));
-const TeacherNotifications = lazy(() => import('./pages/teacher/Notifications'));
-const CourseCreatorGlass = lazy(() => import('./pages/teacher/CourseCreatorGlass')); // New import
-const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
-const AdminUsers = lazy(() => import('./pages/admin/Users'));
-const AdminCourses = lazy(() => import('./pages/admin/Courses'));
-const AdminSettings = lazy(() => import('./pages/admin/Settings'));
-const AdminNotifications = lazy(() => import('./pages/admin/Notifications'));
-const AdminPayments = lazy(() => import('./pages/admin/Payments'));
-const AdminModeracao = lazy(() => import('./pages/admin/Moderacao'));
-const AdminBlog = lazy(() => import('./pages/admin/Blog'));
-const AdminComissoes = lazy(() => import('./pages/admin/Comissoes'));
-const TeacherLanding = lazy(() => import('./pages/TeacherLanding'));
-const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
-const TermsOfService = lazy(() => import('./pages/TermsOfService'));
-const NotFound = lazy(() => import('./pages/NotFound'));
+// Helper para lazy load com retry automático após deploy
+function lazyWithRetry(importFn: () => Promise<any>) {
+  return lazy(() =>
+    importFn().catch((error) => {
+      // Detecta erro de chunk não encontrado (comum após novo deploy)
+      if (
+        error.message.includes('Failed to fetch dynamically imported module') ||
+        error.message.includes('Loading chunk') ||
+        error.message.includes('Loading CSS chunk')
+      ) {
+        // Evita loop infinito verificando se já tentou reload
+        const hasReloaded = sessionStorage.getItem('chunk-reload');
+        if (!hasReloaded) {
+          sessionStorage.setItem('chunk-reload', 'true');
+          window.location.reload();
+          return { default: () => null }; // Retorno temporário
+        }
+        sessionStorage.removeItem('chunk-reload');
+      }
+      throw error;
+    })
+  );
+}
+
+
+
+const Home = lazyWithRetry(() => import('./pages/Home'));
+const Login = lazyWithRetry(() => import('./pages/Login'));
+const Register = lazyWithRetry(() => import('./pages/Register'));
+const ResetPassword = lazyWithRetry(() => import('./pages/ResetPassword'));
+const Courses = lazyWithRetry(() => import('./pages/Courses'));
+const CourseDetail = lazyWithRetry(() => import('./pages/CourseDetail'));
+const Blog = lazyWithRetry(() => import('./pages/Blog'));
+const BlogPost = lazyWithRetry(() => import('./pages/BlogPost'));
+const Settings = lazyWithRetry(() => import('./pages/Settings'));
+const PagamentoCertificado = lazyWithRetry(() => import('./pages/PagamentoCertificado'));
+const VerificarCertificado = lazyWithRetry(() => import('./pages/VerificarCertificado'));
+const StudentDashboard = lazyWithRetry(() => import('./pages/student/Dashboard'));
+const StudentMyCourses = lazyWithRetry(() => import('./pages/student/MyCourses'));
+const CoursePlayer = lazyWithRetry(() => import('./pages/student/CoursePlayer'));
+const StudentNotifications = lazyWithRetry(() => import('./pages/student/Notifications'));
+const TeacherDashboard = lazyWithRetry(() => import('./pages/teacher/Dashboard'));
+const TeacherMyCourses = lazyWithRetry(() => import('./pages/teacher/MyCourses'));
+const CourseEditor = lazyWithRetry(() => import('./pages/teacher/CourseEditor'));
+const AiAccessPayment = lazyWithRetry(() => import('./pages/teacher/AiAccessPayment'));
+const AiCreator = lazyWithRetry(() => import('./pages/teacher/AiCreator'));
+const TeacherNotifications = lazyWithRetry(() => import('./pages/teacher/Notifications'));
+const CourseCreatorGlass = lazyWithRetry(() => import('./pages/teacher/CourseCreatorGlass')); // New import
+const AdminDashboard = lazyWithRetry(() => import('./pages/admin/Dashboard'));
+const AdminUsers = lazyWithRetry(() => import('./pages/admin/Users'));
+const AdminCourses = lazyWithRetry(() => import('./pages/admin/Courses'));
+const AdminSettings = lazyWithRetry(() => import('./pages/admin/Settings'));
+const AdminNotifications = lazyWithRetry(() => import('./pages/admin/Notifications'));
+const AdminPayments = lazyWithRetry(() => import('./pages/admin/Payments'));
+const AdminModeracao = lazyWithRetry(() => import('./pages/admin/Moderacao'));
+const AdminBlog = lazyWithRetry(() => import('./pages/admin/Blog'));
+const AdminComissoes = lazyWithRetry(() => import('./pages/admin/Comissoes'));
+const TeacherLanding = lazyWithRetry(() => import('./pages/TeacherLanding'));
+const PrivacyPolicy = lazyWithRetry(() => import('./pages/PrivacyPolicy'));
+const TermsOfService = lazyWithRetry(() => import('./pages/TermsOfService'));
+const NotFound = lazyWithRetry(() => import('./pages/NotFound'));
 
 function ProtectedRoute({ children, roles }: { children: React.ReactNode; roles?: string[] }) {
   const { isAuthenticated, user, isLoading } = useAuthStore();
@@ -65,8 +91,33 @@ function ProtectedRoute({ children, roles }: { children: React.ReactNode; roles?
 function App() {
   const loadUser = useAuthStore((state) => state.loadUser);
 
+  
+  // Listener para erros de chunk não capturados
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      if (
+        event.message.includes('Failed to fetch dynamically imported module') ||
+        event.message.includes('Loading chunk')
+      ) {
+        const hasReloaded = sessionStorage.getItem('chunk-reload');
+        if (!hasReloaded) {
+          sessionStorage.setItem('chunk-reload', 'true');
+          window.location.reload();
+        } else {
+          sessionStorage.removeItem('chunk-reload');
+        }
+      }
+    };
+    
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, []);
+
+
   useEffect(() => {
     loadUser();
+    // Limpar flag de reload após carregamento bem-sucedido
+    sessionStorage.removeItem('chunk-reload');
   }, [loadUser]);
 
   return (
