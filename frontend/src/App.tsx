@@ -260,6 +260,14 @@ function App() {
             }
           />
           <Route
+            path="/teacher/tutorial"
+            element={
+              <ProtectedRoute roles={['teacher']}>
+                <TeacherTutorial />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/teacher/course/new-glass" // New route for glassmorphism creator
             element={
               <ProtectedRoute roles={['teacher', 'admin']}>
