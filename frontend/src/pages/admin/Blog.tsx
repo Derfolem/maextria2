@@ -78,10 +78,80 @@ export default function AdminBlog() {
   };
 
   const hasCurrent = Boolean(current.id);
-  const normalizedSearch = search.trim().toLowerCase();
-  const filteredPosts = normalizedSearch
-    ? posts.filter((post) => post.titulo.toLowerCase().includes(normalizedSearch))
-    : posts;
+  const normalize = (value: string) =>
+    value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s/]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  const levenshtein = (a: string, b: string) => {
+    if (a === b) return 0;
+    const aLen = a.length;
+    const bLen = b.length;
+    if (!aLen) return bLen;
+    if (!bLen) return aLen;
+
+    const dp = Array.from({ length: aLen + 1 }, () => new Array(bLen + 1).fill(0));
+    for (let i = 0; i <= aLen; i += 1) dp[i][0] = i;
+    for (let j = 0; j <= bLen; j += 1) dp[0][j] = j;
+
+    for (let i = 1; i <= aLen; i += 1) {
+      for (let j = 1; j <= bLen; j += 1) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        dp[i][j] = Math.min(
+          dp[i - 1][j] + 1,
+          dp[i][j - 1] + 1,
+          dp[i - 1][j - 1] + cost
+        );
+      }
+    }
+    return dp[aLen][bLen];
+  };
+
+  const normalizedSearch = useMemo(() => normalize(search), [search]);
+
+  const filteredPosts = useMemo(() => {
+    if (!normalizedSearch) return posts;
+    const tokens = normalizedSearch.split(' ').filter(Boolean);
+
+    return posts
+      .map((post) => {
+        const dateLabel = post.publicado_em
+          ? new Date(post.publicado_em).toLocaleDateString('pt-BR')
+          : '';
+        const scoreField = (field: string) => {
+          if (!field) return 0;
+          const hay = normalize(field);
+          let score = 0;
+          tokens.forEach((token) => {
+            const idx = hay.indexOf(token);
+            if (idx >= 0) {
+              score += 2 + token.length / Math.max(hay.length, 1) + 1 / (idx + 1);
+            } else if (token.length > 3) {
+              const dist = levenshtein(token, hay.slice(0, Math.min(hay.length, token.length + 2)));
+              if (dist <= 2) score += 0.5;
+            }
+          });
+          return score;
+        };
+
+        const score = [
+          scoreField(post.titulo),
+          scoreField(post.resumo || ''),
+          scoreField(post.autor),
+          scoreField(dateLabel),
+          scoreField(post.slug),
+        ].reduce((acc, value) => acc + value, 0);
+
+        return { post, score };
+      })
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map((item) => item.post);
+  }, [normalizedSearch, posts]);
 
   const handleEdit = (post: BlogPost) => {
     setCurrent({
