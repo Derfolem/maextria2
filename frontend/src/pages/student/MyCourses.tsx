@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Enrollment } from '../../types';
 import { supabase } from '../../lib/supabase';
-import { FaPlay, FaCertificate } from 'react-icons/fa';
+import { FaPlay, FaCertificate , FaClock } from 'react-icons/fa';
 import { normalizeEnrollment } from '../../lib/normalizeEnrollment';
 import { useAuthStore } from '../../lib/store';
 
@@ -205,6 +205,12 @@ export default function MyCourses() {
                   <p className="text-[hsl(var(--muted-foreground))] mb-3">
                     {enrollment.course?.description}
                   </p>
+                  {enrollment.course?.duration_hours && (
+                    <p className="text-sm text-[hsl(var(--muted-foreground))] mb-2 flex items-center gap-1">
+                      <FaClock />
+                      Carga horária: {enrollment.course.duration_hours}h
+                    </p>
+                  )}
                   <div className="w-full bg-[hsl(var(--muted))] rounded-full h-3">
                     <div
                       className="bg-[hsl(var(--primary))] h-3 rounded-full transition-all"
