@@ -24,6 +24,8 @@ export interface Course {
   enrollment_count?: number;
   rating?: number;
   modules?: Module[];
+  em_curadoria?: boolean;
+  feedback_curadoria?: string;
 }
 
 export interface Module {
