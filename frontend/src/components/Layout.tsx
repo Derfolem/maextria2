@@ -471,7 +471,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               Verificar certificado
             </Link>
             {isHome && (
-              <Link to="/sou-professor" className="nav-link" onClick={() => setMobileOpen(false)}>
+              <Link to="/sou-professor" className="nav-link md:hidden" onClick={() => setMobileOpen(false)}>
                 Sou professor
               </Link>
             )}
