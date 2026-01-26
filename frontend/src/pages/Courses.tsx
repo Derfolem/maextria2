@@ -683,7 +683,7 @@ export default function Courses() {
                           </p>
                           <div className="flex items-center justify-between text-sm text-[hsl(var(--muted-foreground))]">
                             <StarRating value={course.rating || 4.3} readonly size="sm" showValue />
-                            {course.duration_hours && (
+                            {(course.duration_hours !== undefined && course.duration_hours !== null) && (
                               <span className="flex items-center gap-1">
                                 <FaClock className="text-xs" />
                                 {course.duration_hours}h
@@ -744,7 +744,7 @@ export default function Courses() {
                           </p>
                           <div className="flex items-center gap-4 mt-3 text-sm text-[hsl(var(--muted-foreground))]">
                             <StarRating value={course.rating || 4.3} readonly size="sm" showValue />
-                            {course.duration_hours && (
+                            {(course.duration_hours !== undefined && course.duration_hours !== null) && (
                               <span className="flex items-center gap-1">
                                 <FaClock className="text-xs" />
                                 {course.duration_hours}h

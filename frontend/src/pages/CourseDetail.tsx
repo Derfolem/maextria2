@@ -264,7 +264,7 @@ export default function CourseDetail() {
           <div className="space-y-5">
             <div className="flex flex-wrap items-center gap-4 text-sm text-[hsl(var(--muted-foreground))]">
               <span className="uppercase tracking-[0.2em]">{course.category || 'Trilha'}</span>
-              {course.duration_hours && (
+              {(course.duration_hours !== undefined && course.duration_hours !== null) && (
                 <span className="flex items-center gap-1">
                     <FaClock />
                     {course.duration_hours}h
