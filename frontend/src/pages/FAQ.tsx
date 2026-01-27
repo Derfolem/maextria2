@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { FaChevronDown, FaChevronUp, FaQuestionCircle, FaGraduationCap, FaUsers, FaBriefcase } from 'react-icons/fa';
 import Layout from '../components/Layout';
 import { SEO } from '../components/SEO';
