@@ -470,10 +470,10 @@ serve(async (req) => {
       }
     }
 
-    // QR Code
+    // QR Code (top-right)
     const qrSize = 26;
     const qrX = pageWidth - margin - qrSize;
-    const qrY = footerTop + 2;
+    const qrY = margin + 4;
     try {
       const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(validationUrl)}`;
       const qrResponse = await fetch(qrUrl);
@@ -484,9 +484,7 @@ serve(async (req) => {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(7);
         doc.setTextColor(90, 90, 90);
-        doc.text("Valide este certificado em:", qrX - 2, qrY + qrSize + 5, { align: "right" });
-        doc.setFont("helvetica", "bold");
-        doc.text("maextria.com.br/validar", qrX - 2, qrY + qrSize + 10, { align: "right" });
+        doc.text("Valide este certificado:", qrX + qrSize, qrY - 2, { align: "right" });
       }
     } catch (error) {
       console.error("QR render failed, continuing without QR:", error);

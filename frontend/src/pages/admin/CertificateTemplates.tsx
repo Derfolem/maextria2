@@ -867,16 +867,24 @@ export default function CertificateTemplates() {
                   : undefined
               }
             >
-              <div className="flex items-center justify-between">
-                <p className="text-sm tracking-[0.2em] text-[hsl(var(--muted-foreground))]">MAEXTRIA</p>
-                {form.logo_url && (
-                  <img
-                    src={form.logo_url}
-                    alt="Logo"
-                    className="object-contain"
-                    style={{ width: `${form.logo_largura_mm || 22}mm`, height: `${form.logo_altura_mm || 22}mm` }}
-                  />
-                )}
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  {form.logo_url && (
+                    <img
+                      src={form.logo_url}
+                      alt="Logo"
+                      className="object-contain"
+                      style={{ width: `${form.logo_largura_mm || 22}mm`, height: `${form.logo_altura_mm || 22}mm` }}
+                    />
+                  )}
+                  <p className="text-sm tracking-[0.2em] text-[hsl(var(--muted-foreground))]">MAEXTRIA</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] text-[hsl(var(--muted-foreground))]">Valide este certificado:</p>
+                  <div className="h-16 w-16 border border-[hsl(var(--border))] rounded bg-white/60 flex items-center justify-center text-[10px] text-[hsl(var(--muted-foreground))]">
+                    QR
+                  </div>
+                </div>
               </div>
               <div className="text-center space-y-2">
                 <h3 className="headline-font text-2xl text-[hsl(var(--secondary))]">{preview.titulo}</h3>
