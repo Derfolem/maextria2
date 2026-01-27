@@ -27,23 +27,23 @@ const faqData: FAQSection[] = [
     items: [
       {
         question: "O que e a MAEXTRIA?",
-        answer: "A MAEXTRIA e uma plataforma de educacao online que conecta professores especialistas a alunos interessados em aprender. Oferecemos cursos em diversas areas do conhecimento, com conteudo de qualidade e certificado de conclusao."
+        answer: "A MAEXTRIA e uma plataforma de educacao online que conecta professores especialistas a alunos interessados em aprender para evoluir profissionalmente. Oferecemos cursos em diversas areas do conhecimento, com conteudo de qualidade e certificado de conclusao."
       },
       {
         question: "Preciso pagar para me cadastrar?",
-        answer: "Nao! O cadastro na plataforma e totalmente gratuito. Voce so paga pelos cursos que decidir adquirir."
+        answer: "Nao! O cadastro na plataforma e totalmente gratuito."
       },
       {
         question: "Como funciona o acesso aos cursos?",
-        answer: "Apos a compra, voce tem acesso vitalicio ao curso. Pode assistir as aulas quantas vezes quiser, no seu proprio ritmo, de qualquer dispositivo com acesso a internet."
+        answer: "Apos o cadastro, voce tem acesso vitalicio aos cursos. Pode assistir todas as aulas quantas vezes quiser, no seu proprio ritmo, de qualquer dispositivo com acesso a internet."
       },
       {
         question: "Os cursos tem certificado?",
-        answer: "Sim! Ao concluir um curso com aproveitamento minimo de 70%, voce recebe um certificado digital que pode ser verificado em nossa plataforma e compartilhado no LinkedIn."
+        answer: "Sim! Ao concluir um curso com aproveitamento minimo de 70%, voce recebe um certificado digital que pode ser verificado em nossa plataforma e compartilhado no LinkedIn, curriculo e faculdade."
       },
       {
         question: "Como posso entrar em contato com o suporte?",
-        answer: "Voce pode nos contatar atraves do email suporte@maextria.com.br ou pelo chat disponivel na plataforma. Nosso tempo medio de resposta e de 24 horas uteis."
+        answer: "Voce pode nos contatar atraves do formulario do fale conosco no final desta pagina. Nosso tempo medio de resposta e de 24 horas uteis."
       }
     ]
   },
@@ -55,7 +55,7 @@ const faqData: FAQSection[] = [
     items: [
       {
         question: "Como faco para comprar um curso?",
-        answer: "Basta criar uma conta gratuita, escolher o curso desejado e realizar o pagamento via cartao de credito, boleto ou PIX. Apos a confirmacao, voce tera acesso imediato ao conteudo."
+        answer: "Basta criar uma conta gratuita, escolher o curso desejado e assistir quantas vezes quiser e realizar a prova final. Com 70% de aproveitamento voce podera baixar o certificado. Nossa plataforma e democratizadora de conhecimento, acessivel a todos e gratuitamente."
       },
       {
         question: "Posso baixar as aulas para assistir offline?",
@@ -63,7 +63,7 @@ const faqData: FAQSection[] = [
       },
       {
         question: "E se eu nao gostar do curso?",
-        answer: "Oferecemos garantia de 7 dias. Se voce nao ficar satisfeito, pode solicitar o reembolso integral dentro desse prazo, sem burocracia."
+        answer: "Para assistir as aulas, nao e necessario realizar nenhum pagamento. Pode assistir quantas vezes quiser."
       },
       {
         question: "Como funciona o sistema de avaliacoes?",
@@ -71,11 +71,11 @@ const faqData: FAQSection[] = [
       },
       {
         question: "Posso tirar duvidas com o professor?",
-        answer: "Sim! Cada curso possui uma area de comentarios onde voce pode interagir com o professor e outros alunos. Os professores respondem as duvidas regularmente."
+        answer: "Aqui na area de FAQ possui um formulario onde pode enviar suas duvidas. Procure ser o mais detalhista possivel."
       },
       {
         question: "Por quanto tempo tenho acesso ao curso?",
-        answer: "O acesso e vitalicio! Uma vez adquirido, o curso fica disponivel para voce para sempre, incluindo futuras atualizacoes de conteudo."
+        answer: "O acesso e vitalicio! Uma vez cadastrado, o curso fica disponivel para voce para sempre, incluindo futuras atualizacoes de conteudo."
       }
     ]
   },
@@ -91,11 +91,11 @@ const faqData: FAQSection[] = [
       },
       {
         question: "Quanto posso ganhar como professor?",
-        answer: "Voce recebe 70% do valor de cada venda do seu curso. Os pagamentos sao realizados mensalmente, sempre no dia 15, para vendas do mes anterior."
+        answer: "Voce recebe conforme regra de comissao, que e informada ao ingressar no time de professores."
       },
       {
         question: "Preciso ter experiencia com gravacao de videos?",
-        answer: "Nao necessariamente! Oferecemos materiais de apoio e dicas para criar conteudo de qualidade. O mais importante e seu conhecimento e didatica. Tambem temos parceiros que podem ajudar na producao."
+        answer: "Nao necessariamente! Nao precisa gravar videos se achar que nao e necessario. Mas a recomendacao e que tenha formas didaticas e de facil entendimento para que os alunos tenham o maximo de aproveitamento."
       },
       {
         question: "Quem define o preco do curso?",
@@ -107,7 +107,7 @@ const faqData: FAQSection[] = [
       },
       {
         question: "Posso atualizar meu curso depois de publicado?",
-        answer: "Sim! Voce pode adicionar novas aulas, atualizar conteudos existentes e melhorar seu curso a qualquer momento. Atualizacoes significativas passam por nova curadoria."
+        answer: "Sim! Voce pode adicionar novas aulas, atualizar conteudos existentes e melhorar seu curso a qualquer momento. Todas as atualizacoes passam por nova curadoria."
       },
       {
         question: "Como funciona o Maextria Ads?",
