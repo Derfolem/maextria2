@@ -176,7 +176,7 @@ serve(async (req) => {
 
     const { data: transacao } = await supabaseAdmin
       .from("transacoes_pagamento")
-      .select("id")
+      .select("id, referral_id")
       .eq("mercado_pago_payment_id", payment.id?.toString())
       .maybeSingle();
 
@@ -192,7 +192,7 @@ serve(async (req) => {
         await supabaseAdmin.rpc("commission_create_from_transaction", {
           p_transacao_id: transacao.id,
           p_certificado_id: certRow.id,
-          p_referral_id: null,
+          p_referral_id: transacao.referral_id ?? null,
         });
       }
     }

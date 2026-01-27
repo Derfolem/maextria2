@@ -189,8 +189,9 @@ export default function PagamentoCertificado() {
         throw new Error('Voce precisa estar logado para iniciar o pagamento.');
       }
 
+      const referralId = typeof window !== 'undefined' ? window.localStorage.getItem('mae_referral_id') : null;
       const { data, error } = await supabase.functions.invoke('create-payment', {
-        body: { cursoId, metodo: 'stripe' },
+        body: { cursoId, metodo: 'stripe', referralId },
         headers: buildAuthHeaders(accessToken),
       });
 

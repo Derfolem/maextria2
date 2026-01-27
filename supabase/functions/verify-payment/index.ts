@@ -179,27 +179,30 @@ serve(async (req) => {
 
     // === SISTEMA DE COMISSOES (novo ledger) ===
     let transacaoId: string | undefined;
+    let referralId: string | null = null;
     if (stripePaymentIntentId) {
       const { data: transacao } = await supabaseAdmin
         .from("transacoes_pagamento")
-        .select("id")
+        .select("id, referral_id")
         .eq("stripe_payment_intent_id", stripePaymentIntentId)
         .maybeSingle();
       transacaoId = transacao?.id;
+      referralId = transacao?.referral_id ?? null;
     } else if (stripeSessionId) {
       const { data: transacao } = await supabaseAdmin
         .from("transacoes_pagamento")
-        .select("id")
+        .select("id, referral_id")
         .eq("stripe_session_id", stripeSessionId)
         .maybeSingle();
       transacaoId = transacao?.id;
+      referralId = transacao?.referral_id ?? null;
     }
 
     if (transacaoId) {
       await supabaseAdmin.rpc("commission_create_from_transaction", {
         p_transacao_id: transacaoId,
         p_certificado_id: certificadoId,
-        p_referral_id: null,
+        p_referral_id: referralId,
       });
     }
 

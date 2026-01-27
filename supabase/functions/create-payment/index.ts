@@ -24,7 +24,7 @@ serve(async (req) => {
     const user = data.user;
     if (!user?.email) throw new Error("User not authenticated or email not available");
 
-    const { cursoId, metodo } = await req.json();
+    const { cursoId, metodo, referralId } = await req.json();
     if (!cursoId) throw new Error("Course ID is required");
 
     console.log("Creating payment for user:", user.email, "course:", cursoId);
@@ -80,6 +80,7 @@ serve(async (req) => {
         curso_id: cursoId,
         usuario_id: user.id,
         preco: precoCertificado.toString(),
+        referral_id: referralId || '',
       },
     });
 
@@ -94,6 +95,7 @@ serve(async (req) => {
       status: "pendente",
       metodo_pagamento: "stripe",
       stripe_payment_intent_id: paymentIntent.id,
+      referral_id: referralId || null,
     });
 
     console.log("PaymentIntent created:", paymentIntent.id);

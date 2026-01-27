@@ -313,33 +313,35 @@ serve(async (req) => {
     const labelCodigo = applyTemplate(activeTemplate.label_codigo);
     const modalidadeTexto = applyTemplate(activeTemplate.modalidade_texto);
 
-    // Background
-    doc.setFillColor(...baseBg);
-    doc.rect(0, 0, pageWidth, pageHeight, "F");
-
     const papelTimbrado = await resolveImageDataUri(activeTemplate.papel_timbrado_url || null);
-    if (papelTimbrado) {
+    const hasPaper = Boolean(papelTimbrado);
+
+    if (hasPaper && papelTimbrado) {
       try {
         doc.addImage(papelTimbrado.dataUri, papelTimbrado.format, 0, 0, pageWidth, pageHeight);
       } catch (error) {
         console.error("Paper background render failed:", error);
       }
+    } else {
+      // Background
+      doc.setFillColor(...baseBg);
+      doc.rect(0, 0, pageWidth, pageHeight, "F");
+
+      // Watermark X
+      doc.setTextColor(...watermark);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(160);
+      doc.text("X", pageWidth / 2, pageHeight / 2 + 25, { align: "center" });
+
+      // Border
+      doc.setDrawColor(...lightLine);
+      doc.setLineWidth(0.4);
+      doc.rect(margin, margin, pageWidth - margin * 2, pageHeight - margin * 2);
+
+      // Header line
+      doc.setLineWidth(0.6);
+      doc.line(margin, margin + 30, pageWidth - margin, margin + 30);
     }
-
-    // Watermark X
-    doc.setTextColor(...watermark);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(160);
-    doc.text("X", pageWidth / 2, pageHeight / 2 + 25, { align: "center" });
-
-    // Border
-    doc.setDrawColor(...lightLine);
-    doc.setLineWidth(0.4);
-    doc.rect(margin, margin, pageWidth - margin * 2, pageHeight - margin * 2);
-
-    // Header line
-    doc.setLineWidth(0.6);
-    doc.line(margin, margin + 30, pageWidth - margin, margin + 30);
 
     // Logo
     const logoData = await resolveLogoDataUri();
