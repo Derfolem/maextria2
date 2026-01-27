@@ -110,6 +110,24 @@ const getNextTier = (tiers: Tier[], current?: Tier | null) => {
   return currentIndex >= 0 && currentIndex < sorted.length - 1 ? sorted[currentIndex + 1] : null;
 };
 
+const getBaseTier = (tiers: Tier[]) => {
+  if (!tiers.length) return null;
+  const sorted = [...tiers].sort((a, b) => a.priority - b.priority);
+  return sorted[0];
+};
+
+const generateAffiliateCode = () => {
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    const bytes = new Uint8Array(8);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes)
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('')
+      .slice(0, 10);
+  }
+  return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`.slice(0, 10);
+};
+
 export default function TeacherComissoes() {
   const user = useAuthStore((state) => state.user);
   const [activeTab, setActiveTab] = useState<TabKey>('resumo');
@@ -194,11 +212,45 @@ export default function TeacherComissoes() {
         .maybeSingle();
       setMetrics((instructorMetrics as InstructorMetrics) || null);
 
-      const { data: linkData, error: linkError } = await supabase.rpc('affiliate_get_or_create_link', {
+      let linkData: AffiliateLink | null = null;
+      const { data: rpcLinkData, error: linkError } = await supabase.rpc('affiliate_get_or_create_link', {
         p_professor_id: user.id,
       });
-      if (linkError) throw linkError;
-      setAffiliateLink(linkData as AffiliateLink);
+
+      const rpcMissing =
+        linkError &&
+        (linkError.status === 404 || linkError.message?.includes('404') || linkError.message?.includes('Not Found'));
+
+      if (linkError && !rpcMissing) {
+        throw linkError;
+      }
+
+      if (rpcLinkData) {
+        linkData = rpcLinkData as AffiliateLink;
+      } else {
+        const { data: existingLink } = await supabase
+          .from('affiliate_links')
+          .select('id, code')
+          .eq('professor_id', user.id)
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .maybeSingle();
+
+        if (existingLink?.id) {
+          linkData = existingLink as AffiliateLink;
+        } else {
+          const code = generateAffiliateCode();
+          const { data: newLink, error: insertError } = await supabase
+            .from('affiliate_links')
+            .insert({ professor_id: user.id, code, is_active: true })
+            .select('id, code')
+            .single();
+          if (insertError) throw insertError;
+          linkData = newLink as AffiliateLink;
+        }
+      }
+
+      setAffiliateLink(linkData);
 
       if (linkData?.id) {
         const { count } = await supabase
@@ -206,6 +258,8 @@ export default function TeacherComissoes() {
           .select('id', { count: 'exact', head: true })
           .eq('affiliate_link_id', linkData.id);
         setAffiliateClicks(count || 0);
+      } else {
+        setAffiliateClicks(0);
       }
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao carregar comissões.');
@@ -226,7 +280,14 @@ export default function TeacherComissoes() {
   }, [ledger]);
 
   const currentTier = useMemo(() => computeTier(tiers, metrics), [tiers, metrics]);
-  const nextTier = useMemo(() => getNextTier(tiers, currentTier), [tiers, currentTier]);
+  const baseTier = useMemo(() => getBaseTier(tiers), [tiers]);
+  const nextTier = useMemo(() => getNextTier(tiers, currentTier ?? baseTier), [tiers, currentTier, baseTier]);
+  const effectiveTier = currentTier ?? baseTier;
+  const effectivePct = useMemo(() => {
+    if (effectiveTier?.base_pct != null) return effectiveTier.base_pct;
+    const lastLedger = ledger[0];
+    return lastLedger?.base_pct ?? 0;
+  }, [effectiveTier, ledger]);
 
   const affiliateTotals = useMemo(() => {
     const affiliateSales = ledger.filter((row) => row.source_type === 'AFFILIATE');
@@ -269,7 +330,7 @@ export default function TeacherComissoes() {
         <h1 className="headline-font text-4xl md:text-5xl">Painel de ganhos</h1>
       </div>
 
-      <div className="flex flex-wrap gap-3 mb-8">
+      <div className="flex flex-wrap gap-3 mb-8 overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.key}
@@ -310,9 +371,11 @@ export default function TeacherComissoes() {
                 <FaBolt />
                 <h2 className="text-lg font-semibold">Nivel atual</h2>
               </div>
-              <p className="text-2xl font-bold">{currentTier?.label || 'Sem dados suficientes'}</p>
+              <p className="text-2xl font-bold">
+                {currentTier?.label || (baseTier ? `${baseTier.label} (base)` : 'Sem dados suficientes')}
+              </p>
               <p className="text-sm text-[hsl(var(--muted-foreground))] mt-2">
-                {currentTier ? `${currentTier.base_pct}% de comissao base` : 'Aguardando metricas do professor.'}
+                {effectiveTier ? `${effectiveTier.base_pct}% de comissao base` : 'Aguardando metricas do professor.'}
               </p>
             </div>
             <div className="card">
@@ -383,7 +446,7 @@ export default function TeacherComissoes() {
                       </div>
                       <div className="text-right">
                         <p className="text-sm text-[hsl(var(--muted-foreground))]">Comissao aplicada</p>
-                        <p className="text-lg font-semibold">{currentTier?.base_pct ?? 0}%</p>
+                        <p className="text-lg font-semibold">{effectivePct}%</p>
                       </div>
                     </div>
                     {nextTier && (
@@ -480,13 +543,15 @@ export default function TeacherComissoes() {
       )}
 
       {activeTab === 'afiliados' && (
-        <div className="grid lg:grid-cols-[1.2fr,1fr] gap-6">
+        <div className="grid lg:grid-cols-[1.2fr,1fr] gap-6 items-start">
           <div className="card">
             <div className="flex items-center gap-2 text-[hsl(var(--primary))] mb-4">
               <FaLink />
               <h2 className="text-lg font-semibold">Link do professor</h2>
             </div>
-            <p className="text-sm text-[hsl(var(--muted-foreground))]">Use este link para divulgar seus cursos.</p>
+            <p className="text-sm text-[hsl(var(--muted-foreground))]">
+              Use este link para divulgar seus cursos e ganhar +10% nas vendas via afiliado.
+            </p>
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <input
                 className="input-field flex-1 min-w-[220px]"
@@ -525,6 +590,14 @@ export default function TeacherComissoes() {
                 <p className="text-xs text-[hsl(var(--muted-foreground))]">Comissao extra</p>
                 <p className="text-lg font-semibold">{formatCurrency(affiliateTotals.bonus)}</p>
               </div>
+            </div>
+            <div className="mt-6 rounded-[12px] border border-[hsl(var(--border))] bg-[hsl(var(--muted))] p-4">
+              <p className="text-sm font-semibold mb-2">Como gerar o link</p>
+              <ol className="text-xs text-[hsl(var(--muted-foreground))] space-y-1">
+                <li>1) Clique em \"Copiar\" e compartilhe o link com seus alunos.</li>
+                <li>2) O link ja inclui seu codigo (`?ref=...`).</li>
+                <li>3) Compras confirmadas via link somam +10% na sua comissao.</li>
+              </ol>
             </div>
           </div>
           <div className="card">
