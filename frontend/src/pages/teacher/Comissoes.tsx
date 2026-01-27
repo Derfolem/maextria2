@@ -7,7 +7,6 @@ import {
   FaChartLine,
   FaClipboardList,
   FaCoins,
-  FaExternalLinkAlt,
   FaLink,
   FaReceipt,
 } from 'react-icons/fa';
@@ -70,8 +69,6 @@ type Tier = {
 
 type Rule = { id: string; version: number; name: string };
 
-type AffiliateLink = { id: string; code: string };
-
 const tabs = [
   { key: 'resumo', label: 'Resumo', icon: <FaChartLine /> },
   { key: 'cursos', label: 'Cursos', icon: <FaClipboardList /> },
@@ -116,18 +113,6 @@ const getBaseTier = (tiers: Tier[]) => {
   return sorted[0];
 };
 
-const generateAffiliateCode = () => {
-  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-    const bytes = new Uint8Array(8);
-    crypto.getRandomValues(bytes);
-    return Array.from(bytes)
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('')
-      .slice(0, 10);
-  }
-  return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`.slice(0, 10);
-};
-
 export default function TeacherComissoes() {
   const user = useAuthStore((state) => state.user);
   const [activeTab, setActiveTab] = useState<TabKey>('resumo');
@@ -138,8 +123,6 @@ export default function TeacherComissoes() {
   const [courseMetrics, setCourseMetrics] = useState<Record<string, CourseMetric>>({});
   const [metrics, setMetrics] = useState<InstructorMetrics | null>(null);
   const [tiers, setTiers] = useState<Tier[]>([]);
-  const [affiliateLink, setAffiliateLink] = useState<AffiliateLink | null>(null);
-  const [affiliateClicks, setAffiliateClicks] = useState(0);
 
   const [filterCourse, setFilterCourse] = useState('all');
   const [filterStart, setFilterStart] = useState('');
@@ -212,41 +195,7 @@ export default function TeacherComissoes() {
         .maybeSingle();
       setMetrics((instructorMetrics as InstructorMetrics) || null);
 
-      let linkData: AffiliateLink | null = null;
-      const { data: existingLink, error: existingError } = await supabase
-        .from('affiliate_links')
-        .select('id, code')
-        .eq('professor_id', user.id)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .maybeSingle();
-
-      if (existingError) throw existingError;
-
-      if (existingLink?.id) {
-        linkData = existingLink as AffiliateLink;
-      } else {
-        const code = generateAffiliateCode();
-        const { data: newLink, error: insertError } = await supabase
-          .from('affiliate_links')
-          .insert({ professor_id: user.id, code, is_active: true })
-          .select('id, code')
-          .single();
-        if (insertError) throw insertError;
-        linkData = newLink as AffiliateLink;
-      }
-
-      setAffiliateLink(linkData);
-
-      if (linkData?.id) {
-        const { count } = await supabase
-          .from('affiliate_referrals')
-          .select('id', { count: 'exact', head: true })
-          .eq('affiliate_link_id', linkData.id);
-        setAffiliateClicks(count || 0);
-      } else {
-        setAffiliateClicks(0);
-      }
+      // Afiliados desativados (em breve)
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao carregar comissões.');
     } finally {
@@ -275,13 +224,6 @@ export default function TeacherComissoes() {
     return lastLedger?.base_pct ?? 0;
   }, [effectiveTier, ledger]);
 
-  const affiliateTotals = useMemo(() => {
-    const affiliateSales = ledger.filter((row) => row.source_type === 'AFFILIATE');
-    return {
-      sales: affiliateSales.length,
-      bonus: affiliateSales.reduce((sum, row) => sum + (row.commission_bonus_amount || 0), 0),
-    };
-  }, [ledger]);
 
   const filteredLedger = useMemo(() => {
     return ledger.filter((row) => {
@@ -291,12 +233,6 @@ export default function TeacherComissoes() {
       return true;
     });
   }, [ledger, filterCourse, filterStart, filterEnd]);
-
-  const affiliateUrl = useMemo(() => {
-    if (!affiliateLink?.code) return '';
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.maextria.com.br';
-    return `${origin}/courses?ref=${affiliateLink.code}`;
-  }, [affiliateLink]);
 
   if (loading) {
     return (
@@ -529,72 +465,14 @@ export default function TeacherComissoes() {
       )}
 
       {activeTab === 'afiliados' && (
-        <div className="grid lg:grid-cols-[1.2fr,1fr] gap-6 items-start">
-          <div className="card">
-            <div className="flex items-center gap-2 text-[hsl(var(--primary))] mb-4">
-              <FaLink />
-              <h2 className="text-lg font-semibold">Link do professor</h2>
-            </div>
-            <p className="text-sm text-[hsl(var(--muted-foreground))]">
-              Use este link para divulgar seus cursos e ganhar +10% nas vendas via afiliado.
-            </p>
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <input
-                className="input-field flex-1 min-w-[220px]"
-                value={affiliateUrl}
-                readOnly
-              />
-              <button
-                type="button"
-                className="btn-outline text-sm"
-                onClick={() => {
-                  navigator.clipboard.writeText(affiliateUrl);
-                  toast.success('Link copiado!');
-                }}
-              >
-                Copiar
-              </button>
-              <a
-                href={affiliateUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="text-sm text-[hsl(var(--primary))] flex items-center gap-2"
-              >
-                Abrir <FaExternalLinkAlt />
-              </a>
-            </div>
-            <div className="grid md:grid-cols-3 gap-4 mt-6">
-              <div className="border border-[hsl(var(--border))] rounded-[12px] p-3">
-                <p className="text-xs text-[hsl(var(--muted-foreground))]">Cliques</p>
-                <p className="text-lg font-semibold">{affiliateClicks}</p>
-              </div>
-              <div className="border border-[hsl(var(--border))] rounded-[12px] p-3">
-                <p className="text-xs text-[hsl(var(--muted-foreground))]">Vendas via link</p>
-                <p className="text-lg font-semibold">{affiliateTotals.sales}</p>
-              </div>
-              <div className="border border-[hsl(var(--border))] rounded-[12px] p-3">
-                <p className="text-xs text-[hsl(var(--muted-foreground))]">Comissao extra</p>
-                <p className="text-lg font-semibold">{formatCurrency(affiliateTotals.bonus)}</p>
-              </div>
-            </div>
-            <div className="mt-6 rounded-[12px] border border-[hsl(var(--border))] bg-[hsl(var(--muted))] p-4">
-              <p className="text-sm font-semibold mb-2">Como gerar o link</p>
-              <ol className="text-xs text-[hsl(var(--muted-foreground))] space-y-1">
-                <li>1) Clique em \"Copiar\" e compartilhe o link com seus alunos.</li>
-                <li>2) O link ja inclui seu codigo (`?ref=...`).</li>
-                <li>3) Compras confirmadas via link somam +10% na sua comissao.</li>
-              </ol>
-            </div>
+        <div className="card">
+          <div className="flex items-center gap-2 text-[hsl(var(--primary))] mb-3">
+            <FaLink />
+            <h2 className="text-lg font-semibold">Afiliados</h2>
           </div>
-          <div className="card">
-            <h2 className="text-lg font-semibold mb-4">Regras antifraude</h2>
-            <ul className="text-sm text-[hsl(var(--muted-foreground))] space-y-2">
-              <li>Vendas via link valido do professor (+10%).</li>
-              <li>Cliques repetidos podem ser auditados manualmente.</li>
-              <li>Estornos removem o bonus automaticamente.</li>
-              <li>Links sao pessoais e intransferiveis.</li>
-            </ul>
-          </div>
+          <p className="text-sm text-[hsl(var(--muted-foreground))]">
+            Em breve. Estamos preparando o programa de afiliados com bonus por vendas via link.
+          </p>
         </div>
       )}
 

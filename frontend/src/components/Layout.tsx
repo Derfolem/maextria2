@@ -119,41 +119,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     }
   }, [location.search, user?.role]);
 
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const refCode = params.get('ref');
-    if (!refCode) return;
-    if (typeof window === 'undefined') return;
-
-    const storage = window.localStorage;
-    const storedCode = storage.getItem('mae_ref_code');
-    const storedReferral = storage.getItem('mae_referral_id');
-    if (storedCode === refCode && storedReferral) return;
-
-    let sessionId = storage.getItem('mae_ref_session');
-    if (!sessionId) {
-      sessionId = typeof crypto !== 'undefined' && crypto.randomUUID
-        ? crypto.randomUUID()
-        : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-      storage.setItem('mae_ref_session', sessionId);
-    }
-
-    supabase
-      .rpc('affiliate_register_click', {
-        p_code: refCode,
-        p_session_id: sessionId,
-      })
-      .then(({ data, error }) => {
-        if (error) {
-          console.error('Erro ao registrar afiliado:', error.message);
-          return;
-        }
-        if (data) {
-          storage.setItem('mae_ref_code', refCode);
-          storage.setItem('mae_referral_id', data);
-        }
-      });
-  }, [location.search]);
+  // Afiliados (em breve): tracking desativado
 
   const maintenanceBypass =
     user?.role === 'admin' &&
