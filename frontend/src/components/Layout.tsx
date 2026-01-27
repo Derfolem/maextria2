@@ -576,6 +576,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <Link to="/register" className="hover:text-[hsl(var(--secondary))] transition">Iniciar</Link>
               <Link to="/privacidade" className="hover:text-[hsl(var(--secondary))] transition">Privacidade</Link>
               <Link to="/termos" className="hover:text-[hsl(var(--secondary))] transition">Termos</Link>
+              <Link to="/faq" className="hover:text-[hsl(var(--secondary))] transition">FAQ</Link>
             </div>
           </div>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-6 text-sm text-white/70">
