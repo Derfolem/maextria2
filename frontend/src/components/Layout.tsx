@@ -394,6 +394,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
 
             <div className="flex items-center gap-4">
+              {isAuthenticated && user && (
+                <Link
+                  to={user.role === 'teacher' ? '/teacher/dashboard' : user.role === 'admin' ? '/admin/dashboard' : '/student/dashboard'}
+                  className="hidden md:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all"
+                  data-testid="link-minha-area"
+                >
+                  Minha Area
+                </Link>
+              )}
               {user && (user.role === 'student' || user.role === 'teacher') && (
                 <Link
                   to={notificationLink}
