@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { ChevronDown, ChevronUp, HelpCircle, GraduationCap, Users, Briefcase } from 'lucide-react';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
+import { useState, useEffect } from 'react';
+import { FaChevronDown, FaChevronUp, FaQuestionCircle, FaGraduationCap, FaUsers, FaBriefcase } from 'react-icons/fa';
+import Layout from '../components/Layout';
+import { SEO } from '../components/SEO';
 
 interface FAQItem {
   question: string;
@@ -17,91 +17,91 @@ interface FAQSection {
 const faqData: FAQSection[] = [
   {
     title: "Visitantes",
-    icon: <Users className="w-6 h-6" />,
+    icon: <FaUsers className="w-6 h-6" />,
     items: [
       {
-        question: "O que é a MAEXTRIA?",
-        answer: "A MAEXTRIA é uma plataforma de educação online que conecta professores especialistas a alunos interessados em aprender. Oferecemos cursos em diversas áreas do conhecimento, com conteúdo de qualidade e certificado de conclusão."
+        question: "O que e a MAEXTRIA?",
+        answer: "A MAEXTRIA e uma plataforma de educacao online que conecta professores especialistas a alunos interessados em aprender. Oferecemos cursos em diversas areas do conhecimento, com conteudo de qualidade e certificado de conclusao."
       },
       {
         question: "Preciso pagar para me cadastrar?",
-        answer: "Não! O cadastro na plataforma é totalmente gratuito. Você só paga pelos cursos que decidir adquirir."
+        answer: "Nao! O cadastro na plataforma e totalmente gratuito. Voce so paga pelos cursos que decidir adquirir."
       },
       {
         question: "Como funciona o acesso aos cursos?",
-        answer: "Após a compra, você tem acesso vitalício ao curso. Pode assistir às aulas quantas vezes quiser, no seu próprio ritmo, de qualquer dispositivo com acesso à internet."
+        answer: "Apos a compra, voce tem acesso vitalicio ao curso. Pode assistir as aulas quantas vezes quiser, no seu proprio ritmo, de qualquer dispositivo com acesso a internet."
       },
       {
-        question: "Os cursos têm certificado?",
-        answer: "Sim! Ao concluir um curso com aproveitamento mínimo de 70%, você recebe um certificado digital que pode ser verificado em nossa plataforma e compartilhado no LinkedIn."
+        question: "Os cursos tem certificado?",
+        answer: "Sim! Ao concluir um curso com aproveitamento minimo de 70%, voce recebe um certificado digital que pode ser verificado em nossa plataforma e compartilhado no LinkedIn."
       },
       {
         question: "Como posso entrar em contato com o suporte?",
-        answer: "Você pode nos contatar através do email suporte@maextria.com.br ou pelo chat disponível na plataforma. Nosso tempo médio de resposta é de 24 horas úteis."
+        answer: "Voce pode nos contatar atraves do email suporte@maextria.com.br ou pelo chat disponivel na plataforma. Nosso tempo medio de resposta e de 24 horas uteis."
       }
     ]
   },
   {
     title: "Alunos",
-    icon: <GraduationCap className="w-6 h-6" />,
+    icon: <FaGraduationCap className="w-6 h-6" />,
     items: [
       {
-        question: "Como faço para comprar um curso?",
-        answer: "Basta criar uma conta gratuita, escolher o curso desejado e realizar o pagamento via cartão de crédito, boleto ou PIX. Após a confirmação, você terá acesso imediato ao conteúdo."
+        question: "Como faco para comprar um curso?",
+        answer: "Basta criar uma conta gratuita, escolher o curso desejado e realizar o pagamento via cartao de credito, boleto ou PIX. Apos a confirmacao, voce tera acesso imediato ao conteudo."
       },
       {
         question: "Posso baixar as aulas para assistir offline?",
-        answer: "Atualmente as aulas são disponibilizadas apenas via streaming. Estamos trabalhando para disponibilizar o download em breve."
+        answer: "Atualmente as aulas sao disponibilizadas apenas via streaming. Estamos trabalhando para disponibilizar o download em breve."
       },
       {
-        question: "E se eu não gostar do curso?",
-        answer: "Oferecemos garantia de 7 dias. Se você não ficar satisfeito, pode solicitar o reembolso integral dentro desse prazo, sem burocracia."
+        question: "E se eu nao gostar do curso?",
+        answer: "Oferecemos garantia de 7 dias. Se voce nao ficar satisfeito, pode solicitar o reembolso integral dentro desse prazo, sem burocracia."
       },
       {
-        question: "Como funciona o sistema de avaliações?",
-        answer: "Cada módulo pode conter quizzes e atividades práticas. Sua nota final é calculada com base no desempenho nessas avaliações. Você precisa de 70% de aproveitamento para receber o certificado."
+        question: "Como funciona o sistema de avaliacoes?",
+        answer: "Cada modulo pode conter quizzes e atividades praticas. Sua nota final e calculada com base no desempenho nessas avaliacoes. Voce precisa de 70% de aproveitamento para receber o certificado."
       },
       {
-        question: "Posso tirar dúvidas com o professor?",
-        answer: "Sim! Cada curso possui uma área de comentários onde você pode interagir com o professor e outros alunos. Os professores respondem às dúvidas regularmente."
+        question: "Posso tirar duvidas com o professor?",
+        answer: "Sim! Cada curso possui uma area de comentarios onde voce pode interagir com o professor e outros alunos. Os professores respondem as duvidas regularmente."
       },
       {
         question: "Por quanto tempo tenho acesso ao curso?",
-        answer: "O acesso é vitalício! Uma vez adquirido, o curso fica disponível para você para sempre, incluindo futuras atualizações de conteúdo."
+        answer: "O acesso e vitalicio! Uma vez adquirido, o curso fica disponivel para voce para sempre, incluindo futuras atualizacoes de conteudo."
       }
     ]
   },
   {
     title: "Professores",
-    icon: <Briefcase className="w-6 h-6" />,
+    icon: <FaBriefcase className="w-6 h-6" />,
     items: [
       {
         question: "Como me tornar professor na MAEXTRIA?",
-        answer: "Acesse a página 'Seja um Professor', preencha o formulário com suas informações e área de expertise. Nossa equipe analisará seu perfil e entrará em contato em até 5 dias úteis."
+        answer: "Acesse a pagina 'Seja um Professor', preencha o formulario com suas informacoes e area de expertise. Nossa equipe analisara seu perfil e entrara em contato em ate 5 dias uteis."
       },
       {
         question: "Quanto posso ganhar como professor?",
-        answer: "Você recebe 70% do valor de cada venda do seu curso. Os pagamentos são realizados mensalmente, sempre no dia 15, para vendas do mês anterior."
+        answer: "Voce recebe 70% do valor de cada venda do seu curso. Os pagamentos sao realizados mensalmente, sempre no dia 15, para vendas do mes anterior."
       },
       {
-        question: "Preciso ter experiência com gravação de vídeos?",
-        answer: "Não necessariamente! Oferecemos materiais de apoio e dicas para criar conteúdo de qualidade. O mais importante é seu conhecimento e didática. Também temos parceiros que podem ajudar na produção."
+        question: "Preciso ter experiencia com gravacao de videos?",
+        answer: "Nao necessariamente! Oferecemos materiais de apoio e dicas para criar conteudo de qualidade. O mais importante e seu conhecimento e didatica. Tambem temos parceiros que podem ajudar na producao."
       },
       {
-        question: "Quem define o preço do curso?",
-        answer: "Você define! Recomendamos analisar cursos similares na plataforma para definir um preço competitivo. Nossa equipe também pode orientar sobre precificação."
+        question: "Quem define o preco do curso?",
+        answer: "Voce define! Recomendamos analisar cursos similares na plataforma para definir um preco competitivo. Nossa equipe tambem pode orientar sobre precificacao."
       },
       {
-        question: "O que é a curadoria de cursos?",
-        answer: "Todo curso passa por uma análise de qualidade antes de ser publicado. Verificamos a qualidade técnica do conteúdo, clareza das explicações e adequação às nossas diretrizes. O processo leva em média 5 dias úteis."
+        question: "O que e a curadoria de cursos?",
+        answer: "Todo curso passa por uma analise de qualidade antes de ser publicado. Verificamos a qualidade tecnica do conteudo, clareza das explicacoes e adequacao as nossas diretrizes. O processo leva em media 5 dias uteis."
       },
       {
         question: "Posso atualizar meu curso depois de publicado?",
-        answer: "Sim! Você pode adicionar novas aulas, atualizar conteúdos existentes e melhorar seu curso a qualquer momento. Atualizações significativas passam por nova curadoria."
+        answer: "Sim! Voce pode adicionar novas aulas, atualizar conteudos existentes e melhorar seu curso a qualquer momento. Atualizacoes significativas passam por nova curadoria."
       },
       {
         question: "Como funciona o Maextria Ads?",
-        answer: "O Maextria Ads é nossa rede de publicidade interna que permite promover seu curso para mais alunos dentro da plataforma. Você pode investir uma parte dos seus ganhos para aumentar a visibilidade do seu curso. Em breve disponível!"
+        answer: "O Maextria Ads e nossa rede de publicidade interna que permite promover seu curso para mais alunos dentro da plataforma. Voce pode investir uma parte dos seus ganhos para aumentar a visibilidade do seu curso. Em breve disponivel!"
       }
     ]
   }
@@ -109,21 +109,21 @@ const faqData: FAQSection[] = [
 
 function FAQAccordion({ item, isOpen, onToggle }: { item: FAQItem; isOpen: boolean; onToggle: () => void }) {
   return (
-    <div className="border-b border-gray-200 last:border-b-0" data-testid="faq-item">
+    <div className="border-b border-gray-200 dark:border-gray-700 last:border-b-0" data-testid="faq-item">
       <button
         onClick={onToggle}
-        className="w-full py-4 px-4 flex justify-between items-center text-left hover:bg-gray-50 transition-colors"
+        className="w-full py-4 px-4 flex justify-between items-center text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
         data-testid="button-faq-toggle"
       >
-        <span className="font-medium text-gray-900">{item.question}</span>
+        <span className="font-medium text-gray-900 dark:text-white">{item.question}</span>
         {isOpen ? (
-          <ChevronUp className="w-5 h-5 text-gray-500 flex-shrink-0" />
+          <FaChevronUp className="w-4 h-4 text-gray-500 flex-shrink-0" />
         ) : (
-          <ChevronDown className="w-5 h-5 text-gray-500 flex-shrink-0" />
+          <FaChevronDown className="w-4 h-4 text-gray-500 flex-shrink-0" />
         )}
       </button>
       {isOpen && (
-        <div className="px-4 pb-4 text-gray-600 leading-relaxed" data-testid="faq-answer">
+        <div className="px-4 pb-4 text-gray-600 dark:text-gray-300 leading-relaxed" data-testid="faq-answer">
           {item.answer}
         </div>
       )}
@@ -140,60 +140,59 @@ export default function FAQ() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Header />
+    <Layout>
+      <SEO 
+        title="Perguntas Frequentes | MAEXTRIA"
+        description="Encontre respostas para as duvidas mais comuns sobre a MAEXTRIA. Informacoes para visitantes, alunos e professores."
+      />
       
-      <main className="flex-grow">
-        <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-16">
-          <div className="max-w-4xl mx-auto px-4 text-center">
-            <HelpCircle className="w-16 h-16 mx-auto mb-4 opacity-90" />
-            <h1 className="text-4xl font-bold mb-4" data-testid="text-faq-title">Perguntas Frequentes</h1>
-            <p className="text-xl opacity-90">
-              Encontre respostas para as dúvidas mais comuns sobre a MAEXTRIA
-            </p>
-          </div>
+      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-16">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <FaQuestionCircle className="w-16 h-16 mx-auto mb-4 opacity-90" />
+          <h1 className="text-4xl font-bold mb-4" data-testid="text-faq-title">Perguntas Frequentes</h1>
+          <p className="text-xl opacity-90">
+            Encontre respostas para as duvidas mais comuns sobre a MAEXTRIA
+          </p>
         </div>
+      </div>
 
-        <div className="max-w-4xl mx-auto px-4 py-12">
-          {faqData.map((section, sectionIndex) => (
-            <div key={section.title} className="mb-8" data-testid={`faq-section-${sectionIndex}`}>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
-                  {section.icon}
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900">{section.title}</h2>
+      <div className="max-w-4xl mx-auto px-4 py-12">
+        {faqData.map((section, sectionIndex) => (
+          <div key={section.title} className="mb-8" data-testid={`faq-section-${sectionIndex}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg text-blue-600 dark:text-blue-300">
+                {section.icon}
               </div>
-              
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                {section.items.map((item, itemIndex) => (
-                  <FAQAccordion
-                    key={itemIndex}
-                    item={item}
-                    isOpen={openItems[`${sectionIndex}-${itemIndex}`] || false}
-                    onToggle={() => toggleItem(sectionIndex, itemIndex)}
-                  />
-                ))}
-              </div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{section.title}</h2>
             </div>
-          ))}
-
-          <div className="mt-12 text-center p-8 bg-white rounded-lg shadow-sm border border-gray-200">
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Ainda tem dúvidas?</h3>
-            <p className="text-gray-600 mb-4">
-              Nossa equipe está pronta para ajudar você!
-            </p>
-            <a
-              href="mailto:suporte@maextria.com.br"
-              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
-              data-testid="link-contact-support"
-            >
-              Fale Conosco
-            </a>
+            
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+              {section.items.map((item, itemIndex) => (
+                <FAQAccordion
+                  key={itemIndex}
+                  item={item}
+                  isOpen={openItems[`${sectionIndex}-${itemIndex}`] || false}
+                  onToggle={() => toggleItem(sectionIndex, itemIndex)}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      </main>
+        ))}
 
-      <Footer />
-    </div>
+        <div className="mt-12 text-center p-8 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Ainda tem duvidas?</h3>
+          <p className="text-gray-600 dark:text-gray-300 mb-4">
+            Nossa equipe esta pronta para ajudar voce!
+          </p>
+          <a
+            href="mailto:suporte@maextria.com.br"
+            className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+            data-testid="link-contact-support"
+          >
+            Fale Conosco
+          </a>
+        </div>
+      </div>
+    </Layout>
   );
 }
