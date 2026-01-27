@@ -143,6 +143,57 @@ export default function CourseDetail() {
   };
 
   if (loading) {
+
+  // JSON-LD para SEO do curso
+  useEffect(() => {
+    if (!course) return;
+    
+    const jsonLd = {
+      "@context": "https://schema.org",
+      "@type": "Course",
+      "name": course.title || course.titulo,
+      "description": course.description || course.descricao,
+      "provider": {
+        "@type": "Organization",
+        "name": "MAEXTRIA",
+        "url": "https://www.maextria.com.br"
+      },
+      "url": `https://www.maextria.com.br/course/${course.id}`,
+      "offers": {
+        "@type": "Offer",
+        "price": course.price || course.preco || 0,
+        "priceCurrency": "BRL",
+        "availability": "https://schema.org/InStock"
+      },
+      "hasCourseInstance": {
+        "@type": "CourseInstance",
+        "courseMode": "online",
+        "courseWorkload": course.duration_hours ? `PT${course.duration_hours}H` : undefined
+      }
+    };
+    
+    let script = document.getElementById('jsonld-course');
+    if (!script) {
+      script = document.createElement('script');
+      script.id = 'jsonld-course';
+      script.type = 'application/ld+json';
+      document.head.appendChild(script);
+    }
+    script.textContent = JSON.stringify(jsonLd);
+    
+    document.title = `${course.title || course.titulo} | MAEXTRIA`;
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) {
+      metaDesc.setAttribute('content', (course.description || course.descricao || '').substring(0, 160));
+    }
+    
+    return () => {
+      const el = document.getElementById('jsonld-course');
+      if (el) el.remove();
+    };
+  }, [course]);
+
+
     return (
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="animate-pulse">
