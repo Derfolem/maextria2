@@ -276,10 +276,10 @@ export default function Home() {
             )}
           </AnimatePresence>
           {/* Overlay escuro */}
-          <div className="absolute inset-0 bg-[hsl(var(--background))]/85" />
+          <div className="absolute inset-0 bg-[hsl(var(--background))]/50" />
           {/* Gradientes decorativos */}
           <div className="absolute inset-0 bg-gradient-to-t from-[hsl(var(--background))] via-transparent to-[hsl(var(--background))]" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_0%,_hsl(var(--background))_70%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_0%,_hsl(var(--background))_85%)]" />
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-[clamp(24px,5vw,80px)]">
