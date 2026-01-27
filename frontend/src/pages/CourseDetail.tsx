@@ -172,7 +172,7 @@ export default function CourseDetail() {
       }
     };
     
-    let script = document.getElementById('jsonld-course');
+    let script = document.getElementById('jsonld-course') as HTMLScriptElement | null;
     if (!script) {
       script = document.createElement('script');
       script.id = 'jsonld-course';
