@@ -278,7 +278,7 @@ export default function FAQ() {
             <Link to="/courses" className="text-white/70 hover:text-white text-sm transition-colors">Cursos</Link>
             <Link to="/sou-professor" className="text-white/70 hover:text-white text-sm transition-colors">Seja Professor</Link>
             {isAuthenticated ? (
-              <Link to={user?.role === 'teacher' ? '/teacher' : user?.role === 'admin' ? '/admin' : '/student'} className="px-4 py-2 bg-white/10 text-white text-sm rounded-lg hover:bg-white/20 transition-colors">
+              <Link to={user?.role === 'teacher' ? '/teacher/dashboard' : user?.role === 'admin' ? '/admin/dashboard' : '/student/dashboard'} className="px-4 py-2 bg-white/10 text-white text-sm rounded-lg hover:bg-white/20 transition-colors">
                 Minha Area
               </Link>
             ) : (
