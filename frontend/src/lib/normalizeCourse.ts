@@ -32,5 +32,7 @@ export function normalizeCourse(raw: RawCourse): Course {
     ),
     rating: raw.rating_medio ?? raw.rating ?? 4.3,
     modules: raw.modules,
+    em_curadoria: Boolean(raw.em_curadoria),
+    feedback_curadoria: raw.feedback_curadoria ?? undefined,
   };
 }
