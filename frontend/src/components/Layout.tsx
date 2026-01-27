@@ -100,7 +100,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [systemFlagsLoaded, setSystemFlagsLoaded] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const bannerEnabled = banner.enabled && Boolean(banner.imageUrl);
-  const isMemberArea = location.pathname.startsWith('/admin') || location.pathname.startsWith('/teacher');
+  const isMemberArea =
+    location.pathname.startsWith('/admin') ||
+    location.pathname.startsWith('/teacher') ||
+    location.pathname.startsWith('/professor');
   const isTeacherLanding = location.pathname === '/sou-professor';
   const showBanner = bannerEnabled && !isMemberArea && !isTeacherLanding;
 
@@ -518,6 +521,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     </Link>
                     <Link to="/teacher/performance" className="nav-link" onClick={() => setMobileOpen(false)}>
                       Desempenho
+                    </Link>
+                    <Link to="/professor/comissoes" className="nav-link" onClick={() => setMobileOpen(false)}>
+                      Comissoes
                     </Link>
                     <Link to="/teacher/dashboard" className="nav-link" onClick={() => setMobileOpen(false)}>
                       Painel

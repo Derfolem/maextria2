@@ -174,6 +174,29 @@ serve(async (req) => {
         .eq("id", existingCert.id);
     }
 
+    const { data: transacao } = await supabaseAdmin
+      .from("transacoes_pagamento")
+      .select("id")
+      .eq("mercado_pago_payment_id", payment.id?.toString())
+      .maybeSingle();
+
+    if (transacao?.id) {
+      const { data: certRow } = await supabaseAdmin
+        .from("certificados")
+        .select("id")
+        .eq("usuario_id", usuarioId)
+        .eq("curso_id", cursoId)
+        .maybeSingle();
+
+      if (certRow?.id) {
+        await supabaseAdmin.rpc("commission_create_from_transaction", {
+          p_transacao_id: transacao.id,
+          p_certificado_id: certRow.id,
+          p_referral_id: null,
+        });
+      }
+    }
+
     return new Response(JSON.stringify({ success: true, preco }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

@@ -47,14 +47,15 @@ serve(async (req) => {
 
     // 2. Validar entrada
     const body = await req.json();
-    const { cursoId, certificadoId } = body;
-    
-    if (!cursoId || !certificadoId) {
+    const { cursoId, certificadoId, preview, templateId } = body;
+    const isPreview = preview === true;
+
+    if (!isPreview && (!cursoId || !certificadoId)) {
       return new Response(
         JSON.stringify({ error: "Dados insuficientes para gerar certificado." }),
-        { 
+        {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400 
+          status: 400,
         }
       );
     }
@@ -62,57 +63,109 @@ serve(async (req) => {
     console.log("Generating certificate for user:", user.id, "course:", cursoId);
 
     // 3. Buscar certificado e validar
-    const { data: certificado, error: certError } = await supabaseClient
-      .from("certificados")
-      .select(`
+    let certificado: any = null;
+    let provaResultado: any = null;
+    let cursoInfo: { titulo: string; carga_horaria_horas: number } | null = null;
+
+    if (isPreview) {
+      const { data: roleRow } = await supabaseClient
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+
+      if (!roleRow) {
+        return new Response(
+          JSON.stringify({ error: "Apenas admins podem gerar preview." }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 403,
+          }
+        );
+      }
+
+      if (cursoId) {
+        const { data: cursoData } = await supabaseClient
+          .from("cursos")
+          .select("titulo, carga_horaria_horas")
+          .eq("id", cursoId)
+          .maybeSingle();
+        if (cursoData) {
+          cursoInfo = {
+            titulo: cursoData.titulo ?? "Curso",
+            carga_horaria_horas: cursoData.carga_horaria_horas ?? 0,
+          };
+        }
+      }
+
+      certificado = {
+        id: "preview",
+        codigo_validacao: `MX-PREVIEW-${Date.now()}`,
+        emitido_em: new Date().toISOString(),
+        pago: true,
+        cursos: cursoInfo,
+      };
+      provaResultado = { percentual: 93, aprovado: true };
+    } else {
+      const { data: certificadoData, error: certError } = await supabaseClient
+        .from("certificados")
+        .select(
+          `
         *,
         cursos(titulo, carga_horaria_horas)
-      `)
-      .eq("id", certificadoId)
-      .eq("usuario_id", user.id)
-      .single();
+      `
+        )
+        .eq("id", certificadoId)
+        .eq("usuario_id", user.id)
+        .single();
 
-    if (certError || !certificado) {
-      return new Response(
-        JSON.stringify({ error: "Certificado não encontrado ou não autorizado" }),
-        { 
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 404 
-        }
-      );
-    }
+      if (certError || !certificadoData) {
+        return new Response(
+          JSON.stringify({ error: "Certificado não encontrado ou não autorizado" }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 404,
+          }
+        );
+      }
 
-    // 4. Validar pagamento
-    if (!certificado.pago) {
-      return new Response(
-        JSON.stringify({ 
-          error: "Pagamento do certificado não identificado. Conclua a compra para baixar o PDF." 
-        }),
-        { 
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 403 
-        }
-      );
-    }
+      certificado = certificadoData;
 
-    // 5. Validar aprovação na prova (≥60%)
-    const { data: provaResultado, error: provaError } = await supabaseClient
-      .from("prova_resultado")
-      .select("percentual, aprovado")
-      .eq("usuario_id", user.id)
-      .eq("curso_id", cursoId)
-      .single();
+      // 4. Validar pagamento
+      if (!certificado.pago) {
+        return new Response(
+          JSON.stringify({
+            error: "Pagamento do certificado não identificado. Conclua a compra para baixar o PDF.",
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 403,
+          }
+        );
+      }
 
-    if (provaError || !provaResultado || !provaResultado.aprovado || provaResultado.percentual < 60) {
-      return new Response(
-        JSON.stringify({ 
-          error: "Você precisa atingir pelo menos 60% na prova para emitir o certificado." 
-        }),
-        { 
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 403 
-        }
-      );
+      // 5. Validar aprovação na prova (≥60%)
+      const { data: provaData, error: provaError } = await supabaseClient
+        .from("prova_resultado")
+        .select("percentual, aprovado")
+        .eq("usuario_id", user.id)
+        .eq("curso_id", cursoId)
+        .single();
+
+      if (provaError || !provaData || !provaData.aprovado || provaData.percentual < 60) {
+        return new Response(
+          JSON.stringify({
+            error: "Você precisa atingir pelo menos 60% na prova para emitir o certificado.",
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 403,
+          }
+        );
+      }
+
+      provaResultado = provaData;
     }
 
     // 6. Buscar dados do usuário
@@ -148,31 +201,50 @@ serve(async (req) => {
       label_data: "Data de conclusao",
       label_codigo: "Codigo de validacao",
       modalidade_texto: "Online (EAD)",
+      logo_url: "",
+      assinatura_imagem_url: "",
+      papel_timbrado_url: "",
     };
 
-    const { data: templateRow, error: templateError } = await supabaseClient
-      .from("certificate_templates")
-      .select("*")
-      .eq("ativo", true)
-      .maybeSingle();
+    const resolveTemplateQuery = () => {
+      const base = supabaseClient.from("certificate_templates").select("*");
+      return base;
+    };
+
+    const templateQuery = templateId
+      ? resolveTemplateQuery().eq("id", templateId)
+      : resolveTemplateQuery().eq("ativo", true);
+
+    const { data: templateRow, error: templateError } = await templateQuery.maybeSingle();
 
     const activeTemplate =
       templateError || !templateRow ? defaultTemplate : { ...defaultTemplate, ...templateRow };
 
-    const resolveLogoDataUri = async () => {
-      const explicitUrl = Deno.env.get("CERT_LOGO_URL");
-      const origin = req.headers.get("origin");
-      const fallbackUrl = origin ? `${origin}/web-app-manifest-512x512.png` : null;
-      const logoUrl = explicitUrl || fallbackUrl;
-      if (!logoUrl) return null;
+    const resolveImageDataUri = async (url: string | null) => {
+      if (!url) return null;
       try {
-        const response = await fetch(logoUrl);
+        const response = await fetch(url);
         if (!response.ok) return null;
         const bytes = new Uint8Array(await response.arrayBuffer());
-        return `data:image/png;base64,${base64Encode(bytes)}`;
+        const mime = response.headers.get("content-type") || "image/png";
+        const format = mime.includes("jpeg") || mime.includes("jpg") ? "JPEG" : "PNG";
+        return {
+          dataUri: `data:${mime};base64,${base64Encode(bytes)}`,
+          format,
+        };
       } catch {
         return null;
       }
+    };
+
+    const resolveLogoDataUri = async () => {
+      const templateLogo = activeTemplate.logo_url || null;
+      const explicitUrl = Deno.env.get("CERT_LOGO_URL");
+      const origin = req.headers.get("origin");
+      const fallbackUrl = origin ? `${origin}/web-app-manifest-512x512.png` : null;
+      const logoUrl = templateLogo || explicitUrl || fallbackUrl;
+      const resolved = await resolveImageDataUri(logoUrl);
+      return resolved;
     };
 
     // 7. Gerar PDF do certificado
@@ -194,8 +266,8 @@ serve(async (req) => {
 
     const nomeAluno = (usuario.nome_completo || "Aluno").toString();
     const cpfAluno = (usuario.cpf || "Nao informado").toString();
-    const cursoTitulo = (certificado.cursos?.titulo || "Curso").toString();
-    const cargaHoraria = certificado.cursos?.carga_horaria_horas || 0;
+    const cursoTitulo = (cursoInfo?.titulo ?? certificado.cursos?.titulo ?? "Curso").toString();
+    const cargaHoraria = cursoInfo?.carga_horaria_horas ?? certificado.cursos?.carga_horaria_horas ?? 0;
     const dataFormatada = new Date(certificado.emitido_em).toLocaleDateString("pt-BR", {
       day: "2-digit",
       month: "long",
@@ -241,6 +313,15 @@ serve(async (req) => {
     doc.setFillColor(...baseBg);
     doc.rect(0, 0, pageWidth, pageHeight, "F");
 
+    const papelTimbrado = await resolveImageDataUri(activeTemplate.papel_timbrado_url || null);
+    if (papelTimbrado) {
+      try {
+        doc.addImage(papelTimbrado.dataUri, papelTimbrado.format, 0, 0, pageWidth, pageHeight);
+      } catch (error) {
+        console.error("Paper background render failed:", error);
+      }
+    }
+
     // Watermark X
     doc.setTextColor(...watermark);
     doc.setFont("helvetica", "bold");
@@ -257,10 +338,10 @@ serve(async (req) => {
     doc.line(margin, margin + 30, pageWidth - margin, margin + 30);
 
     // Logo
-    const logoDataUri = await resolveLogoDataUri();
-    if (logoDataUri) {
+    const logoData = await resolveLogoDataUri();
+    if (logoData) {
       try {
-        doc.addImage(logoDataUri, "PNG", margin, margin - 2, 22, 22);
+        doc.addImage(logoData.dataUri, logoData.format, margin, margin - 2, 22, 22);
       } catch (error) {
         console.error("Logo render failed, continuing without logo:", error);
       }
@@ -363,6 +444,24 @@ serve(async (req) => {
     doc.line(pageWidth - margin - 70, emissionLineY - 6, pageWidth - margin, emissionLineY - 6);
     doc.text(assinaturaLabel, pageWidth - margin, emissionLineY, { align: "right" });
 
+    const assinaturaImagem = await resolveImageDataUri(activeTemplate.assinatura_imagem_url || null);
+    if (assinaturaImagem) {
+      try {
+        const signatureWidth = 38;
+        const signatureHeight = 14;
+        doc.addImage(
+          assinaturaImagem.dataUri,
+          assinaturaImagem.format,
+          pageWidth - margin - signatureWidth,
+          emissionLineY - 22,
+          signatureWidth,
+          signatureHeight
+        );
+      } catch (error) {
+        console.error("Signature image render failed:", error);
+      }
+    }
+
     // QR Code
     const qrSize = 26;
     const qrX = pageWidth - margin - qrSize;
@@ -386,11 +485,15 @@ serve(async (req) => {
     }
 
     // Second page (verso)
-    const { data: modulos } = await supabaseClient
-      .from("modulos")
-      .select("titulo, ordem")
-      .eq("curso_id", cursoId)
-      .order("ordem", { ascending: true });
+    let modulos: Array<{ titulo: string; ordem: number }> | null = null;
+    if (cursoId) {
+      const { data: modulosData } = await supabaseClient
+        .from("modulos")
+        .select("titulo, ordem")
+        .eq("curso_id", cursoId)
+        .order("ordem", { ascending: true });
+      modulos = modulosData || null;
+    }
 
     doc.addPage("a4", "landscape");
     doc.setFillColor(...baseBg);
@@ -422,10 +525,17 @@ serve(async (req) => {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
     doc.setTextColor(70, 70, 70);
-    const moduleTitles = (modulos || []).map((modulo: any, index: number) => `${index + 1}. ${modulo.titulo}`);
+    const moduleTitles = (modulos || []).map(
+      (modulo: any, index: number) => `${index + 1}. ${modulo.titulo}`
+    );
     const fallbackModules = moduleTitles.length
       ? moduleTitles
-      : ["Conteudos programaticos disponiveis na plataforma MAEXTRIA."];
+      : [
+          "1. Fundamentos e contexto",
+          "2. Aplicacoes praticas",
+          "3. Estudos de caso",
+          "4. Projeto final",
+        ];
     const moduleLines = doc.splitTextToSize(fallbackModules.join("  "), pageWidth - margin * 2 - 10);
     doc.text(moduleLines, margin, margin + 78);
 

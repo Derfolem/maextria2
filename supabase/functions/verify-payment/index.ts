@@ -177,65 +177,30 @@ serve(async (req) => {
       });
     }
 
-    // === SISTEMA DE COMISSOES ===
-    // Buscar dados do curso (professor e preco)
-    const { data: cursoData } = await supabaseAdmin
-      .from("cursos")
-      .select("professor_id, preco_certificado")
-      .eq("id", cursoId)
-      .single();
-
-    if (cursoData?.professor_id) {
-      // Buscar percentual de comissao configurado pelo admin
-      const { data: configData } = await supabaseAdmin
-        .from("configuracoes_site")
-        .select("valor")
-        .eq("chave", "admin_profit_share")
-        .maybeSingle();
-
-      // admin_profit_share e o percentual que FICA com o admin (ex: 30 = admin fica 30%, professor 70%)
-      const adminShare = Number(configData?.valor ?? 30);
-      const professorShare = 100 - adminShare;
-
-      // Valor da venda
-      const valorVenda = cursoData.preco_certificado ?? (preco ? Number(preco) : 39);
-
-      // Calcular comissao do professor
-      const valorComissao = (valorVenda * professorShare) / 100;
-
-      // Buscar transacao_id
-      let transacaoId: string | undefined;
-      if (stripePaymentIntentId) {
-        const { data: transacao } = await supabaseAdmin
-          .from("transacoes_pagamento")
-          .select("id")
-          .eq("stripe_payment_intent_id", stripePaymentIntentId)
-          .maybeSingle();
-        transacaoId = transacao?.id;
-      }
-
-      // Verificar se ja existe comissao para esta transacao (evitar duplicatas)
-      const { data: existingComissao } = await supabaseAdmin
-        .from("comissoes_professores")
+    // === SISTEMA DE COMISSOES (novo ledger) ===
+    let transacaoId: string | undefined;
+    if (stripePaymentIntentId) {
+      const { data: transacao } = await supabaseAdmin
+        .from("transacoes_pagamento")
         .select("id")
-        .eq("certificado_id", certificadoId)
+        .eq("stripe_payment_intent_id", stripePaymentIntentId)
         .maybeSingle();
+      transacaoId = transacao?.id;
+    } else if (stripeSessionId) {
+      const { data: transacao } = await supabaseAdmin
+        .from("transacoes_pagamento")
+        .select("id")
+        .eq("stripe_session_id", stripeSessionId)
+        .maybeSingle();
+      transacaoId = transacao?.id;
+    }
 
-      if (!existingComissao) {
-        // Criar registro de comissao
-        await supabaseAdmin
-          .from("comissoes_professores")
-          .insert({
-            professor_id: cursoData.professor_id,
-            curso_id: cursoId,
-            certificado_id: certificadoId,
-            transacao_id: transacaoId,
-            valor_venda: valorVenda,
-            percentual_professor: professorShare,
-            valor_comissao: valorComissao,
-            status: "pendente",
-          });
-      }
+    if (transacaoId) {
+      await supabaseAdmin.rpc("commission_create_from_transaction", {
+        p_transacao_id: transacaoId,
+        p_certificado_id: certificadoId,
+        p_referral_id: null,
+      });
     }
 
     return new Response(JSON.stringify({ success: true, preco }), {

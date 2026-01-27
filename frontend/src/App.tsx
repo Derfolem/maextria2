@@ -54,6 +54,7 @@ const AiCreator = lazyWithRetry(() => import('./pages/teacher/AiCreator'));
 const TeacherNotifications = lazyWithRetry(() => import('./pages/teacher/Notifications'));
 const TeacherTutorial = lazyWithRetry(() => import('./pages/teacher/Tutorial'));
 const TeacherPerformance = lazyWithRetry(() => import('./pages/teacher/Performance'));
+const TeacherComissoes = lazyWithRetry(() => import('./pages/teacher/Comissoes'));
 const CourseCreatorGlass = lazyWithRetry(() => import('./pages/teacher/CourseCreatorGlass')); // New import
 const AdminDashboard = lazyWithRetry(() => import('./pages/admin/Dashboard'));
 const AdminUsers = lazyWithRetry(() => import('./pages/admin/Users'));
@@ -276,6 +277,14 @@ function App() {
             element={
               <ProtectedRoute roles={['teacher']}>
                 <TeacherPerformance />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/professor/comissoes"
+            element={
+              <ProtectedRoute roles={['teacher', 'admin']}>
+                <TeacherComissoes />
               </ProtectedRoute>
             }
           />

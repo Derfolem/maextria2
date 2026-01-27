@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase, getValidAccessToken } from '../../lib/supabase';
 import toast from 'react-hot-toast';
-import { FaPlus, FaSave, FaTrash, FaCheck } from 'react-icons/fa';
+import { FaPlus, FaSave, FaTrash, FaCheck, FaFilePdf, FaUpload, FaTimes } from 'react-icons/fa';
 
 type CertificateTemplate = {
   id: string;
@@ -18,6 +18,9 @@ type CertificateTemplate = {
   label_data: string;
   label_codigo: string;
   modalidade_texto: string;
+  logo_url: string;
+  assinatura_imagem_url: string;
+  papel_timbrado_url: string;
   ativo: boolean;
   criado_em: string;
 };
@@ -43,6 +46,9 @@ const defaultForm: TemplateForm = {
   label_data: 'Data de conclusao',
   label_codigo: 'Codigo de validacao',
   modalidade_texto: 'Online (EAD)',
+  logo_url: '',
+  assinatura_imagem_url: '',
+  papel_timbrado_url: '',
 };
 
 const placeholderList = [
@@ -58,11 +64,32 @@ const placeholderList = [
   { token: '{{url_validacao}}', label: 'URL de validacao' },
 ];
 
+const blankForm: TemplateForm = {
+  nome: 'Novo modelo',
+  titulo: '',
+  subtitulo: '',
+  linha_curso: '',
+  descricao: '',
+  local_emissao: '',
+  assinatura_label: '',
+  legal_texto: '',
+  label_carga_horaria: 'Carga horaria',
+  label_modalidade: 'Modalidade',
+  label_data: 'Data de conclusao',
+  label_codigo: 'Codigo de validacao',
+  modalidade_texto: 'Online (EAD)',
+  logo_url: '',
+  assinatura_imagem_url: '',
+  papel_timbrado_url: '',
+};
+
 export default function CertificateTemplates() {
   const [templates, setTemplates] = useState<CertificateTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settingActive, setSettingActive] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [uploadingField, setUploadingField] = useState<string | null>(null);
   const [form, setForm] = useState<TemplateForm>(defaultForm);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -111,6 +138,9 @@ export default function CertificateTemplates() {
     label_data: template.label_data,
     label_codigo: template.label_codigo,
     modalidade_texto: template.modalidade_texto,
+    logo_url: template.logo_url || '',
+    assinatura_imagem_url: template.assinatura_imagem_url || '',
+    papel_timbrado_url: template.papel_timbrado_url || '',
   });
 
   const handleSelect = (template: CertificateTemplate) => {
@@ -128,7 +158,7 @@ export default function CertificateTemplates() {
 
   const handleCreateNew = () => {
     setSelectedId(null);
-    setForm({ ...defaultForm, nome: 'Novo modelo' });
+    setForm(blankForm);
   };
 
   const handleSave = async () => {
@@ -152,6 +182,9 @@ export default function CertificateTemplates() {
         label_data: form.label_data.trim(),
         label_codigo: form.label_codigo.trim(),
         modalidade_texto: form.modalidade_texto.trim(),
+        logo_url: form.logo_url.trim(),
+        assinatura_imagem_url: form.assinatura_imagem_url.trim(),
+        papel_timbrado_url: form.papel_timbrado_url.trim(),
       };
 
       if (form.id) {
@@ -224,6 +257,78 @@ export default function CertificateTemplates() {
     }
   };
 
+  const handleUpload = async (field: 'logo_url' | 'assinatura_imagem_url' | 'papel_timbrado_url', file: File) => {
+    if (!file) return;
+    setUploadingField(field);
+    try {
+      const fileExt = file.name.split('.').pop() || 'png';
+      const path = `admin/${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('certificate-assets')
+        .upload(path, file, { upsert: false });
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from('certificate-assets').getPublicUrl(path);
+      if (!data?.publicUrl) throw new Error('Nao foi possivel gerar URL publica.');
+
+      setForm((prev) => ({
+        ...prev,
+        [field]: data.publicUrl,
+      }));
+      toast.success('Imagem enviada!');
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao enviar imagem.');
+    } finally {
+      setUploadingField(null);
+    }
+  };
+
+  const handleClearImage = (field: 'logo_url' | 'assinatura_imagem_url' | 'papel_timbrado_url') => {
+    setForm((prev) => ({
+      ...prev,
+      [field]: '',
+    }));
+  };
+
+  const handleTestPdf = async () => {
+    if (!form.id) {
+      toast.error('Salve o modelo antes de gerar o PDF de teste.');
+      return;
+    }
+    setTesting(true);
+    try {
+      const accessToken = await getValidAccessToken();
+      if (!accessToken) {
+        toast.error('Sessao expirada. Faça login novamente.');
+        return;
+      }
+      const { data, error } = await supabase.functions.invoke('generate-certificate', {
+        body: {
+          preview: true,
+          templateId: form.id,
+        },
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      if (error) throw error;
+      const pdf = data?.pdf as string | undefined;
+      if (!pdf) throw new Error('Nao foi possivel gerar o PDF.');
+      const link = document.createElement('a');
+      link.href = pdf;
+      link.download = `certificado-teste-${form.nome.replace(/\s+/g, '-').toLowerCase()}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('PDF de teste gerado!');
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao gerar PDF de teste.');
+    } finally {
+      setTesting(false);
+    }
+  };
+
   const preview = useMemo(() => {
     const sample = {
       aluno: 'Maria Costa',
@@ -245,18 +350,18 @@ export default function CertificateTemplates() {
       );
 
     return {
-      titulo: applyTemplate(form.titulo),
-      subtitulo: applyTemplate(form.subtitulo),
-      linhaCurso: applyTemplate(form.linha_curso),
-      descricao: applyTemplate(form.descricao),
-      localEmissao: applyTemplate(form.local_emissao),
-      assinatura: applyTemplate(form.assinatura_label),
-      legal: applyTemplate(form.legal_texto),
-      labelCarga: applyTemplate(form.label_carga_horaria),
-      labelModalidade: applyTemplate(form.label_modalidade),
-      labelData: applyTemplate(form.label_data),
-      labelCodigo: applyTemplate(form.label_codigo),
-      modalidade: applyTemplate(form.modalidade_texto),
+      titulo: applyTemplate(form.titulo || 'Titulo do certificado'),
+      subtitulo: applyTemplate(form.subtitulo || 'Subtitulo'),
+      linhaCurso: applyTemplate(form.linha_curso || 'Linha do curso'),
+      descricao: applyTemplate(form.descricao || 'Descricao do certificado'),
+      localEmissao: applyTemplate(form.local_emissao || 'Local de emissao'),
+      assinatura: applyTemplate(form.assinatura_label || 'Assinatura'),
+      legal: applyTemplate(form.legal_texto || 'Texto legal'),
+      labelCarga: applyTemplate(form.label_carga_horaria || 'Carga horaria'),
+      labelModalidade: applyTemplate(form.label_modalidade || 'Modalidade'),
+      labelData: applyTemplate(form.label_data || 'Data de conclusao'),
+      labelCodigo: applyTemplate(form.label_codigo || 'Codigo de validacao'),
+      modalidade: applyTemplate(form.modalidade_texto || 'Online (EAD)'),
       nomeAluno: sample.aluno,
       cpfAluno: sample.cpf,
       curso: sample.curso,
@@ -288,10 +393,16 @@ export default function CertificateTemplates() {
             Crie modelos reutilizaveis e defina qual deve ser aplicado na emissao do PDF para alunos.
           </p>
         </div>
-        <button type="button" className="btn-secondary flex items-center gap-2" onClick={handleCreateNew}>
-          <FaPlus />
-          Novo modelo
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <button type="button" className="btn-outline flex items-center gap-2" onClick={handleTestPdf}>
+            <FaFilePdf />
+            {testing ? 'Gerando PDF...' : 'Gerar PDF de teste'}
+          </button>
+          <button type="button" className="btn-secondary flex items-center gap-2" onClick={handleCreateNew}>
+            <FaPlus />
+            Novo modelo
+          </button>
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-[0.9fr_1.1fr] gap-8">
@@ -346,6 +457,131 @@ export default function CertificateTemplates() {
                   {item.token} · {item.label}
                 </span>
               ))}
+            </div>
+          </div>
+
+          <div className="card">
+            <h2 className="text-lg font-semibold mb-4">Imagens do certificado</h2>
+            <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
+              Envie imagens para logo, assinatura e papel timbrado (fundo). Arquivos PNG/JPG recomendados.
+            </p>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Logo (URL ou upload)</label>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <input
+                    name="logo_url"
+                    value={form.logo_url}
+                    onChange={handleChange}
+                    className="input-field flex-1"
+                    placeholder="https://.../logo.png"
+                  />
+                  <label className="btn-outline flex items-center gap-2 cursor-pointer">
+                    <FaUpload />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (file) handleUpload('logo_url', file);
+                      }}
+                    />
+                    {uploadingField === 'logo_url' ? 'Enviando...' : 'Upload'}
+                  </label>
+                  {form.logo_url && (
+                    <button
+                      type="button"
+                      className="btn-outline flex items-center gap-2"
+                      onClick={() => handleClearImage('logo_url')}
+                    >
+                      <FaTimes />
+                      Limpar
+                    </button>
+                  )}
+                </div>
+                {form.logo_url && (
+                  <img src={form.logo_url} alt="Logo" className="mt-3 h-12 object-contain" />
+                )}
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Assinatura do diretor (imagem)</label>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <input
+                    name="assinatura_imagem_url"
+                    value={form.assinatura_imagem_url}
+                    onChange={handleChange}
+                    className="input-field flex-1"
+                    placeholder="https://.../assinatura.png"
+                  />
+                  <label className="btn-outline flex items-center gap-2 cursor-pointer">
+                    <FaUpload />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (file) handleUpload('assinatura_imagem_url', file);
+                      }}
+                    />
+                    {uploadingField === 'assinatura_imagem_url' ? 'Enviando...' : 'Upload'}
+                  </label>
+                  {form.assinatura_imagem_url && (
+                    <button
+                      type="button"
+                      className="btn-outline flex items-center gap-2"
+                      onClick={() => handleClearImage('assinatura_imagem_url')}
+                    >
+                      <FaTimes />
+                      Limpar
+                    </button>
+                  )}
+                </div>
+                {form.assinatura_imagem_url && (
+                  <img src={form.assinatura_imagem_url} alt="Assinatura" className="mt-3 h-12 object-contain" />
+                )}
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Papel timbrado (fundo)</label>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <input
+                    name="papel_timbrado_url"
+                    value={form.papel_timbrado_url}
+                    onChange={handleChange}
+                    className="input-field flex-1"
+                    placeholder="https://.../fundo.png"
+                  />
+                  <label className="btn-outline flex items-center gap-2 cursor-pointer">
+                    <FaUpload />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (file) handleUpload('papel_timbrado_url', file);
+                      }}
+                    />
+                    {uploadingField === 'papel_timbrado_url' ? 'Enviando...' : 'Upload'}
+                  </label>
+                  {form.papel_timbrado_url && (
+                    <button
+                      type="button"
+                      className="btn-outline flex items-center gap-2"
+                      onClick={() => handleClearImage('papel_timbrado_url')}
+                    >
+                      <FaTimes />
+                      Limpar
+                    </button>
+                  )}
+                </div>
+                {form.papel_timbrado_url && (
+                  <img src={form.papel_timbrado_url} alt="Papel timbrado" className="mt-3 h-16 object-cover rounded" />
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -433,7 +669,7 @@ export default function CertificateTemplates() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Assinatura</label>
+                  <label className="text-sm font-medium">Assinatura (texto)</label>
                   <input
                     name="assinatura_label"
                     value={form.assinatura_label}
@@ -529,9 +765,23 @@ export default function CertificateTemplates() {
 
           <div className="card">
             <h2 className="text-lg font-semibold mb-4">Preview rapido</h2>
-            <div className="border border-[hsl(var(--border))] rounded-xl p-6 space-y-4 bg-[hsl(var(--background))]/40">
-              <div className="text-center space-y-2">
+            <div
+              className="border border-[hsl(var(--border))] rounded-xl p-6 space-y-4 bg-[hsl(var(--background))]/40"
+              style={
+                form.papel_timbrado_url
+                  ? {
+                      backgroundImage: `url(${form.papel_timbrado_url})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                    }
+                  : undefined
+              }
+            >
+              <div className="flex items-center justify-between">
                 <p className="text-sm tracking-[0.2em] text-[hsl(var(--muted-foreground))]">MAEXTRIA</p>
+                {form.logo_url && <img src={form.logo_url} alt="Logo" className="h-10 object-contain" />}
+              </div>
+              <div className="text-center space-y-2">
                 <h3 className="headline-font text-2xl text-[hsl(var(--secondary))]">{preview.titulo}</h3>
                 <p className="text-sm text-[hsl(var(--muted-foreground))]">{preview.subtitulo}</p>
                 <p className="text-xl font-semibold text-[hsl(var(--foreground))]">{preview.nomeAluno}</p>
@@ -563,11 +813,20 @@ export default function CertificateTemplates() {
                 </div>
               </div>
 
-              <div className="text-xs text-[hsl(var(--muted-foreground))] space-y-2">
+              <div className="text-xs text-[hsl(var(--muted-foreground))] space-y-3">
                 <p>{preview.legal}</p>
                 <div className="flex items-center justify-between text-[hsl(var(--foreground))]">
                   <span>{preview.localEmissao}</span>
-                  <span>{preview.assinatura}</span>
+                  <div className="text-right">
+                    {form.assinatura_imagem_url && (
+                      <img
+                        src={form.assinatura_imagem_url}
+                        alt="Assinatura"
+                        className="h-8 object-contain ml-auto"
+                      />
+                    )}
+                    <span>{preview.assinatura}</span>
+                  </div>
                 </div>
               </div>
             </div>
