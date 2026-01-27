@@ -27,6 +27,49 @@ export default function Home() {
     setCarouselIndex((prev) => (prev === 0 ? topCourses.length - 1 : prev - 1));
   };
 
+  
+  // JSON-LD para SEO
+  useEffect(() => {
+    const jsonLd = {
+      "@context": "https://schema.org",
+      "@type": "EducationalOrganization",
+      "name": "MAEXTRIA",
+      "url": "https://www.maextria.com.br",
+      "logo": "https://www.maextria.com.br/maextria-logo.png",
+      "description": "Plataforma de cursos online com certificados reconhecidos. Aprenda tecnologia, negocios e desenvolvimento pessoal.",
+      "sameAs": [
+        "https://www.instagram.com/maextria",
+        "https://www.facebook.com/maextria"
+      ],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer service",
+        "availableLanguage": "Portuguese"
+      },
+      "offers": {
+        "@type": "Offer",
+        "category": "Cursos Online",
+        "priceCurrency": "BRL"
+      }
+    };
+    
+    let script = document.getElementById('jsonld-org');
+    if (!script) {
+      script = document.createElement('script');
+      script.id = 'jsonld-org';
+      script.type = 'application/ld+json';
+      document.head.appendChild(script);
+    }
+    script.textContent = JSON.stringify(jsonLd);
+    
+    return () => {
+      const el = document.getElementById('jsonld-org');
+      if (el) el.remove();
+    };
+  }, []);
+
+
+
   useEffect(() => {
     const loadTopCourses = async () => {
       try {
