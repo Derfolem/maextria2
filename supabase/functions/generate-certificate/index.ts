@@ -400,7 +400,17 @@ serve(async (req) => {
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...accentTeal);
     doc.setFontSize(18);
-    doc.text(cursoTitulo.toUpperCase(), pageWidth / 2, blockTop + 68, { align: "center" });
+    const courseMaxWidth = pageWidth * 0.78;
+    let courseFontSize = 18;
+    let courseLines = doc.splitTextToSize(cursoTitulo.toUpperCase(), courseMaxWidth);
+    while (courseLines.length > 2 && courseFontSize > 12) {
+      courseFontSize -= 1;
+      doc.setFontSize(courseFontSize);
+      courseLines = doc.splitTextToSize(cursoTitulo.toUpperCase(), courseMaxWidth);
+    }
+    doc.setFontSize(courseFontSize);
+    const courseStartY = blockTop + 66;
+    doc.text(courseLines, pageWidth / 2, courseStartY, { align: "center" });
 
     doc.setFont("helvetica", "normal");
     doc.setTextColor(70, 70, 70);
@@ -491,11 +501,11 @@ serve(async (req) => {
     }
 
     // Second page (verso)
-    let modulos: Array<{ titulo: string; ordem: number }> | null = null;
+    let modulos: Array<{ titulo_modulo?: string; titulo?: string; ordem: number }> | null = null;
     if (cursoId) {
       const { data: modulosData } = await supabaseClient
         .from("modulos")
-        .select("titulo, ordem")
+        .select("titulo_modulo, ordem")
         .eq("curso_id", cursoId)
         .order("ordem", { ascending: true });
       modulos = modulosData || null;
@@ -508,11 +518,6 @@ serve(async (req) => {
     doc.setLineWidth(0.4);
     doc.rect(margin, margin, pageWidth - margin * 2, pageHeight - margin * 2);
 
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(16);
-    doc.setTextColor(...deepTeal);
-    doc.text("VERSO DO CERTIFICADO", margin, margin + 14);
-
     doc.setFont("helvetica", "normal");
     doc.setFontSize(11);
     doc.setTextColor(60, 60, 60);
@@ -523,17 +528,12 @@ serve(async (req) => {
     }
     doc.text(`Codigo de validacao: ${certificado.codigo_validacao}`, margin, margin + 52);
 
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.setTextColor(...accentTeal);
-    doc.text("Conteudos programaticos", margin, margin + 68);
-
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
     doc.setTextColor(70, 70, 70);
-    const moduleTitles = (modulos || []).map(
-      (modulo: any, index: number) => `${index + 1}. ${modulo.titulo}`
-    );
+    const moduleTitles = (modulos || [])
+      .map((modulo: any, index: number) => `${index + 1}. ${modulo.titulo_modulo || modulo.titulo || ""}`)
+      .filter((line: string) => line.trim().length > 0);
     const fallbackModules = moduleTitles.length
       ? moduleTitles
       : [
@@ -542,8 +542,27 @@ serve(async (req) => {
           "3. Estudos de caso",
           "4. Projeto final",
         ];
-    const moduleLines = doc.splitTextToSize(fallbackModules.join("  "), pageWidth - margin * 2 - 10);
-    doc.text(moduleLines, margin, margin + 78);
+    const moduleText = fallbackModules.join("  ");
+    const maxWidth = pageWidth - margin * 2 - 10;
+    const startY = margin + 64;
+    const maxHeight = pageHeight - margin - startY;
+    const minFontSize = 7;
+    let fontSize = 10;
+    let moduleLines = doc.splitTextToSize(moduleText, maxWidth);
+
+    while (fontSize > minFontSize) {
+      doc.setFontSize(fontSize);
+      moduleLines = doc.splitTextToSize(moduleText, maxWidth);
+      const lineHeight = doc.getTextDimensions("M").h * 1.2;
+      const totalHeight = moduleLines.length * lineHeight;
+      if (totalHeight <= maxHeight) {
+        break;
+      }
+      fontSize -= 0.5;
+    }
+
+    doc.setFontSize(fontSize);
+    doc.text(moduleLines, margin, startY);
 
     // 8. Gerar PDF como base64
     const pdfBase64 = doc.output("datauristring");
