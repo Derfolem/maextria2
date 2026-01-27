@@ -132,6 +132,33 @@ serve(async (req) => {
       );
     }
 
+    const defaultTemplate = {
+      nome: "Padrao MAEXTRIA",
+      titulo: "CERTIFICADO DE CONCLUSAO",
+      subtitulo: "Certificamos que",
+      linha_curso: "concluiu com exito o curso",
+      descricao:
+        "promovido pela plataforma MAEXTRIA, com carga horaria total de {{carga_horaria}} horas, realizado na modalidade {{modalidade}}, com foco em aplicacao pratica, desenvolvimento profissional e formacao continuada.",
+      local_emissao: "Rio de Janeiro - RJ",
+      assinatura_label: "Diretoria Academica - MAEXTRIA",
+      legal_texto:
+        "Cursos livres realizados na modalidade Educacao a Distancia, conforme legislacao brasileira vigente, incluindo o Decreto no 9.057/2017 e normas aplicaveis a formacao continuada. Conteudo alinhado as boas praticas da ABED - Associacao Brasileira de Educacao a Distancia.",
+      label_carga_horaria: "Carga horaria",
+      label_modalidade: "Modalidade",
+      label_data: "Data de conclusao",
+      label_codigo: "Codigo de validacao",
+      modalidade_texto: "Online (EAD)",
+    };
+
+    const { data: templateRow, error: templateError } = await supabaseClient
+      .from("certificate_templates")
+      .select("*")
+      .eq("ativo", true)
+      .maybeSingle();
+
+    const activeTemplate =
+      templateError || !templateRow ? defaultTemplate : { ...defaultTemplate, ...templateRow };
+
     const resolveLogoDataUri = async () => {
       const explicitUrl = Deno.env.get("CERT_LOGO_URL");
       const origin = req.headers.get("origin");
@@ -178,6 +205,38 @@ serve(async (req) => {
     const percentualProva = provaResultado?.percentual ?? null;
     const validationUrl = `https://maextria.com.br/verificar-certificado?codigo=${certificado.codigo_validacao}`;
 
+    const templateReplacements: Record<string, string> = {
+      "{{aluno}}": nomeAluno,
+      "{{cpf}}": cpfAluno,
+      "{{curso}}": cursoTitulo,
+      "{{carga_horaria}}": String(cargaHoraria),
+      "{{data_extenso}}": dataFormatada,
+      "{{data_curta}}": dataCurta,
+      "{{codigo_validacao}}": certificado.codigo_validacao,
+      "{{modalidade}}": activeTemplate.modalidade_texto,
+      "{{nota}}": percentualProva !== null ? `${percentualProva}%` : "N/A",
+      "{{url_validacao}}": validationUrl,
+    };
+
+    const applyTemplate = (value: string) =>
+      Object.entries(templateReplacements).reduce(
+        (acc, [token, replacement]) => acc.split(token).join(replacement),
+        value
+      );
+
+    const tituloCertificado = applyTemplate(activeTemplate.titulo);
+    const subtituloCertificado = applyTemplate(activeTemplate.subtitulo);
+    const linhaCurso = applyTemplate(activeTemplate.linha_curso);
+    const descricaoTemplate = applyTemplate(activeTemplate.descricao);
+    const localEmissao = applyTemplate(activeTemplate.local_emissao);
+    const assinaturaLabel = applyTemplate(activeTemplate.assinatura_label);
+    const legalTemplate = applyTemplate(activeTemplate.legal_texto);
+    const labelCarga = applyTemplate(activeTemplate.label_carga_horaria);
+    const labelModalidade = applyTemplate(activeTemplate.label_modalidade);
+    const labelData = applyTemplate(activeTemplate.label_data);
+    const labelCodigo = applyTemplate(activeTemplate.label_codigo);
+    const modalidadeTexto = applyTemplate(activeTemplate.modalidade_texto);
+
     // Background
     doc.setFillColor(...baseBg);
     doc.rect(0, 0, pageWidth, pageHeight, "F");
@@ -217,7 +276,7 @@ serve(async (req) => {
     doc.setFont("times", "bold");
     doc.setFontSize(20);
     doc.setTextColor(...accentTeal);
-    doc.text("CERTIFICADO DE CONCLUSAO", pageWidth / 2, margin + 24, { align: "center" });
+    doc.text(tituloCertificado, pageWidth / 2, margin + 24, { align: "center" });
 
     // Central block
     const blockTop = margin + 38;
@@ -229,7 +288,7 @@ serve(async (req) => {
     doc.setFont("helvetica", "normal");
     doc.setTextColor(60, 60, 60);
     doc.setFontSize(12);
-    doc.text("Certificamos que", pageWidth / 2, blockTop + 16, { align: "center" });
+    doc.text(subtituloCertificado, pageWidth / 2, blockTop + 16, { align: "center" });
 
     // Student name
     doc.setFont("helvetica", "bold");
@@ -247,7 +306,7 @@ serve(async (req) => {
     doc.setFont("helvetica", "normal");
     doc.setTextColor(60, 60, 60);
     doc.setFontSize(12);
-    doc.text("concluiu com exito o curso", pageWidth / 2, blockTop + 54, { align: "center" });
+    doc.text(linhaCurso, pageWidth / 2, blockTop + 54, { align: "center" });
 
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...accentTeal);
@@ -257,8 +316,7 @@ serve(async (req) => {
     doc.setFont("helvetica", "normal");
     doc.setTextColor(70, 70, 70);
     doc.setFontSize(11);
-    const descricao = `promovido pela plataforma MAEXTRIA, com carga horaria total de ${cargaHoraria} horas, realizado na modalidade Educacao a Distancia (EAD), com foco em aplicacao pratica, desenvolvimento profissional e formacao continuada.`;
-    const descricaoLinhas = doc.splitTextToSize(descricao, pageWidth * 0.72);
+    const descricaoLinhas = doc.splitTextToSize(descricaoTemplate, pageWidth * 0.72);
     doc.text(descricaoLinhas, pageWidth / 2, blockTop + 82, { align: "center" });
 
     // Info boxes
@@ -283,10 +341,10 @@ serve(async (req) => {
       doc.text(value, x + 3, y + 15);
     };
 
-    drawBox(0, "Carga horaria", `${cargaHoraria} horas`);
-    drawBox(1, "Modalidade", "Online (EAD)");
-    drawBox(2, "Data de conclusao", dataCurta);
-    drawBox(3, "Codigo de validacao", certificado.codigo_validacao);
+    drawBox(0, labelCarga, `${cargaHoraria} horas`);
+    drawBox(1, labelModalidade, modalidadeTexto);
+    drawBox(2, labelData, dataCurta);
+    drawBox(3, labelCodigo, certificado.codigo_validacao);
 
     // Footer with legal and QR
     const footerTop = infoTop + boxHeight + 6;
@@ -294,20 +352,16 @@ serve(async (req) => {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8.5);
     doc.setTextColor(90, 90, 90);
-    const legalLines = [
-      "Cursos livres realizados na modalidade Educacao a Distancia, conforme legislacao brasileira vigente, incluindo o Decreto no 9.057/2017 e normas aplicaveis a formacao continuada.",
-      "Conteudo alinhado as boas praticas da ABED - Associacao Brasileira de Educacao a Distancia.",
-    ];
-    const legalText = doc.splitTextToSize(legalLines.join(" "), footerTextWidth);
+    const legalText = doc.splitTextToSize(legalTemplate, footerTextWidth);
     doc.text(legalText, margin, footerTop + 10);
 
     const emissionLineY = footerTop + 26;
-    doc.text(`Rio de Janeiro - RJ, ${dataFormatada}`, margin, emissionLineY);
+    doc.text(`${localEmissao}, ${dataFormatada}`, margin, emissionLineY);
 
     doc.setDrawColor(...lightLine);
     doc.setLineWidth(0.4);
     doc.line(pageWidth - margin - 70, emissionLineY - 6, pageWidth - margin, emissionLineY - 6);
-    doc.text("Diretoria Academica - MAEXTRIA", pageWidth - margin, emissionLineY, { align: "right" });
+    doc.text(assinaturaLabel, pageWidth - margin, emissionLineY, { align: "right" });
 
     // QR Code
     const qrSize = 26;
