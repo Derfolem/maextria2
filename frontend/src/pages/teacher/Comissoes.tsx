@@ -217,9 +217,13 @@ export default function TeacherComissoes() {
         p_professor_id: user.id,
       });
 
+      const errorStatus = linkError ? (linkError as { status?: number }).status : undefined;
       const rpcMissing =
         linkError &&
-        (linkError.status === 404 || linkError.message?.includes('404') || linkError.message?.includes('Not Found'));
+        (errorStatus === 404 ||
+          linkError.code === '404' ||
+          linkError.message?.includes('404') ||
+          linkError.message?.includes('Not Found'));
 
       if (linkError && !rpcMissing) {
         throw linkError;
