@@ -518,15 +518,20 @@ serve(async (req) => {
     doc.setLineWidth(0.4);
     doc.rect(margin, margin, pageWidth - margin * 2, pageHeight - margin * 2);
 
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(...deepTeal);
+    doc.text("CONTEUDO PROGRAMATICO", margin, margin + 12);
+
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(11);
+    doc.setFontSize(12);
     doc.setTextColor(60, 60, 60);
-    doc.text(`Curso: ${cursoTitulo}`, margin, margin + 28);
+    doc.text(`Curso: ${cursoTitulo}`, margin, margin + 26);
     doc.text(`Carga horaria total: ${cargaHoraria} horas`, margin, margin + 36);
     if (percentualProva !== null) {
-      doc.text(`Nota final: ${percentualProva}%`, margin, margin + 44);
+      doc.text(`Nota final: ${percentualProva}%`, margin, margin + 46);
     }
-    doc.text(`Codigo de validacao: ${certificado.codigo_validacao}`, margin, margin + 52);
+    doc.text(`Codigo de validacao: ${certificado.codigo_validacao}`, margin, margin + 56);
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
@@ -544,7 +549,7 @@ serve(async (req) => {
         ];
     const moduleText = fallbackModules.join("  ");
     const maxWidth = pageWidth - margin * 2 - 10;
-    const startY = margin + 64;
+    const startY = margin + 66;
     const maxHeight = pageHeight - margin - startY;
     const minFontSize = 7;
     let fontSize = 10;
