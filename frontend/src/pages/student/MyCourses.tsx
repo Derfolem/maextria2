@@ -225,7 +225,7 @@ export default function MyCourses() {
                 <div className="flex flex-wrap gap-3">
                   <Link
                     to={`/student/course/${enrollment.course_id}`}
-                    className="btn-accent flex items-center space-x-2"
+                    className="btn-accent flex flex-row items-center gap-2 whitespace-nowrap"
                   >
                     <FaPlay />
                     <span>{enrollment.completed ? 'Revisar' : 'Continuar'}</span>
@@ -236,7 +236,7 @@ export default function MyCourses() {
                         href={(enrollment as any).certificate.link_pdf}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="btn-outline flex items-center space-x-2"
+                        className="btn-outline flex flex-row items-center gap-2 whitespace-nowrap"
                       >
                         <FaCertificate />
                         <span>Baixar certificado</span>
@@ -244,7 +244,7 @@ export default function MyCourses() {
                     ) : (
                       <button
                         type="button"
-                        className="btn-outline flex items-center space-x-2"
+                        className="btn-outline flex flex-row items-center gap-2 whitespace-nowrap"
                         onClick={() => navigate(`/pagamento-certificado/${enrollment.course_id}`)}
                       >
                         <FaCertificate />
