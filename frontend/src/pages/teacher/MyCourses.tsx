@@ -1,16 +1,53 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Course } from '../../types';
 import toast from 'react-hot-toast';
-import { FaEye, FaPlus, FaEdit, FaTrash, FaCopy, FaPaperPlane, FaExclamationTriangle, FaClock } from 'react-icons/fa';
+import { FaEye, FaPlus, FaEdit, FaTrash, FaCopy, FaPaperPlane, FaExclamationTriangle, FaClock, FaFilter } from 'react-icons/fa';
 import { normalizeCourse } from '../../lib/normalizeCourse';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
 
+type FilterOption = 'recentes' | 'modificados' | 'publicados' | 'reprovados' | 'curadoria' | 'az';
+
 export default function TeacherMyCourses() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<FilterOption>('recentes');
   const user = useAuthStore((state) => state.user);
+
+  const filteredAndSortedCourses = useMemo(() => {
+    let result = [...courses];
+
+    // Aplicar filtro
+    switch (filter) {
+      case 'publicados':
+        result = result.filter(c => c.is_published);
+        break;
+      case 'reprovados':
+        result = result.filter(c => c.feedback_curadoria);
+        break;
+      case 'curadoria':
+        result = result.filter(c => c.em_curadoria);
+        break;
+    }
+
+    // Aplicar ordenação
+    switch (filter) {
+      case 'recentes':
+        result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        break;
+      case 'modificados':
+        result.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+        break;
+      case 'az':
+        result.sort((a, b) => a.title.localeCompare(b.title, 'pt-BR'));
+        break;
+      default:
+        result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+
+    return result;
+  }, [courses, filter]);
 
   useEffect(() => {
     loadCourses();
@@ -237,10 +274,27 @@ export default function TeacherMyCourses() {
           <p className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--primary))]">Cursos</p>
           <h1 className="headline-font text-4xl md:text-5xl">Seu catálogo</h1>
         </div>
-        <Link to="/teacher/course/new-glass" className="btn-accent flex items-center space-x-2">
-          <FaPlus />
-          <span>Novo curso</span>
-        </Link>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <FaFilter className="text-[hsl(var(--muted-foreground))]" />
+            <select
+              value={filter}
+              onChange={(e) => setFilter(e.target.value as FilterOption)}
+              className="input-field py-2 pr-8"
+            >
+              <option value="recentes">Mais recentes</option>
+              <option value="modificados">Modificados recentemente</option>
+              <option value="publicados">Publicados</option>
+              <option value="reprovados">Reprovados</option>
+              <option value="curadoria">Em curadoria</option>
+              <option value="az">A-Z</option>
+            </select>
+          </div>
+          <Link to="/teacher/course/new-glass" className="btn-accent flex items-center space-x-2">
+            <FaPlus />
+            <span>Novo curso</span>
+          </Link>
+        </div>
       </div>
 
       {courses.length === 0 ? (
@@ -255,9 +309,16 @@ export default function TeacherMyCourses() {
             </Link>
           </div>
         </div>
+      ) : filteredAndSortedCourses.length === 0 ? (
+        <div className="card text-center py-12">
+          <p className="text-[hsl(var(--muted-foreground))] mb-4">Nenhum curso encontrado com este filtro</p>
+          <button onClick={() => setFilter('recentes')} className="btn-outline">
+            Limpar filtro
+          </button>
+        </div>
       ) : (
         <div className="space-y-6">
-          {courses.map((course) => (
+          {filteredAndSortedCourses.map((course) => (
             <div key={course.id} className="card">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                 <div className="flex-grow mb-4 md:mb-0">

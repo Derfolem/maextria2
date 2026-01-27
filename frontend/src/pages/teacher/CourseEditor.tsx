@@ -413,6 +413,13 @@ const loadCourse = async () => {
           .eq('id', id);
         if (error) throw error;
         toast.success('Curso atualizado com sucesso!');
+        // Redirecionar baseado no role do usuário
+        if (isAdmin) {
+          navigate('/admin/courses');
+        } else {
+          navigate('/teacher/my-courses');
+        }
+        return;
       } else {
         const { data, error } = await supabase
           .from('cursos')

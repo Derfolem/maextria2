@@ -1,15 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Course } from '../../types';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
-import { FaTrash, FaEye, FaEyeSlash, FaSearch, FaArrowRight, FaEdit, FaClock, FaTimes } from 'react-icons/fa';
+import { FaTrash, FaEye, FaEyeSlash, FaSearch, FaArrowRight, FaEdit, FaClock, FaTimes, FaFilter } from 'react-icons/fa';
 import { normalizeCourse } from '../../lib/normalizeCourse';
+
+type FilterOption = 'recentes' | 'modificados' | 'publicados' | 'reprovados' | 'aguardando' | 'curadoria' | 'az';
 
 export default function AdminCourses() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<FilterOption>('recentes');
   const [feedbackOpen, setFeedbackOpen] = useState<string | number | null>(null);
   const [feedbackText, setFeedbackText] = useState('');
 
@@ -128,12 +131,48 @@ export default function AdminCourses() {
     }
   };
 
-  const filteredCourses = courses.filter(
-    (course) =>
-      course.title.toLowerCase().includes(search.toLowerCase()) ||
-      course.description.toLowerCase().includes(search.toLowerCase()) ||
-      course.teacher_name?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredAndSortedCourses = useMemo(() => {
+    // Primeiro aplica busca por texto
+    let result = courses.filter(
+      (course) =>
+        course.title.toLowerCase().includes(search.toLowerCase()) ||
+        course.description.toLowerCase().includes(search.toLowerCase()) ||
+        course.teacher_name?.toLowerCase().includes(search.toLowerCase())
+    );
+
+    // Aplicar filtro por status
+    switch (filter) {
+      case 'publicados':
+        result = result.filter(c => c.is_published);
+        break;
+      case 'reprovados':
+        result = result.filter(c => c.feedback_curadoria);
+        break;
+      case 'curadoria':
+        result = result.filter(c => c.em_curadoria);
+        break;
+      case 'aguardando':
+        result = result.filter(c => !c.em_curadoria && !c.is_published);
+        break;
+    }
+
+    // Aplicar ordenação
+    switch (filter) {
+      case 'recentes':
+        result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        break;
+      case 'modificados':
+        result.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+        break;
+      case 'az':
+        result.sort((a, b) => a.title.localeCompare(b.title, 'pt-BR'));
+        break;
+      default:
+        result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+
+    return result;
+  }, [courses, search, filter]);
 
   if (loading) {
     return (
@@ -160,20 +199,38 @@ export default function AdminCourses() {
       </div>
 
       <div className="card mb-8">
-        <div className="relative">
-          <FaSearch className="absolute left-4 top-3 text-[hsl(var(--muted-foreground))]" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por curso, professor ou tema..."
-            className="input-field pl-12 w-full"
-          />
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="relative flex-grow">
+            <FaSearch className="absolute left-4 top-3 text-[hsl(var(--muted-foreground))]" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por curso, professor ou tema..."
+              className="input-field pl-12 w-full"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <FaFilter className="text-[hsl(var(--muted-foreground))]" />
+            <select
+              value={filter}
+              onChange={(e) => setFilter(e.target.value as FilterOption)}
+              className="input-field py-2 pr-8"
+            >
+              <option value="recentes">Mais recentes</option>
+              <option value="modificados">Modificados recentemente</option>
+              <option value="publicados">Publicados</option>
+              <option value="reprovados">Reprovados</option>
+              <option value="curadoria">Em curadoria</option>
+              <option value="aguardando">Aguardando envio</option>
+              <option value="az">A-Z</option>
+            </select>
+          </div>
         </div>
       </div>
 
       <div className="space-y-4">
-        {filteredCourses.map((course) => (
+        {filteredAndSortedCourses.map((course) => (
           <div key={course.id} className={`card ${course.em_curadoria ? 'ring-2 ring-yellow-400' : ''}`}>
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
               <div className="flex-grow">
@@ -314,7 +371,7 @@ export default function AdminCourses() {
         ))}
       </div>
 
-      {filteredCourses.length === 0 && (
+      {filteredAndSortedCourses.length === 0 && (
         <div className="card text-center py-12">
           <p className="text-[hsl(var(--muted-foreground))] mb-4">Nenhum curso encontrado</p>
           <Link to="/courses" className="btn-accent">
@@ -324,7 +381,7 @@ export default function AdminCourses() {
       )}
 
       <div className="mt-4 text-sm text-[hsl(var(--muted-foreground))]">
-        Total: {filteredCourses.length} curso(s)
+        Total: {filteredAndSortedCourses.length} curso(s)
       </div>
     </div>
   );
