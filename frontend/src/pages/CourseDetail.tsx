@@ -151,8 +151,8 @@ export default function CourseDetail() {
     const jsonLd = {
       "@context": "https://schema.org",
       "@type": "Course",
-      "name": course.title || course.titulo,
-      "description": course.description || course.descricao,
+      "name": course.title || course.title,
+      "description": course.description || course.description,
       "provider": {
         "@type": "Organization",
         "name": "MAEXTRIA",
@@ -161,7 +161,7 @@ export default function CourseDetail() {
       "url": `https://www.maextria.com.br/course/${course.id}`,
       "offers": {
         "@type": "Offer",
-        "price": course.price || course.preco || 0,
+        "price": course.price || course.price || 0,
         "priceCurrency": "BRL",
         "availability": "https://schema.org/InStock"
       },
@@ -181,10 +181,10 @@ export default function CourseDetail() {
     }
     script.textContent = JSON.stringify(jsonLd);
     
-    document.title = `${course.title || course.titulo} | MAEXTRIA`;
+    document.title = `${course.title || course.title} | MAEXTRIA`;
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) {
-      metaDesc.setAttribute('content', (course.description || course.descricao || '').substring(0, 160));
+      metaDesc.setAttribute('content', (course.description || course.description || '').substring(0, 160));
     }
     
     return () => {
