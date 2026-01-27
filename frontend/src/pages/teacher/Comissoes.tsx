@@ -213,45 +213,27 @@ export default function TeacherComissoes() {
       setMetrics((instructorMetrics as InstructorMetrics) || null);
 
       let linkData: AffiliateLink | null = null;
-      const { data: rpcLinkData, error: linkError } = await supabase.rpc('affiliate_get_or_create_link', {
-        p_professor_id: user.id,
-      });
+      const { data: existingLink, error: existingError } = await supabase
+        .from('affiliate_links')
+        .select('id, code')
+        .eq('professor_id', user.id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .maybeSingle();
 
-      const errorStatus = linkError ? (linkError as { status?: number }).status : undefined;
-      const rpcMissing =
-        linkError &&
-        (errorStatus === 404 ||
-          linkError.code === '404' ||
-          linkError.message?.includes('404') ||
-          linkError.message?.includes('Not Found'));
+      if (existingError) throw existingError;
 
-      if (linkError && !rpcMissing) {
-        throw linkError;
-      }
-
-      if (rpcLinkData) {
-        linkData = rpcLinkData as AffiliateLink;
+      if (existingLink?.id) {
+        linkData = existingLink as AffiliateLink;
       } else {
-        const { data: existingLink } = await supabase
+        const code = generateAffiliateCode();
+        const { data: newLink, error: insertError } = await supabase
           .from('affiliate_links')
+          .insert({ professor_id: user.id, code, is_active: true })
           .select('id, code')
-          .eq('professor_id', user.id)
-          .eq('is_active', true)
-          .order('created_at', { ascending: false })
-          .maybeSingle();
-
-        if (existingLink?.id) {
-          linkData = existingLink as AffiliateLink;
-        } else {
-          const code = generateAffiliateCode();
-          const { data: newLink, error: insertError } = await supabase
-            .from('affiliate_links')
-            .insert({ professor_id: user.id, code, is_active: true })
-            .select('id, code')
-            .single();
-          if (insertError) throw insertError;
-          linkData = newLink as AffiliateLink;
-        }
+          .single();
+        if (insertError) throw insertError;
+        linkData = newLink as AffiliateLink;
       }
 
       setAffiliateLink(linkData);
