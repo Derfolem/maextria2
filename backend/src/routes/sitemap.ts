@@ -72,6 +72,14 @@ router.get('/sitemap.xml', async (req: Request, res: Response) => {
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
+
+  <!-- Perguntas Frequentes -->
+  <url>
+    <loc>https://www.maextria.com.br/faq</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
 `;
 
     // Adicionar cada curso dinamicamente
