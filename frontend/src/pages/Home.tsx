@@ -53,7 +53,7 @@ export default function Home() {
       }
     };
     
-    let script = document.getElementById('jsonld-org');
+    let script = document.getElementById('jsonld-org') as HTMLScriptElement | null;
     if (!script) {
       script = document.createElement('script');
       script.id = 'jsonld-org';
