@@ -142,17 +142,15 @@ export default function CourseDetail() {
     }
   };
 
-  if (loading) {
-
   // JSON-LD para SEO do curso
   useEffect(() => {
     if (!course) return;
-    
+
     const jsonLd = {
       "@context": "https://schema.org",
       "@type": "Course",
-      "name": course.title || course.title,
-      "description": course.description || course.description,
+      "name": course.title,
+      "description": course.description,
       "provider": {
         "@type": "Organization",
         "name": "MAEXTRIA",
@@ -161,7 +159,7 @@ export default function CourseDetail() {
       "url": `https://www.maextria.com.br/course/${course.id}`,
       "offers": {
         "@type": "Offer",
-        "price": course.price || course.price || 0,
+        "price": course.price || 0,
         "priceCurrency": "BRL",
         "availability": "https://schema.org/InStock"
       },
@@ -171,7 +169,7 @@ export default function CourseDetail() {
         "courseWorkload": course.duration_hours ? `PT${course.duration_hours}H` : undefined
       }
     };
-    
+
     let script = document.getElementById('jsonld-course') as HTMLScriptElement | null;
     if (!script) {
       script = document.createElement('script');
@@ -180,20 +178,20 @@ export default function CourseDetail() {
       document.head.appendChild(script);
     }
     script.textContent = JSON.stringify(jsonLd);
-    
-    document.title = `${course.title || course.title} | MAEXTRIA`;
+
+    document.title = `${course.title} | MAEXTRIA`;
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) {
-      metaDesc.setAttribute('content', (course.description || course.description || '').substring(0, 160));
+      metaDesc.setAttribute('content', (course.description || '').substring(0, 160));
     }
-    
+
     return () => {
       const el = document.getElementById('jsonld-course');
       if (el) el.remove();
     };
   }, [course]);
 
-
+  if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="animate-pulse">
