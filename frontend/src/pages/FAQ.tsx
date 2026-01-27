@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { FaChevronDown, FaChevronUp, FaQuestionCircle, FaGraduationCap, FaUsers, FaBriefcase, FaPaperPlane } from 'react-icons/fa';
+import { FaChevronDown, FaQuestionCircle, FaGraduationCap, FaUsers, FaBriefcase, FaPaperPlane } from 'react-icons/fa';
 import { SEO } from '../components/SEO';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuthStore } from '../lib/store';
 import { supabase } from '../lib/supabase';
 
@@ -117,7 +117,7 @@ const faqData: FAQSection[] = [
   }
 ];
 
-function FAQAccordion({ item, isOpen, onToggle, color }: { item: FAQItem; isOpen: boolean; onToggle: () => void; color: string }) {
+function FAQAccordion({ item, isOpen, onToggle }: { item: FAQItem; isOpen: boolean; onToggle: () => void }) {
   return (
     <div className="group" data-testid="faq-item">
       <button
@@ -250,9 +250,8 @@ function ContactForm() {
 export default function FAQ() {
   const [activeSection, setActiveSection] = useState<string>("visitantes");
   const [openItems, setOpenItems] = useState<Record<string, boolean>>({});
-  const { isAuthenticated, user, logout } = useAuthStore();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const { isAuthenticated, user } = useAuthStore();
+  
 
   const toggleItem = (sectionId: string, itemIndex: number) => {
     const key = `${sectionId}-${itemIndex}`;
@@ -353,7 +352,7 @@ export default function FAQ() {
                   item={item}
                   isOpen={openItems[`${currentSection.id}-${index}`] || false}
                   onToggle={() => toggleItem(currentSection.id, index)}
-                  color={currentSection.color}
+                  
                 />
               ))}
             </div>
