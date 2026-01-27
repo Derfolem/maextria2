@@ -31,6 +31,7 @@ function lazyWithRetry(importFn: () => Promise<any>) {
 
 
 const Home = lazyWithRetry(() => import('./pages/Home'));
+const FAQ = lazyWithRetry(() => import('./pages/FAQ'));
 const Login = lazyWithRetry(() => import('./pages/Login'));
 const Register = lazyWithRetry(() => import('./pages/Register'));
 const ResetPassword = lazyWithRetry(() => import('./pages/ResetPassword'));
