@@ -65,6 +65,7 @@ type Tier = {
   min_completion_rate?: number | null;
   min_courses_active?: number | null;
   priority: number;
+  rule_id?: string;
 };
 
 type Rule = { id: string; version: number; name: string };

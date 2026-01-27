@@ -21,6 +21,10 @@ type CertificateTemplate = {
   logo_url: string;
   assinatura_imagem_url: string;
   papel_timbrado_url: string;
+  logo_largura_mm: number | null;
+  logo_altura_mm: number | null;
+  assinatura_largura_mm: number | null;
+  assinatura_altura_mm: number | null;
   ativo: boolean;
   criado_em: string;
 };
@@ -49,6 +53,10 @@ const defaultForm: TemplateForm = {
   logo_url: '',
   assinatura_imagem_url: '',
   papel_timbrado_url: '',
+  logo_largura_mm: 22,
+  logo_altura_mm: 22,
+  assinatura_largura_mm: 38,
+  assinatura_altura_mm: 14,
 };
 
 const placeholderList = [
@@ -81,6 +89,10 @@ const blankForm: TemplateForm = {
   logo_url: '',
   assinatura_imagem_url: '',
   papel_timbrado_url: '',
+  logo_largura_mm: 22,
+  logo_altura_mm: 22,
+  assinatura_largura_mm: 38,
+  assinatura_altura_mm: 14,
 };
 
 export default function CertificateTemplates() {
@@ -141,6 +153,10 @@ export default function CertificateTemplates() {
     logo_url: template.logo_url || '',
     assinatura_imagem_url: template.assinatura_imagem_url || '',
     papel_timbrado_url: template.papel_timbrado_url || '',
+    logo_largura_mm: template.logo_largura_mm ?? 22,
+    logo_altura_mm: template.logo_altura_mm ?? 22,
+    assinatura_largura_mm: template.assinatura_largura_mm ?? 38,
+    assinatura_altura_mm: template.assinatura_altura_mm ?? 14,
   });
 
   const handleSelect = (template: CertificateTemplate) => {
@@ -153,6 +169,15 @@ export default function CertificateTemplates() {
     setForm((prev) => ({
       ...prev,
       [name]: value,
+    }));
+  };
+
+  const handleNumberChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target;
+    const numericValue = value === '' ? '' : Number(value);
+    setForm((prev) => ({
+      ...prev,
+      [name]: numericValue,
     }));
   };
 
@@ -185,6 +210,10 @@ export default function CertificateTemplates() {
         logo_url: form.logo_url.trim(),
         assinatura_imagem_url: form.assinatura_imagem_url.trim(),
         papel_timbrado_url: form.papel_timbrado_url.trim(),
+        logo_largura_mm: form.logo_largura_mm ? Number(form.logo_largura_mm) : 22,
+        logo_altura_mm: form.logo_altura_mm ? Number(form.logo_altura_mm) : 22,
+        assinatura_largura_mm: form.assinatura_largura_mm ? Number(form.assinatura_largura_mm) : 38,
+        assinatura_altura_mm: form.assinatura_altura_mm ? Number(form.assinatura_altura_mm) : 14,
       };
 
       if (form.id) {
@@ -584,6 +613,67 @@ export default function CertificateTemplates() {
               </div>
             </div>
           </div>
+
+          <div className="card">
+            <h2 className="text-lg font-semibold mb-4">Tamanhos das imagens (mm)</h2>
+            <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
+              Ajuste os tamanhos em milimetros usados no PDF. Valores recomendados: logo 22x22mm, assinatura 38x14mm.
+            </p>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Logo largura (mm)</label>
+                <input
+                  type="number"
+                  min="5"
+                  max="80"
+                  step="0.5"
+                  name="logo_largura_mm"
+                  value={form.logo_largura_mm ?? ''}
+                  onChange={handleNumberChange}
+                  className="input-field mt-2"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Logo altura (mm)</label>
+                <input
+                  type="number"
+                  min="5"
+                  max="80"
+                  step="0.5"
+                  name="logo_altura_mm"
+                  value={form.logo_altura_mm ?? ''}
+                  onChange={handleNumberChange}
+                  className="input-field mt-2"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Assinatura largura (mm)</label>
+                <input
+                  type="number"
+                  min="10"
+                  max="120"
+                  step="0.5"
+                  name="assinatura_largura_mm"
+                  value={form.assinatura_largura_mm ?? ''}
+                  onChange={handleNumberChange}
+                  className="input-field mt-2"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Assinatura altura (mm)</label>
+                <input
+                  type="number"
+                  min="5"
+                  max="60"
+                  step="0.5"
+                  name="assinatura_altura_mm"
+                  value={form.assinatura_altura_mm ?? ''}
+                  onChange={handleNumberChange}
+                  className="input-field mt-2"
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-6">
@@ -779,7 +869,14 @@ export default function CertificateTemplates() {
             >
               <div className="flex items-center justify-between">
                 <p className="text-sm tracking-[0.2em] text-[hsl(var(--muted-foreground))]">MAEXTRIA</p>
-                {form.logo_url && <img src={form.logo_url} alt="Logo" className="h-10 object-contain" />}
+                {form.logo_url && (
+                  <img
+                    src={form.logo_url}
+                    alt="Logo"
+                    className="object-contain"
+                    style={{ width: `${form.logo_largura_mm || 22}mm`, height: `${form.logo_altura_mm || 22}mm` }}
+                  />
+                )}
               </div>
               <div className="text-center space-y-2">
                 <h3 className="headline-font text-2xl text-[hsl(var(--secondary))]">{preview.titulo}</h3>
@@ -822,7 +919,11 @@ export default function CertificateTemplates() {
                       <img
                         src={form.assinatura_imagem_url}
                         alt="Assinatura"
-                        className="h-8 object-contain ml-auto"
+                        className="object-contain ml-auto"
+                        style={{
+                          width: `${form.assinatura_largura_mm || 38}mm`,
+                          height: `${form.assinatura_altura_mm || 14}mm`,
+                        }}
                       />
                     )}
                     <span>{preview.assinatura}</span>

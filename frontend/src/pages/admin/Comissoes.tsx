@@ -41,6 +41,7 @@ type Tier = {
   min_completion_rate?: number | null;
   min_courses_active?: number | null;
   priority: number;
+  rule_id?: string;
 };
 
 type AffiliateLink = { id: string; professor_id: string; code: string; is_active: boolean; created_at: string };
@@ -195,7 +196,7 @@ export default function AdminComissoes() {
   }, [ledger, selectedProfessor]);
 
   const activeRule = rules.find((rule) => rule.is_active) || rules[0];
-  const activeTiers = tiers.filter((tier) => (activeRule ? (tier as any).rule_id === activeRule.id : true));
+  const activeTiers = tiers.filter((tier) => (activeRule ? tier.rule_id === activeRule.id : true));
 
   const simulatedTier = useMemo(() => {
     if (!activeTiers.length) return null;

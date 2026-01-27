@@ -204,6 +204,10 @@ serve(async (req) => {
       logo_url: "",
       assinatura_imagem_url: "",
       papel_timbrado_url: "",
+      logo_largura_mm: 22,
+      logo_altura_mm: 22,
+      assinatura_largura_mm: 38,
+      assinatura_altura_mm: 14,
     };
 
     const resolveTemplateQuery = () => {
@@ -341,7 +345,9 @@ serve(async (req) => {
     const logoData = await resolveLogoDataUri();
     if (logoData) {
       try {
-        doc.addImage(logoData.dataUri, logoData.format, margin, margin - 2, 22, 22);
+        const logoWidth = Number(activeTemplate.logo_largura_mm || 22);
+        const logoHeight = Number(activeTemplate.logo_altura_mm || 22);
+        doc.addImage(logoData.dataUri, logoData.format, margin, margin - 2, logoWidth, logoHeight);
       } catch (error) {
         console.error("Logo render failed, continuing without logo:", error);
       }
@@ -447,8 +453,8 @@ serve(async (req) => {
     const assinaturaImagem = await resolveImageDataUri(activeTemplate.assinatura_imagem_url || null);
     if (assinaturaImagem) {
       try {
-        const signatureWidth = 38;
-        const signatureHeight = 14;
+        const signatureWidth = Number(activeTemplate.assinatura_largura_mm || 38);
+        const signatureHeight = Number(activeTemplate.assinatura_altura_mm || 14);
         doc.addImage(
           assinaturaImagem.dataUri,
           assinaturaImagem.format,
