@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { getValidAccessToken, supabase } from '../lib/supabase';
+import { handlePdfDownload } from '../lib/downloadPdf';
 import { useAuthStore } from '../lib/store';
 
 interface Certificado {
@@ -231,10 +232,8 @@ export default function PagamentoCertificado() {
       if (error) throw error;
 
       if (data?.pdf) {
-        const link = document.createElement('a');
-        link.href = data.pdf;
-        link.download = `certificado-${curso?.titulo?.replace(/\s+/g, '-').toLowerCase()}.pdf`;
-        link.click();
+        const filename = `certificado-${curso?.titulo?.replace(/\s+/g, '-').toLowerCase()}.pdf`;
+        handlePdfDownload(data.pdf, filename);
         toast.success('Download iniciado.');
       }
     } catch (error: any) {
