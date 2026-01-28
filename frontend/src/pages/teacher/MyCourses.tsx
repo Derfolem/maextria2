@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Course } from '../../types';
 import toast from 'react-hot-toast';
 import { FaEye, FaPlus, FaEdit, FaTrash, FaCopy, FaPaperPlane, FaExclamationTriangle, FaClock, FaFilter } from 'react-icons/fa';
@@ -14,6 +14,7 @@ export default function TeacherMyCourses() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterOption>('recentes');
   const user = useAuthStore((state) => state.user);
+  const navigate = useNavigate();
 
   const filteredAndSortedCourses = useMemo(() => {
     let result = [...courses];
@@ -249,6 +250,69 @@ export default function TeacherMyCourses() {
     }
   };
 
+  const handleEditCourse = async (course: Course) => {
+    // Se em curadoria, não pode editar
+    if (course.em_curadoria) {
+      toast.error('Curso em curadoria - aguarde análise do admin');
+      return;
+    }
+
+    try {
+      // Verificar se precisa clonar (curso publicado com alunos)
+      const { data: shouldClone, error: checkError } = await supabase.rpc('should_clone_for_editing', {
+        p_curso_id: String(course.id)
+      });
+
+      if (checkError) {
+        console.error('Erro ao verificar clone:', checkError);
+        // Se a função não existe ainda, edita normalmente
+        navigate(`/teacher/course/${course.id}/edit`);
+        return;
+      }
+
+      if (shouldClone) {
+        // Verificar se já existe um clone pendente
+        const { data: pendingClone } = await supabase.rpc('get_pending_clone', {
+          p_original_id: String(course.id)
+        });
+
+        if (pendingClone) {
+          // Redirecionar para o clone existente
+          toast.success('Redirecionando para versão em edição...');
+          navigate(`/teacher/course/${pendingClone}/edit`);
+          return;
+        }
+
+        // Confirmar criação de nova versão
+        if (!confirm('Este curso está publicado com alunos matriculados.\n\nSerá criada uma nova versão para edição. Os alunos atuais continuarão na versão antiga.\n\nContinuar?')) {
+          return;
+        }
+
+        const toastId = toast.loading('Criando nova versão...');
+        try {
+          const { data: newCourseId, error: cloneError } = await supabase.rpc('clone_course_for_editing', {
+            p_original_curso_id: String(course.id)
+          });
+
+          if (cloneError) throw cloneError;
+
+          toast.success('Nova versão criada! Redirecionando...', { id: toastId });
+          loadCourses();
+          navigate(`/teacher/course/${newCourseId}/edit`);
+        } catch (error: any) {
+          toast.error(error?.message || 'Erro ao criar nova versão', { id: toastId });
+        }
+      } else {
+        // Comportamento normal - edita diretamente
+        navigate(`/teacher/course/${course.id}/edit`);
+      }
+    } catch (error: any) {
+      console.error('Erro ao verificar edição:', error);
+      // Em caso de erro, tenta editar normalmente
+      navigate(`/teacher/course/${course.id}/edit`);
+    }
+  };
+
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-12">
@@ -322,7 +386,7 @@ export default function TeacherMyCourses() {
             <div key={course.id} className="card">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                 <div className="flex-grow mb-4 md:mb-0">
-                  <div className="flex items-center space-x-3 mb-2">
+                  <div className="flex items-center space-x-3 mb-2 flex-wrap gap-2">
                     <h3 className="text-xl font-semibold">{course.title}</h3>
                     <span className={`px-3 py-1 rounded-full text-xs uppercase tracking-[0.2em] ${
                       course.is_published
@@ -333,6 +397,16 @@ export default function TeacherMyCourses() {
                     }`}>
                       {course.is_published ? 'Publicado' : course.em_curadoria ? 'Em curadoria' : 'Rascunho'}
                     </span>
+                    {course.versao && course.versao > 1 && (
+                      <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-700 text-xs font-medium">
+                        v{course.versao}
+                      </span>
+                    )}
+                    {course.curso_original_id && !course.is_published && (
+                      <span className="px-2 py-0.5 rounded bg-purple-100 text-purple-700 text-xs font-medium">
+                        Nova versão em edição
+                      </span>
+                    )}
                   </div>
                   <p className="text-[hsl(var(--muted-foreground))] mb-3">{course.description}</p>
                   <div className="flex items-center space-x-4 text-sm text-[hsl(var(--muted-foreground))]">
@@ -356,24 +430,15 @@ export default function TeacherMyCourses() {
                     <FaEye />
                     <span>Visualizar</span>
                   </Link>
-                  {course.em_curadoria ? (
-                    <button
-                      disabled
-                      className="btn-outline flex items-center space-x-1 opacity-50 cursor-not-allowed"
-                      title="Curso em curadoria - aguarde análise do admin"
-                    >
-                      <FaEdit />
-                      <span>Editar</span>
-                    </button>
-                  ) : (
-                    <Link
-                      to={`/teacher/course/${course.id}/edit`}
-                      className="btn-outline flex items-center space-x-1"
-                    >
-                      <FaEdit />
-                      <span>Editar</span>
-                    </Link>
-                  )}
+                  <button
+                    onClick={() => handleEditCourse(course)}
+                    disabled={course.em_curadoria}
+                    className={`btn-outline flex items-center space-x-1 ${course.em_curadoria ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    title={course.em_curadoria ? 'Curso em curadoria - aguarde análise do admin' : 'Editar curso'}
+                  >
+                    <FaEdit />
+                    <span>Editar</span>
+                  </button>
                   <button
                     onClick={() => duplicateCourse(course.id)}
                     className="btn-outline flex items-center space-x-1"

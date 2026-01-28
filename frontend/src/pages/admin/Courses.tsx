@@ -247,6 +247,16 @@ export default function AdminCourses() {
                   >
                     {course.is_published ? 'Publicado' : course.em_curadoria ? 'Aguardando curadoria' : 'Rascunho'}
                   </span>
+                  {course.versao && course.versao > 1 && (
+                    <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-700 text-xs font-medium">
+                      v{course.versao}
+                    </span>
+                  )}
+                  {course.curso_original_id && (
+                    <span className="px-2 py-0.5 rounded bg-purple-100 text-purple-700 text-xs font-medium">
+                      Nova versao
+                    </span>
+                  )}
                 </div>
                 <p className="text-[hsl(var(--muted-foreground))] mb-3">{course.description}</p>
                 <div className="flex flex-wrap items-center gap-3 text-sm text-[hsl(var(--muted-foreground))]">

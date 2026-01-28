@@ -34,5 +34,7 @@ export function normalizeCourse(raw: RawCourse): Course {
     modules: raw.modules,
     em_curadoria: Boolean(raw.em_curadoria),
     feedback_curadoria: raw.feedback_curadoria ?? undefined,
+    curso_original_id: raw.curso_original_id ?? null,
+    versao: raw.versao ?? 1,
   };
 }

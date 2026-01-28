@@ -26,6 +26,8 @@ export interface Course {
   modules?: Module[];
   em_curadoria?: boolean;
   feedback_curadoria?: string;
+  curso_original_id?: string | null;
+  versao?: number;
 }
 
 export interface Module {

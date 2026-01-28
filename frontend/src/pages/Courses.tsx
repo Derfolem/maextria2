@@ -123,7 +123,24 @@ export default function Courses() {
         .select('*')
         .eq('ativo', true);
       if (error) throw error;
-      setCourses((data || []).map(normalizeCourse));
+
+      // Filtrar para mostrar apenas a versão mais recente de cada curso
+      // Agrupa por curso_original_id (ou id se for original) e mantém a maior versão
+      const latestVersions = (data || []).reduce((acc: Record<string, any>, course) => {
+        // O identificador do curso raiz é curso_original_id se existir, senão é o próprio id
+        const rootId = course.curso_original_id || course.id;
+        const key = String(rootId);
+        const courseVersion = course.versao || 1;
+        const existingVersion = acc[key]?.versao || 0;
+
+        // Manter apenas a versão mais alta
+        if (!acc[key] || courseVersion > existingVersion) {
+          acc[key] = course;
+        }
+        return acc;
+      }, {});
+
+      setCourses(Object.values(latestVersions).map(normalizeCourse));
     } catch (error) {
       console.error('Error loading courses:', error);
     } finally {
