@@ -547,27 +547,77 @@ serve(async (req) => {
           "3. Estudos de caso",
           "4. Projeto final",
         ];
-    const moduleText = fallbackModules.join("  ");
-    const maxWidth = pageWidth - margin * 2 - 10;
+
     const startY = margin + 66;
+    const maxWidth = pageWidth - margin * 2 - 10;
     const maxHeight = pageHeight - margin - startY;
     const minFontSize = 7;
-    let fontSize = 10;
-    let moduleLines = doc.splitTextToSize(moduleText, maxWidth);
+    const maxFontSize = 10;
+    const columnGap = 6;
+    const minColumnWidth = 58;
 
-    while (fontSize > minFontSize) {
+    const maxColumns = Math.max(
+      1,
+      Math.floor((maxWidth + columnGap) / (minColumnWidth + columnGap))
+    );
+
+    const computeLayout = (fontSize: number) => {
       doc.setFontSize(fontSize);
-      moduleLines = doc.splitTextToSize(moduleText, maxWidth);
       const lineHeight = doc.getTextDimensions("M").h * 1.2;
-      const totalHeight = moduleLines.length * lineHeight;
-      if (totalHeight <= maxHeight) {
+
+      for (let columns = 1; columns <= maxColumns; columns += 1) {
+        const columnWidth = Math.max(
+          1,
+          (maxWidth - columnGap * (columns - 1)) / columns
+        );
+        let columnIndex = 0;
+        let cursorY = startY;
+        const placements: Array<{ x: number; y: number; lines: string[] }> = [];
+
+        for (const line of fallbackModules) {
+          const wrapped = doc.splitTextToSize(line, columnWidth);
+          const blockHeight = wrapped.length * lineHeight;
+          const nextY = cursorY + blockHeight;
+
+          if (nextY > startY + maxHeight) {
+            columnIndex += 1;
+            cursorY = startY;
+          }
+
+          if (columnIndex >= columns) {
+            return null;
+          }
+
+          const x = margin + columnIndex * (columnWidth + columnGap);
+          placements.push({ x, y: cursorY, lines: wrapped });
+          cursorY += blockHeight;
+        }
+
+        return { fontSize, placements };
+      }
+
+      return null;
+    };
+
+    let resolved = null as null | { fontSize: number; placements: Array<{ x: number; y: number; lines: string[] }> };
+    for (let fontSize = maxFontSize; fontSize >= minFontSize; fontSize -= 0.5) {
+      const layout = computeLayout(fontSize);
+      if (layout) {
+        resolved = layout;
         break;
       }
-      fontSize -= 0.5;
     }
 
-    doc.setFontSize(fontSize);
-    doc.text(moduleLines, margin, startY);
+    if (!resolved) {
+      resolved = computeLayout(minFontSize);
+    }
+
+    if (resolved) {
+      doc.setFontSize(resolved.fontSize);
+      resolved.placements.forEach((placement) => {
+        doc.text(placement.lines, placement.x, placement.y);
+      });
+    }
 
     // 8. Gerar PDF como base64
     const pdfBase64 = doc.output("datauristring");
