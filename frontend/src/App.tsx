@@ -39,6 +39,7 @@ const Courses = lazyWithRetry(() => import('./pages/Courses'));
 const CourseDetail = lazyWithRetry(() => import('./pages/CourseDetail'));
 const Blog = lazyWithRetry(() => import('./pages/Blog'));
 const BlogPost = lazyWithRetry(() => import('./pages/BlogPost'));
+const Vagas = lazyWithRetry(() => import('./pages/Vagas'));
 const Settings = lazyWithRetry(() => import('./pages/Settings'));
 const PagamentoCertificado = lazyWithRetry(() => import('./pages/PagamentoCertificado'));
 const VerificarCertificado = lazyWithRetry(() => import('./pages/VerificarCertificado'));
@@ -144,6 +145,7 @@ function App() {
           <Route path="/courses/:id" element={<CourseDetail />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<BlogPost />} />
+          <Route path="/vagas" element={<Vagas />} />
           <Route path="/sou-professor" element={<TeacherLanding />} />
           <Route path="/verificar-certificado" element={<VerificarCertificado />} />
           <Route path="/privacidade" element={<PrivacyPolicy />} />

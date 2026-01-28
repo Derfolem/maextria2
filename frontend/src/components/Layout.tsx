@@ -384,6 +384,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <FaBook />
                 <span>Cursos</span>
               </Link>
+              <Link to="/vagas" className="nav-link">
+                Vagas
+              </Link>
               <Link to="/blog" className="nav-link">
                 Blog
               </Link>
@@ -476,6 +479,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
             <Link to="/courses" className="nav-link md:hidden" onClick={() => setMobileOpen(false)}>
               Cursos
+            </Link>
+            <Link to="/vagas" className="nav-link md:hidden" onClick={() => setMobileOpen(false)}>
+              Vagas
             </Link>
             <Link to="/blog" className="nav-link md:hidden" onClick={() => setMobileOpen(false)}>
               Blog
