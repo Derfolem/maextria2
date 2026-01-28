@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { getValidAccessToken, supabase } from '../lib/supabase';
-import { handlePdfDownload, isMobileUserAgent, openPdfPopup } from '../lib/downloadPdf';
+import { handlePdfDownload, isMobileUserAgent, openPdfPopup, setPdfPopupError } from '../lib/downloadPdf';
 import { useAuthStore } from '../lib/store';
 
 interface Certificado {
@@ -219,6 +219,7 @@ export default function PagamentoCertificado() {
     try {
       const accessToken = await getValidAccessToken();
       if (!accessToken) {
+        setPdfPopupError(popup, 'Sessao expirada. Faça login novamente.');
         throw new Error('Voce precisa estar logado para gerar o certificado.');
       }
 
@@ -232,12 +233,16 @@ export default function PagamentoCertificado() {
 
       if (error) throw error;
 
-      if (data?.pdf) {
-        const filename = `certificado-${curso?.titulo?.replace(/\s+/g, '-').toLowerCase()}.pdf`;
-        handlePdfDownload(data.pdf, filename, popup);
-        toast.success('Download iniciado.');
+      if (!data?.pdf) {
+        setPdfPopupError(popup, 'Nao foi possivel gerar o PDF. Tente novamente.');
+        throw new Error('Nao foi possivel gerar o PDF.');
       }
+
+      const filename = `certificado-${curso?.titulo?.replace(/\s+/g, '-').toLowerCase()}.pdf`;
+      handlePdfDownload(data.pdf, filename, popup);
+      toast.success('Download iniciado.');
     } catch (error: any) {
+      setPdfPopupError(popup, error?.message || 'Erro ao gerar certificado.');
       toast.error(error?.message || 'Erro ao gerar certificado.');
     } finally {
       setProcessing(false);

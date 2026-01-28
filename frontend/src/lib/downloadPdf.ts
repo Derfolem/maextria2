@@ -18,7 +18,39 @@ const dataUriToBlob = (dataUri: string) => {
 
 export const openPdfPopup = () => {
   if (typeof window === 'undefined') return null;
-  return window.open('', '_blank');
+  const popup = window.open('', '_blank');
+  if (popup && popup.document) {
+    popup.document.title = 'Carregando certificado...';
+    popup.document.body.style.margin = '0';
+    popup.document.body.style.fontFamily = 'ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif';
+    popup.document.body.innerHTML = `
+      <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0f172a;color:#f8fafc;">
+        <div style="text-align:center;max-width:320px;padding:24px;">
+          <div style="font-size:14px;letter-spacing:0.3em;text-transform:uppercase;opacity:0.7;margin-bottom:12px;">
+            MAEXTRIA
+          </div>
+          <div style="font-size:18px;font-weight:600;margin-bottom:8px;">Aguarde, estamos gerando seu PDF</div>
+          <div style="font-size:13px;opacity:0.7;">Isso pode levar alguns segundos no celular.</div>
+        </div>
+      </div>
+    `;
+  }
+  return popup;
+};
+
+export const setPdfPopupError = (popup: Window | null, message: string) => {
+  if (!popup || popup.closed || !popup.document) return;
+  popup.document.title = 'Falha ao abrir PDF';
+  popup.document.body.style.margin = '0';
+  popup.document.body.style.fontFamily = 'ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif';
+  popup.document.body.innerHTML = `
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0f172a;color:#f8fafc;">
+      <div style="text-align:center;max-width:340px;padding:24px;">
+        <div style="font-size:18px;font-weight:600;margin-bottom:8px;">Nao foi possivel abrir o PDF</div>
+        <div style="font-size:13px;opacity:0.7;">${message}</div>
+      </div>
+    </div>
+  `;
 };
 
 export const handlePdfDownload = (dataUri: string, filename: string, targetWindow?: Window | null) => {
@@ -43,6 +75,7 @@ export const handlePdfDownload = (dataUri: string, filename: string, targetWindo
 
     setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
   } catch {
+    setPdfPopupError(targetWindow || null, 'Tente novamente ou permita pop-ups no navegador.');
     toast.error('Nao foi possivel preparar o PDF para download.');
   }
 };

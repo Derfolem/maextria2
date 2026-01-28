@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase, getValidAccessToken } from '../../lib/supabase';
-import { handlePdfDownload, isMobileUserAgent, openPdfPopup } from '../../lib/downloadPdf';
+import { handlePdfDownload, isMobileUserAgent, openPdfPopup, setPdfPopupError } from '../../lib/downloadPdf';
 import toast from 'react-hot-toast';
 import { FaPlus, FaSave, FaTrash, FaCheck, FaFilePdf, FaUpload, FaTimes } from 'react-icons/fa';
 
@@ -331,6 +331,7 @@ export default function CertificateTemplates() {
     try {
       const accessToken = await getValidAccessToken();
       if (!accessToken) {
+        setPdfPopupError(popup, 'Sessao expirada. Faça login novamente.');
         toast.error('Sessao expirada. Faça login novamente.');
         return;
       }
@@ -345,11 +346,15 @@ export default function CertificateTemplates() {
       });
       if (error) throw error;
       const pdf = data?.pdf as string | undefined;
-      if (!pdf) throw new Error('Nao foi possivel gerar o PDF.');
+      if (!pdf) {
+        setPdfPopupError(popup, 'Nao foi possivel gerar o PDF. Tente novamente.');
+        throw new Error('Nao foi possivel gerar o PDF.');
+      }
       const filename = `certificado-teste-${form.nome.replace(/\s+/g, '-').toLowerCase()}.pdf`;
       handlePdfDownload(pdf, filename, popup);
       toast.success('PDF de teste gerado!');
     } catch (error: any) {
+      setPdfPopupError(popup, error?.message || 'Erro ao gerar PDF de teste.');
       toast.error(error?.message || 'Erro ao gerar PDF de teste.');
     } finally {
       setTesting(false);
