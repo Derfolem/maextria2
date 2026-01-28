@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase, getValidAccessToken } from '../../lib/supabase';
-import { handlePdfDownload } from '../../lib/downloadPdf';
+import { handlePdfDownload, isMobileUserAgent, openPdfPopup } from '../../lib/downloadPdf';
 import toast from 'react-hot-toast';
 import { FaPlus, FaSave, FaTrash, FaCheck, FaFilePdf, FaUpload, FaTimes } from 'react-icons/fa';
 
@@ -327,6 +327,7 @@ export default function CertificateTemplates() {
       return;
     }
     setTesting(true);
+    const popup = isMobileUserAgent() ? openPdfPopup() : null;
     try {
       const accessToken = await getValidAccessToken();
       if (!accessToken) {
@@ -346,7 +347,7 @@ export default function CertificateTemplates() {
       const pdf = data?.pdf as string | undefined;
       if (!pdf) throw new Error('Nao foi possivel gerar o PDF.');
       const filename = `certificado-teste-${form.nome.replace(/\s+/g, '-').toLowerCase()}.pdf`;
-      handlePdfDownload(pdf, filename);
+      handlePdfDownload(pdf, filename, popup);
       toast.success('PDF de teste gerado!');
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao gerar PDF de teste.');

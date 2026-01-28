@@ -1,6 +1,6 @@
 import toast from 'react-hot-toast';
 
-const isMobileUserAgent = () =>
+export const isMobileUserAgent = () =>
   typeof navigator !== 'undefined' &&
   /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
@@ -16,11 +16,18 @@ const dataUriToBlob = (dataUri: string) => {
   return new Blob([bytes], { type: mime });
 };
 
-export const handlePdfDownload = (dataUri: string, filename: string) => {
+export const openPdfPopup = () => {
+  if (typeof window === 'undefined') return null;
+  return window.open('', '_blank');
+};
+
+export const handlePdfDownload = (dataUri: string, filename: string, targetWindow?: Window | null) => {
   try {
     const blobUrl = URL.createObjectURL(dataUriToBlob(dataUri));
 
-    if (isMobileUserAgent()) {
+    if (targetWindow && !targetWindow.closed) {
+      targetWindow.location.href = blobUrl;
+    } else if (isMobileUserAgent()) {
       const opened = window.open(blobUrl, '_blank');
       if (!opened) {
         toast.error('Permita pop-ups para abrir o PDF no dispositivo.');
@@ -34,7 +41,7 @@ export const handlePdfDownload = (dataUri: string, filename: string) => {
       link.remove();
     }
 
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
   } catch {
     toast.error('Nao foi possivel preparar o PDF para download.');
   }

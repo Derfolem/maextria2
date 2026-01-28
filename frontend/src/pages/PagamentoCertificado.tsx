@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { getValidAccessToken, supabase } from '../lib/supabase';
-import { handlePdfDownload } from '../lib/downloadPdf';
+import { handlePdfDownload, isMobileUserAgent, openPdfPopup } from '../lib/downloadPdf';
 import { useAuthStore } from '../lib/store';
 
 interface Certificado {
@@ -213,6 +213,7 @@ export default function PagamentoCertificado() {
   const handleDownloadCertificate = async () => {
     if (!certificado || !cursoId) return;
 
+    const popup = isMobileUserAgent() ? openPdfPopup() : null;
     setProcessing(true);
 
     try {
@@ -233,7 +234,7 @@ export default function PagamentoCertificado() {
 
       if (data?.pdf) {
         const filename = `certificado-${curso?.titulo?.replace(/\s+/g, '-').toLowerCase()}.pdf`;
-        handlePdfDownload(data.pdf, filename);
+        handlePdfDownload(data.pdf, filename, popup);
         toast.success('Download iniciado.');
       }
     } catch (error: any) {
