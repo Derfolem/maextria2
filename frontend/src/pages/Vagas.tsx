@@ -1,16 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaArrowRight } from 'react-icons/fa';
 import { SEO } from '../components/SEO';
-
-const areaOptions = [
-  'Inteligência Artificial',
-  'Ciência de Dados',
-  'Automação Industrial',
-  'Engenharia',
-  'Tecnologia da Informação',
-  'Produto & Inovação',
-];
 
 const workTypeOptions = [
   { label: 'Remoto', value: '2' },
@@ -30,6 +21,19 @@ export default function Vagas() {
   const keywordsPreview = useMemo(() => {
     return [keyword, area, level].filter(Boolean).join(' ').trim();
   }, [keyword, area, level]);
+
+  const resetFilters = () => {
+    setKeyword('');
+    setArea('');
+    setWorkType('');
+    setLevel('');
+    setLocation('Brasil');
+  };
+
+  useEffect(() => {
+    resetFilters();
+    return () => resetFilters();
+  }, []);
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -121,19 +125,14 @@ export default function Vagas() {
                 </label>
 
                 <label className="space-y-2 text-sm font-semibold">
-                  <span>Área de atuação</span>
-                  <select
+                  <span>Área de atuação (opcional)</span>
+                  <input
+                    type="text"
                     className="input-field"
                     value={area}
                     onChange={(event) => setArea(event.target.value)}
-                  >
-                    <option value="">Selecione</option>
-                    {areaOptions.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="Ex: Produto, Segurança, BI"
+                  />
                 </label>
               </div>
 
@@ -182,9 +181,17 @@ export default function Vagas() {
               </div>
 
               <div className="flex flex-col gap-4">
-                <button type="submit" className="btn-accent text-center">
-                  Buscar vagas no LinkedIn
-                </button>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <button type="submit" className="btn-accent text-center">
+                    Buscar vagas no LinkedIn
+                  </button>
+                  <button type="button" className="btn-outline" onClick={resetFilters}>
+                    Limpar filtros
+                  </button>
+                </div>
+                <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                  Você será redirecionado para o LinkedIn Jobs e pode ser necessário fazer login.
+                </p>
                 <p className="text-xs text-[hsl(var(--muted-foreground))]">
                   A Maextria não hospeda nem publica vagas. Todas as oportunidades são exibidas diretamente no LinkedIn, garantindo informações atualizadas e confiáveis.
                 </p>
