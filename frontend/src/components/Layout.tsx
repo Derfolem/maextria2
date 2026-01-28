@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../lib/store';
 import { FaBook, FaBars, FaTimes, FaInstagram, FaLinkedinIn, FaYoutube, FaBell } from 'react-icons/fa';
-import AIChat from './AIChat';
 import { supabase } from '../lib/supabase';
 import DOMPurify from 'dompurify';
 
@@ -393,7 +392,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </Link>
               {isHome && (
                 <Link to="/sou-professor" className="nav-link">
-                  Sou professor
+                  Seja professor
                 </Link>
               )}
             </div>
@@ -486,7 +485,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </Link>
             {isHome && (
               <Link to="/sou-professor" className="nav-link md:hidden" onClick={() => setMobileOpen(false)}>
-                Sou professor
+                Seja professor
               </Link>
             )}
             {isAuthenticated ? (
@@ -581,7 +580,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      <AIChat />
 
       <footer className="bg-[hsl(var(--background))] text-[hsl(var(--foreground))] py-12 border-t border-[hsl(var(--border))]">
         <div className="max-w-7xl mx-auto px-4">
