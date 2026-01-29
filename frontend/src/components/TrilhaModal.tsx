@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes, FaCheck, FaTrash } from 'react-icons/fa';
-import { Course, Trilha, TrilhaCurso } from '../types';
+import { Course, Trilha } from '../types';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 
