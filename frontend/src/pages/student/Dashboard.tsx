@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { DashboardStats, Enrollment, Certificate, Trilha } from '../../types';
-import { FaBook, FaCertificate, FaTrophy, FaChartLine, FaArrowRight, FaPaperPlane, FaRoute, FaClock } from 'react-icons/fa';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { DashboardStats, Enrollment, Certificate, Trilha, Course, ObjetivoAluno } from '../../types';
+import { FaBook, FaCertificate, FaTrophy, FaChartLine, FaArrowRight, FaPaperPlane, FaRoute, FaClock, FaBullseye, FaLightbulb, FaTimes, FaCheck, FaPlus } from 'react-icons/fa';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend } from 'recharts';
 import { normalizeEnrollment } from '../../lib/normalizeEnrollment';
 import { normalizeCourse } from '../../lib/normalizeCourse';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
 import toast from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface TrilhaEmAndamento extends Trilha {
   cursos_progresso?: Array<{
@@ -20,19 +21,36 @@ interface TrilhaEmAndamento extends Trilha {
   progresso_total?: number;
 }
 
+interface CertificadoPorMes {
+  mes: string;
+  concluidos: number;
+  certificados: number;
+  meta: number;
+}
+
 export default function StudentDashboard() {
   const user = useAuthStore((state) => state.user);
   const [stats, setStats] = useState<DashboardStats>({});
   const [recentCourses, setRecentCourses] = useState<Enrollment[]>([]);
-  const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const [, setCertificates] = useState<Certificate[]>([]);
   const [trilhasEmAndamento, setTrilhasEmAndamento] = useState<TrilhaEmAndamento[]>([]);
   const [loading, setLoading] = useState(true);
   const [avgProgress, setAvgProgress] = useState(0);
-  const [suggestion, setSuggestion] = useState({
-    course: '',
-    reason: '',
+
+  // Objetivos
+  const [objetivo, setObjetivo] = useState<ObjetivoAluno | null>(null);
+  const [showObjetivoModal, setShowObjetivoModal] = useState(false);
+  const [allCourses, setAllCourses] = useState<Course[]>([]);
+  const [objetivoForm, setObjetivoForm] = useState({
+    objetivo_profissional: '',
+    o_que_quer_alcancar: '',
+    prazo_meses: 12,
+    cursos_selecionados: [] as string[],
   });
-  const [sending, setSending] = useState(false);
+  const [savingObjetivo, setSavingObjetivo] = useState(false);
+
+  // Grafico de certificacoes
+  const [chartData, setChartData] = useState<CertificadoPorMes[]>([]);
 
   useEffect(() => {
     loadDashboard();
@@ -41,6 +59,16 @@ export default function StudentDashboard() {
   const loadDashboard = async () => {
     try {
       const userId = user?.id;
+
+      // Carregar todos os cursos para seleção de objetivo
+      const { data: cursosData } = await supabase
+        .from('cursos')
+        .select('*')
+        .eq('ativo', true)
+        .order('titulo');
+
+      setAllCourses((cursosData || []).map(normalizeCourse));
+
       const [enrollmentsRes, certsRes] = await Promise.all([
         supabase
           .from('matriculas')
@@ -52,23 +80,21 @@ export default function StudentDashboard() {
           .order('emitido_em', { ascending: false }),
       ]);
 
-      if (enrollmentsRes.error) {
-        throw enrollmentsRes.error;
-      }
-      if (certsRes.error) {
-        throw certsRes.error;
-      }
+      if (enrollmentsRes.error) throw enrollmentsRes.error;
+      if (certsRes.error) throw certsRes.error;
 
       const filteredEnrollmentsRaw = (enrollmentsRes.data || []).filter((row: any) => row.cursos);
       const filteredCertsRaw = (certsRes.data || []).filter((row: any) => row.cursos);
       const enrolled = filteredEnrollmentsRaw.length || 0;
       const completed = filteredCertsRaw.length || 0;
       const active = Math.max(enrolled - completed, 0);
+
       setStats({
         in_progress_courses: active,
         completed_courses: completed,
         certificates: completed,
       });
+
       const normalizedEnrollments = filteredEnrollmentsRaw.map(normalizeEnrollment);
       const courseIds = normalizedEnrollments.map((item) => item.course_id).filter(Boolean);
 
@@ -76,22 +102,10 @@ export default function StudentDashboard() {
 
       if (userId && courseIds.length > 0) {
         const [modulesRes, progressRes, quizzesRes, responsesRes] = await Promise.all([
-          supabase
-            .from('modulos')
-            .select('id, curso_id, aulas(id)')
-            .in('curso_id', courseIds),
-          supabase
-            .from('progresso_aula')
-            .select('concluido, aulas!inner(modulos!inner(curso_id))')
-            .eq('usuario_id', userId),
-          supabase
-            .from('questionarios')
-            .select('id, curso_id')
-            .in('curso_id', courseIds),
-          supabase
-            .from('respostas_questionario')
-            .select('questionario_id, aprovado')
-            .eq('usuario_id', userId),
+          supabase.from('modulos').select('id, curso_id, aulas(id)').in('curso_id', courseIds),
+          supabase.from('progresso_aula').select('concluido, aulas!inner(modulos!inner(curso_id))').eq('usuario_id', userId),
+          supabase.from('questionarios').select('id, curso_id').in('curso_id', courseIds),
+          supabase.from('respostas_questionario').select('questionario_id, aprovado').eq('usuario_id', userId),
         ]);
 
         if (!modulesRes.error && !progressRes.error && !quizzesRes.error && !responsesRes.error) {
@@ -134,13 +148,9 @@ export default function StudentDashboard() {
             const totalItems = totalLessons + totalQuizzes;
             const completedItems = completedLessons + completedQuizzes;
             const progress = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
-            const completed = totalLessons > 0 && completedLessons === totalLessons && completedQuizzes === totalQuizzes;
+            const isCompleted = totalLessons > 0 && completedLessons === totalLessons && completedQuizzes === totalQuizzes;
 
-            return {
-              ...enrollment,
-              progress,
-              completed,
-            };
+            return { ...enrollment, progress, completed: isCompleted };
           });
         }
       }
@@ -148,41 +158,52 @@ export default function StudentDashboard() {
       const totalProgress = enrollmentsWithProgress.reduce((sum, item) => sum + (item.progress || 0), 0);
       setAvgProgress(enrollmentsWithProgress.length > 0 ? totalProgress / enrollmentsWithProgress.length : 0);
       setRecentCourses(enrollmentsWithProgress.slice(0, 3));
-      setCertificates(
-        filteredCertsRaw.map((cert: any) => ({
-          ...cert,
-          certificate_url:
-            cert.link_pdf ?? cert.certificate_url ?? cert.certificateUrl ?? '',
-          course: {
-            id: cert.curso_id ?? cert.course_id ?? cert.cursos?.id,
-            title: cert.cursos?.titulo ?? cert.course_title ?? '',
-            description: cert.cursos?.descricao ?? '',
-            price: cert.cursos?.preco_certificado ?? cert.price ?? 0,
-            teacher_id: '',
-            teacher_name: cert.teacher_name,
-            level: cert.cursos?.nivel ?? cert.level ?? cert.course_level ?? '',
-            is_published: true,
-            created_at: cert.emitido_em ?? cert.issued_at,
-            updated_at: cert.emitido_em ?? cert.issued_at,
-            thumbnail: cert.cursos?.imagem_capa_url ?? cert.cover_image,
-          },
-        }))
-      );
 
-      // Carregar trilhas em andamento
+      const normalizedCerts = filteredCertsRaw.map((cert: any) => ({
+        ...cert,
+        certificate_url: cert.link_pdf ?? cert.certificate_url ?? cert.certificateUrl ?? '',
+        issued_at: cert.emitido_em ?? cert.issued_at,
+        course: {
+          id: cert.curso_id ?? cert.course_id ?? cert.cursos?.id,
+          title: cert.cursos?.titulo ?? cert.course_title ?? '',
+          description: cert.cursos?.descricao ?? '',
+          price: cert.cursos?.preco_certificado ?? cert.price ?? 0,
+          teacher_id: '',
+          teacher_name: cert.teacher_name,
+          level: cert.cursos?.nivel ?? cert.level ?? cert.course_level ?? '',
+          is_published: true,
+          created_at: cert.emitido_em ?? cert.issued_at,
+          updated_at: cert.emitido_em ?? cert.issued_at,
+          thumbnail: cert.cursos?.imagem_capa_url ?? cert.cover_image,
+        },
+      }));
+      setCertificates(normalizedCerts);
+
+      // Carregar objetivo do aluno
       if (userId) {
+        const { data: objetivoData } = await supabase
+          .from('objetivos_aluno')
+          .select(`*, objetivos_cursos(*, cursos(*))`)
+          .eq('usuario_id', userId)
+          .single();
+
+        if (objetivoData) {
+          setObjetivo({
+            ...objetivoData,
+            cursos: objetivoData.objetivos_cursos?.map((oc: any) => ({
+              ...oc,
+              curso: oc.cursos ? normalizeCourse(oc.cursos) : null,
+            })),
+          });
+
+          // Montar dados do grafico baseado no objetivo
+          buildChartData(objetivoData, normalizedCerts, enrollmentsWithProgress);
+        }
+
+        // Carregar trilhas em andamento
         const { data: matriculasTrilha, error: trilhasError } = await supabase
           .from('matriculas_trilha')
-          .select(`
-            *,
-            trilhas(
-              *,
-              trilha_cursos(
-                *,
-                cursos(*)
-              )
-            )
-          `)
+          .select(`*, trilhas(*, trilha_cursos(*, cursos(*)))`)
           .eq('usuario_id', userId);
 
         if (!trilhasError && matriculasTrilha) {
@@ -192,9 +213,7 @@ export default function StudentDashboard() {
               const trilha = mt.trilhas;
               const cursosProgresso = trilha.trilha_cursos?.map((tc: any) => {
                 const curso = tc.cursos ? normalizeCourse(tc.cursos) : null;
-                const enrollment = enrollmentsWithProgress.find(
-                  e => String(e.course_id) === String(tc.curso_id)
-                );
+                const enrollment = enrollmentsWithProgress.find(e => String(e.course_id) === String(tc.curso_id));
                 return {
                   curso_id: tc.curso_id,
                   curso_titulo: curso?.title || 'Curso',
@@ -208,11 +227,7 @@ export default function StudentDashboard() {
                 ? Math.round(cursosProgresso.reduce((sum: number, c: any) => sum + c.progresso, 0) / cursosProgresso.length)
                 : 0;
 
-              return {
-                ...trilha,
-                cursos_progresso: cursosProgresso,
-                progresso_total: progressoTotal,
-              };
+              return { ...trilha, cursos_progresso: cursosProgresso, progresso_total: progressoTotal };
             });
 
           setTrilhasEmAndamento(trilhasComProgresso);
@@ -225,54 +240,170 @@ export default function StudentDashboard() {
     }
   };
 
+  const buildChartData = (obj: any, certs: any[], enrollments: Enrollment[]) => {
+    const prazoMeses = obj.prazo_meses || 12;
+    const metaCursos = obj.objetivos_cursos?.length || 0;
+    const metaPorMes = metaCursos / prazoMeses;
 
-  const progressData = [
-    { month: 'Jan', progress: 20 },
-    { month: 'Fev', progress: 35 },
-    { month: 'Mar', progress: 50 },
-    { month: 'Abr', progress: 65 },
-    { month: 'Mai', progress: 80 },
-  ];
+    // Agrupar certificados por mes
+    const certsPorMes: Record<string, number> = {};
+    const concluidosPorMes: Record<string, number> = {};
 
-  const handleSuggestionChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = event.target;
-    setSuggestion((prev) => ({ ...prev, [name]: value }));
+    certs.forEach((cert: any) => {
+      if (cert.issued_at) {
+        const date = new Date(cert.issued_at);
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        certsPorMes[key] = (certsPorMes[key] || 0) + 1;
+      }
+    });
+
+    // Contar cursos concluidos (100%) por mes de matricula
+    enrollments.filter(e => e.completed).forEach(e => {
+      const date = new Date(e.enrolled_at);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      concluidosPorMes[key] = (concluidosPorMes[key] || 0) + 1;
+    });
+
+    // Gerar ultimos 6 meses
+    const meses: CertificadoPorMes[] = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const mesLabel = d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '');
+      meses.push({
+        mes: mesLabel.charAt(0).toUpperCase() + mesLabel.slice(1),
+        concluidos: concluidosPorMes[key] || 0,
+        certificados: certsPorMes[key] || 0,
+        meta: Math.round(metaPorMes * 10) / 10,
+      });
+    }
+
+    setChartData(meses);
   };
 
-  const handleSuggestionSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setSending(true);
+  const handleSaveObjetivo = async () => {
+    if (!objetivoForm.objetivo_profissional.trim()) {
+      toast.error('Informe seu objetivo profissional');
+      return;
+    }
+
+    setSavingObjetivo(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('Você precisa estar logado para enviar uma sugestão.');
+      const userId = user?.id;
+      if (!userId) throw new Error('Usuario nao autenticado');
+
+      // Upsert objetivo
+      const { data: savedObjetivo, error: objError } = await supabase
+        .from('objetivos_aluno')
+        .upsert({
+          usuario_id: userId,
+          objetivo_profissional: objetivoForm.objetivo_profissional.trim(),
+          o_que_quer_alcancar: objetivoForm.o_que_quer_alcancar.trim() || null,
+          prazo_meses: objetivoForm.prazo_meses,
+          atualizado_em: new Date().toISOString(),
+        }, { onConflict: 'usuario_id' })
+        .select()
+        .single();
+
+      if (objError) throw objError;
+
+      // Deletar cursos antigos
+      await supabase
+        .from('objetivos_cursos')
+        .delete()
+        .eq('objetivo_id', savedObjetivo.id);
+
+      // Inserir novos cursos
+      if (objetivoForm.cursos_selecionados.length > 0) {
+        const cursosToInsert = objetivoForm.cursos_selecionados.map((cursoId, index) => ({
+          objetivo_id: savedObjetivo.id,
+          curso_id: cursoId,
+          ordem: index,
+        }));
+
+        const { error: insertError } = await supabase
+          .from('objetivos_cursos')
+          .insert(cursosToInsert);
+
+        if (insertError) throw insertError;
       }
 
-      const course = suggestion.course.trim();
-      const reason = suggestion.reason.trim();
-      if (!course || !reason) {
-        throw new Error('Preencha o curso e o motivo.');
-      }
-
-      const { error } = await supabase
-        .from('curso_sugestoes')
-        .insert({
-          usuario_id: user.id,
-          curso: course,
-          motivo: reason,
-        });
-
-      if (error) throw error;
-
-      toast.success('Sugestão enviada com sucesso!');
-      setSuggestion({ course: '', reason: '' });
+      toast.success('Objetivo salvo com sucesso!');
+      setShowObjetivoModal(false);
+      loadDashboard();
     } catch (error: any) {
-      toast.error(error?.message || 'Erro ao enviar sugestão.');
+      toast.error(error?.message || 'Erro ao salvar objetivo');
     } finally {
-      setSending(false);
+      setSavingObjetivo(false);
     }
   };
 
+  const openObjetivoModal = () => {
+    if (objetivo) {
+      setObjetivoForm({
+        objetivo_profissional: objetivo.objetivo_profissional || '',
+        o_que_quer_alcancar: objetivo.o_que_quer_alcancar || '',
+        prazo_meses: objetivo.prazo_meses || 12,
+        cursos_selecionados: objetivo.cursos?.map(c => c.curso_id) || [],
+      });
+    } else {
+      setObjetivoForm({
+        objetivo_profissional: '',
+        o_que_quer_alcancar: '',
+        prazo_meses: 12,
+        cursos_selecionados: [],
+      });
+    }
+    setShowObjetivoModal(true);
+  };
+
+  const toggleCursoSelecionado = (cursoId: string) => {
+    setObjetivoForm(prev => ({
+      ...prev,
+      cursos_selecionados: prev.cursos_selecionados.includes(cursoId)
+        ? prev.cursos_selecionados.filter(id => id !== cursoId)
+        : [...prev.cursos_selecionados, cursoId],
+    }));
+  };
+
+  // Gerar dica personalizada
+  const getDica = () => {
+    if (!objetivo) return null;
+
+    const cursosObjetivo = objetivo.cursos || [];
+    const cursosPendentes = cursosObjetivo.filter(oc => {
+      const enrollment = recentCourses.find(e => String(e.course_id) === oc.curso_id);
+      return !enrollment || enrollment.progress < 100;
+    });
+
+    if (cursosPendentes.length === 0) {
+      return { tipo: 'sucesso', texto: 'Parabens! Voce concluiu todos os cursos do seu objetivo!' };
+    }
+
+    const cursoEmAndamento = cursosPendentes.find(oc => {
+      const enrollment = recentCourses.find(e => String(e.course_id) === oc.curso_id);
+      return enrollment && enrollment.progress > 0 && enrollment.progress < 100;
+    });
+
+    if (cursoEmAndamento) {
+      const enrollment = recentCourses.find(e => String(e.course_id) === cursoEmAndamento.curso_id);
+      return {
+        tipo: 'andamento',
+        texto: `Continue o curso "${cursoEmAndamento.curso?.title}" - voce ja esta em ${enrollment?.progress}%!`,
+        cursoId: cursoEmAndamento.curso_id,
+      };
+    }
+
+    const proximoCurso = cursosPendentes[0];
+    return {
+      tipo: 'iniciar',
+      texto: `Comece o curso "${proximoCurso.curso?.title}" para avancar no seu objetivo!`,
+      cursoId: proximoCurso.curso_id,
+    };
+  };
+
+  const dica = getDica();
 
   if (loading) {
     return (
@@ -302,28 +433,13 @@ export default function StudentDashboard() {
         </Link>
       </div>
 
+      {/* Stats Cards */}
       <div className="grid md:grid-cols-4 gap-6 mb-12">
         {[
-          {
-            label: 'Cursos ativos',
-            value: stats.in_progress_courses || 0,
-            icon: <FaBook />,
-          },
-          {
-            label: 'Concluidos',
-            value: stats.completed_courses || 0,
-            icon: <FaTrophy />,
-          },
-          {
-            label: 'Certificados',
-            value: stats.certificates || 0,
-            icon: <FaCertificate />,
-          },
-          {
-            label: 'Progresso medio',
-            value: avgProgress ? `${Math.round(avgProgress)}%` : '0%',
-            icon: <FaChartLine />,
-          },
+          { label: 'Cursos ativos', value: stats.in_progress_courses || 0, icon: <FaBook /> },
+          { label: 'Concluidos', value: stats.completed_courses || 0, icon: <FaTrophy /> },
+          { label: 'Certificados', value: stats.certificates || 0, icon: <FaCertificate /> },
+          { label: 'Progresso medio', value: avgProgress ? `${Math.round(avgProgress)}%` : '0%', icon: <FaChartLine /> },
         ].map((item) => (
           <div key={item.label} className="card">
             <div className="flex items-center justify-between">
@@ -339,58 +455,102 @@ export default function StudentDashboard() {
         ))}
       </div>
 
+      {/* Objetivo Profissional */}
       <div className="grid md:grid-cols-2 gap-8 mb-12">
         <div className="card">
-          <h2 className="text-xl font-semibold mb-4">Progresso ao longo do tempo</h2>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={progressData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
-              <YAxis stroke="hsl(var(--muted-foreground))" />
-              <Tooltip />
-              <Line type="monotone" dataKey="progress" stroke="hsl(var(--primary))" strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <FaBullseye className="text-[hsl(var(--primary))]" />
+              <h2 className="text-xl font-semibold">Meu Objetivo Profissional</h2>
+            </div>
+            <button onClick={openObjetivoModal} className="btn-outline text-sm">
+              {objetivo ? 'Editar' : 'Definir'}
+            </button>
+          </div>
+
+          {objetivo ? (
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-[hsl(var(--muted-foreground))]">Objetivo</p>
+                <p className="font-medium">{objetivo.objetivo_profissional}</p>
+              </div>
+              {objetivo.o_que_quer_alcancar && (
+                <div>
+                  <p className="text-sm text-[hsl(var(--muted-foreground))]">O que quero alcancar</p>
+                  <p className="font-medium">{objetivo.o_que_quer_alcancar}</p>
+                </div>
+              )}
+              <div className="flex items-center gap-4">
+                <div>
+                  <p className="text-sm text-[hsl(var(--muted-foreground))]">Prazo</p>
+                  <p className="font-medium">{objetivo.prazo_meses} meses</p>
+                </div>
+                <div>
+                  <p className="text-sm text-[hsl(var(--muted-foreground))]">Certificacoes meta</p>
+                  <p className="font-medium">{objetivo.cursos?.length || 0} cursos</p>
+                </div>
+              </div>
+
+              {/* Dica personalizada */}
+              {dica && (
+                <div className={`p-4 rounded-lg flex items-start gap-3 ${
+                  dica.tipo === 'sucesso' ? 'bg-green-50 border border-green-200' :
+                  'bg-[hsl(var(--primary)/0.1)] border border-[hsl(var(--primary)/0.2)]'
+                }`}>
+                  <FaLightbulb className={dica.tipo === 'sucesso' ? 'text-green-500 mt-0.5' : 'text-[hsl(var(--primary))] mt-0.5'} />
+                  <div>
+                    <p className={`text-sm ${dica.tipo === 'sucesso' ? 'text-green-700' : ''}`}>{dica.texto}</p>
+                    {dica.cursoId && (
+                      <Link
+                        to={`/courses/${dica.cursoId}`}
+                        className="text-sm font-medium text-[hsl(var(--primary))] hover:underline mt-1 inline-block"
+                      >
+                        {dica.tipo === 'andamento' ? 'Continuar' : 'Comecar'} →
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <FaBullseye className="text-4xl text-[hsl(var(--muted-foreground))] mx-auto mb-4" />
+              <p className="text-[hsl(var(--muted-foreground))] mb-4">
+                Defina seu objetivo profissional para acompanhar seu progresso
+              </p>
+              <button onClick={openObjetivoModal} className="btn-accent">
+                Definir objetivo
+              </button>
+            </div>
+          )}
         </div>
 
+        {/* Grafico de Certificacoes */}
         <div className="card">
-          <h2 className="text-xl font-semibold mb-4">Certificados recentes</h2>
-          {certificates.length === 0 ? (
-            <p className="text-[hsl(var(--muted-foreground))]">Nenhum certificado ainda</p>
+          <h2 className="text-xl font-semibold mb-4">Certificacoes ao longo do tempo</h2>
+          {objetivo && chartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="mes" stroke="hsl(var(--muted-foreground))" />
+                <YAxis stroke="hsl(var(--muted-foreground))" />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="concluidos" name="Cursos concluidos" fill="hsl(var(--primary))" />
+                <Bar dataKey="certificados" name="Certificados obtidos" fill="hsl(var(--secondary))" />
+                <ReferenceLine y={chartData[0]?.meta || 0} stroke="orange" strokeDasharray="5 5" label={{ value: 'Meta', fill: 'orange', fontSize: 12 }} />
+              </BarChart>
+            </ResponsiveContainer>
           ) : (
-            <div className="space-y-3">
-              {certificates.slice(0, 3).map((cert) => {
-                const title = cert.course?.title || 'Curso';
-                const issuedAt = cert.issued_at ? new Date(cert.issued_at) : null;
-                const issuedLabel = issuedAt && !Number.isNaN(issuedAt.getTime())
-                  ? issuedAt.toLocaleDateString('pt-BR')
-                  : '-';
-                return (
-                  <div key={cert.id} className="flex items-center justify-between p-3 border border-[hsl(var(--border))] rounded-[12px]">
-                    <div className="space-y-1">
-                      <p className="font-semibold">{title}</p>
-                      <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                        Conclusao: 100%
-                      </p>
-                      <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                        {issuedLabel}
-                      </p>
-                    </div>
-                    <Link
-                      to="/student/my-courses"
-                      className="text-[hsl(var(--primary))] hover:text-[hsl(var(--accent))]"
-                    >
-                      <FaCertificate className="text-2xl" />
-                    </Link>
-                  </div>
-                );
-              })}
+            <div className="flex items-center justify-center h-[250px] text-[hsl(var(--muted-foreground))]">
+              <p>Defina um objetivo para ver seu progresso</p>
             </div>
           )}
         </div>
       </div>
 
-      <div className="card">
+      {/* Cursos em andamento */}
+      <div className="card mb-8">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Cursos em andamento</h2>
           <Link to="/student/my-courses" className="text-[hsl(var(--primary))] hover:text-[hsl(var(--accent))]">
@@ -417,15 +577,10 @@ export default function StudentDashboard() {
                 <div className="flex-grow">
                   <h3 className="font-semibold">{enrollment.course?.title}</h3>
                   <div className="w-full bg-[hsl(var(--muted))] rounded-full h-2 mt-2">
-                    <div
-                      className="bg-[hsl(var(--primary))] h-2 rounded-full"
-                      style={{ width: `${enrollment.progress}%` }}
-                    ></div>
+                    <div className="bg-[hsl(var(--primary))] h-2 rounded-full" style={{ width: `${enrollment.progress}%` }} />
                   </div>
                 </div>
-                <div className="ml-4 text-[hsl(var(--primary))] font-semibold">
-                  {enrollment.progress}%
-                </div>
+                <div className="ml-4 text-[hsl(var(--primary))] font-semibold">{enrollment.progress}%</div>
               </Link>
             ))}
           </div>
@@ -434,7 +589,7 @@ export default function StudentDashboard() {
 
       {/* Trilhas em Andamento */}
       {trilhasEmAndamento.length > 0 && (
-        <div className="card mt-8">
+        <div className="card mb-8">
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-center gap-2">
               <FaRoute className="text-orange-500" />
@@ -449,15 +604,10 @@ export default function StudentDashboard() {
               <div key={trilha.id} className="border border-[hsl(var(--border))] rounded-[12px] p-4">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-semibold">{trilha.nome}</h3>
-                  <span className="text-sm font-medium text-orange-500">
-                    {trilha.progresso_total}% concluido
-                  </span>
+                  <span className="text-sm font-medium text-orange-500">{trilha.progresso_total}% concluido</span>
                 </div>
                 <div className="w-full bg-[hsl(var(--muted))] rounded-full h-2 mb-4">
-                  <div
-                    className="bg-orange-500 h-2 rounded-full transition-all"
-                    style={{ width: `${trilha.progresso_total}%` }}
-                  />
+                  <div className="bg-orange-500 h-2 rounded-full transition-all" style={{ width: `${trilha.progresso_total}%` }} />
                 </div>
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   {trilha.cursos_progresso?.map((curso) => (
@@ -468,16 +618,10 @@ export default function StudentDashboard() {
                     >
                       <div className="w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden">
                         {curso.curso_thumbnail ? (
-                          <img
-                            src={curso.curso_thumbnail}
-                            alt={curso.curso_titulo}
-                            className="w-full h-full object-cover"
-                          />
+                          <img src={curso.curso_thumbnail} alt={curso.curso_titulo} className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--secondary))]">
-                            <span className="text-xs font-bold text-white">
-                              {curso.curso_titulo?.charAt(0)}
-                            </span>
+                            <span className="text-xs font-bold text-white">{curso.curso_titulo?.charAt(0)}</span>
                           </div>
                         )}
                       </div>
@@ -505,35 +649,150 @@ export default function StudentDashboard() {
         </div>
       )}
 
-      <div className="card mt-10">
+      {/* Sugerir curso */}
+      <div className="card">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">Sugerir novo curso</h2>
-          <span className="text-sm text-[hsl(var(--muted-foreground))]">Sugestoes vao direto para nossa equipe</span>
+          <h2 className="text-xl font-semibold">Nao encontrou o curso que precisa?</h2>
         </div>
-        <form onSubmit={handleSuggestionSubmit} className="space-y-4">
-          <input
-            name="course"
-            value={suggestion.course}
-            onChange={handleSuggestionChange}
-            placeholder="Qual curso você gostaria de ver?"
-            className="input-field"
-            required
-          />
-          <textarea
-            name="reason"
-            value={suggestion.reason}
-            onChange={handleSuggestionChange}
-            placeholder="Conte por que esse tema e importante para você"
-            className="input-field min-h-[120px]"
-            required
-          />
-          <button type="submit" className="btn-accent inline-flex items-center gap-2" disabled={sending}>
-            {sending ? 'Enviando...' : 'Enviar sugestao'}
-            <FaPaperPlane />
-          </button>
-        </form>
+        <p className="text-[hsl(var(--muted-foreground))] mb-4">
+          Sugira um curso que voce gostaria de ver na plataforma. Sua sugestao vai direto para nossa equipe!
+        </p>
+        <Link to="#sugestao" onClick={() => {
+          const el = document.getElementById('sugestao-form');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }} className="btn-accent inline-flex items-center gap-2">
+          Sugerir curso
+          <FaPaperPlane />
+        </Link>
       </div>
 
+      {/* Modal de Objetivo */}
+      <AnimatePresence>
+        {showObjetivoModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+            onClick={() => setShowObjetivoModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[hsl(var(--card))] rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between p-6 border-b border-[hsl(var(--border))]">
+                <h2 className="text-xl font-semibold">Definir Objetivo Profissional</h2>
+                <button onClick={() => setShowObjetivoModal(false)} className="p-2 rounded-lg hover:bg-[hsl(var(--muted))] transition">
+                  <FaTimes />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-6 overflow-y-auto max-h-[60vh]">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Qual seu objetivo profissional? *</label>
+                  <input
+                    type="text"
+                    value={objetivoForm.objetivo_profissional}
+                    onChange={e => setObjetivoForm(prev => ({ ...prev, objetivo_profissional: e.target.value }))}
+                    placeholder="Ex: Me tornar desenvolvedor full-stack"
+                    className="input-field w-full"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">O que voce quer alcancar?</label>
+                  <textarea
+                    value={objetivoForm.o_que_quer_alcancar}
+                    onChange={e => setObjetivoForm(prev => ({ ...prev, o_que_quer_alcancar: e.target.value }))}
+                    placeholder="Ex: Conseguir uma vaga em empresa de tecnologia, aumentar meu salario..."
+                    className="input-field w-full min-h-[80px]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Em quanto tempo quer alcancar? *</label>
+                  <select
+                    value={objetivoForm.prazo_meses}
+                    onChange={e => setObjetivoForm(prev => ({ ...prev, prazo_meses: Number(e.target.value) }))}
+                    className="input-field w-full"
+                  >
+                    <option value={3}>3 meses</option>
+                    <option value={6}>6 meses</option>
+                    <option value={12}>12 meses</option>
+                    <option value={18}>18 meses</option>
+                    <option value={24}>24 meses</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Quais certificacoes voce precisa? ({objetivoForm.cursos_selecionados.length} selecionado(s))
+                  </label>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
+                    Selecione os cursos que fazem parte do seu objetivo
+                  </p>
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                    {allCourses.map(course => {
+                      const isSelected = objetivoForm.cursos_selecionados.includes(String(course.id));
+                      return (
+                        <button
+                          key={course.id}
+                          type="button"
+                          onClick={() => toggleCursoSelecionado(String(course.id))}
+                          className={`w-full text-left p-3 rounded-lg border transition flex items-center gap-3 ${
+                            isSelected
+                              ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.1)]'
+                              : 'border-[hsl(var(--border))] hover:border-[hsl(var(--muted-foreground))]'
+                          }`}
+                        >
+                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition ${
+                            isSelected ? 'bg-[hsl(var(--primary))] border-[hsl(var(--primary))]' : 'border-[hsl(var(--muted-foreground))]'
+                          }`}>
+                            {isSelected && <FaCheck className="text-white text-xs" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{course.title}</p>
+                            {course.category && (
+                              <p className="text-xs text-[hsl(var(--muted-foreground))]">{course.category}</p>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <Link
+                    to="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setShowObjetivoModal(false);
+                      setTimeout(() => {
+                        const el = document.querySelector('.card:last-child');
+                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      }, 300);
+                    }}
+                    className="text-sm text-[hsl(var(--primary))] hover:underline mt-2 inline-flex items-center gap-1"
+                  >
+                    <FaPlus className="text-xs" />
+                    Nao encontrou? Sugira um curso
+                  </Link>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 p-6 border-t border-[hsl(var(--border))]">
+                <button onClick={() => setShowObjetivoModal(false)} disabled={savingObjetivo} className="btn-outline">
+                  Cancelar
+                </button>
+                <button onClick={handleSaveObjetivo} disabled={savingObjetivo || !objetivoForm.objetivo_profissional.trim()} className="btn-accent">
+                  {savingObjetivo ? 'Salvando...' : 'Salvar objetivo'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

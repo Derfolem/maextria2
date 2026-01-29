@@ -136,3 +136,23 @@ export interface MatriculaTrilha {
   trilha?: Trilha;
   progresso?: number;
 }
+
+export interface ObjetivoAluno {
+  id: string;
+  usuario_id: string;
+  objetivo_profissional: string;
+  o_que_quer_alcancar?: string;
+  prazo_meses: number;
+  criado_em: string;
+  atualizado_em: string;
+  cursos?: ObjetivoCurso[];
+}
+
+export interface ObjetivoCurso {
+  id: string;
+  objetivo_id: string;
+  curso_id: string;
+  ordem: number;
+  criado_em?: string;
+  curso?: Course;
+}

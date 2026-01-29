@@ -12,6 +12,7 @@ interface TrilhaModalProps {
   courses: Course[];
   trilha?: Trilha | null;
   professorId: string;
+  isAdmin?: boolean;
 }
 
 export default function TrilhaModal({
@@ -21,13 +22,14 @@ export default function TrilhaModal({
   courses,
   trilha,
   professorId,
+  isAdmin = false,
 }: TrilhaModalProps) {
   const [nome, setNome] = useState('');
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   const isEditing = !!trilha;
-  const MAX_CURSOS = 5;
+  const MAX_CURSOS = isAdmin ? 999 : 5;
 
   useEffect(() => {
     if (trilha) {
@@ -210,10 +212,13 @@ export default function TrilhaModal({
               {/* Seletor de cursos */}
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Cursos ({selectedCourses.length}/{MAX_CURSOS})
+                  Cursos ({selectedCourses.length}{isAdmin ? '' : `/${MAX_CURSOS}`})
                 </label>
                 <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
-                  Selecione os cursos que compoem esta trilha (apenas publicados)
+                  {isAdmin
+                    ? 'Selecione os cursos que compoem esta trilha (todos os cursos publicados)'
+                    : 'Selecione os cursos que compoem esta trilha (apenas seus cursos publicados)'
+                  }
                 </p>
 
                 {publishedCourses.length === 0 ? (

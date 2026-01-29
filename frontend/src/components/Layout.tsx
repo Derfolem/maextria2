@@ -560,6 +560,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     <Link to="/admin/courses" className="nav-link" onClick={() => setMobileOpen(false)}>
                       Aprovacoes
                     </Link>
+                    <Link to="/admin/trilhas" className="nav-link" onClick={() => setMobileOpen(false)}>
+                      Trilhas
+                    </Link>
                     <Link to="/admin/users" className="nav-link" onClick={() => setMobileOpen(false)}>
                       Liberacoes
                     </Link>

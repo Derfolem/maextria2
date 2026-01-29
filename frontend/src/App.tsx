@@ -67,6 +67,7 @@ const AdminModeracao = lazyWithRetry(() => import('./pages/admin/Moderacao'));
 const AdminBlog = lazyWithRetry(() => import('./pages/admin/Blog'));
 const AdminComissoes = lazyWithRetry(() => import('./pages/admin/Comissoes'));
 const AdminCertificateTemplates = lazyWithRetry(() => import('./pages/admin/CertificateTemplates'));
+const AdminTrilhas = lazyWithRetry(() => import('./pages/admin/Trilhas'));
 const TeacherLanding = lazyWithRetry(() => import('./pages/TeacherLanding'));
 const PrivacyPolicy = lazyWithRetry(() => import('./pages/PrivacyPolicy'));
 const TermsOfService = lazyWithRetry(() => import('./pages/TermsOfService'));
@@ -320,6 +321,14 @@ function App() {
             element={
               <ProtectedRoute roles={['admin']}>
                 <AdminCourses />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/trilhas"
+            element={
+              <ProtectedRoute roles={['admin']}>
+                <AdminTrilhas />
               </ProtectedRoute>
             }
           />
