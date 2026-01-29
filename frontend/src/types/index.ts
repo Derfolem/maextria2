@@ -107,3 +107,32 @@ export interface ChatMessage {
 export interface SystemSettings {
   profit_share_percentage: number;
 }
+
+export interface Trilha {
+  id: string;
+  nome: string;
+  professor_id: string;
+  professor_nome?: string;
+  ativa: boolean;
+  criado_em: string;
+  atualizado_em: string;
+  cursos?: TrilhaCurso[];
+}
+
+export interface TrilhaCurso {
+  id: string;
+  trilha_id: string;
+  curso_id: string;
+  ordem: number;
+  criado_em?: string;
+  curso?: Course;
+}
+
+export interface MatriculaTrilha {
+  id: string;
+  usuario_id: string;
+  trilha_id: string;
+  data_matricula: string;
+  trilha?: Trilha;
+  progresso?: number;
+}

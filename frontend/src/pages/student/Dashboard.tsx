@@ -1,18 +1,31 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { DashboardStats, Enrollment, Certificate } from '../../types';
-import { FaBook, FaCertificate, FaTrophy, FaChartLine, FaArrowRight, FaPaperPlane } from 'react-icons/fa';
+import { DashboardStats, Enrollment, Certificate, Trilha } from '../../types';
+import { FaBook, FaCertificate, FaTrophy, FaChartLine, FaArrowRight, FaPaperPlane, FaRoute, FaClock } from 'react-icons/fa';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { normalizeEnrollment } from '../../lib/normalizeEnrollment';
+import { normalizeCourse } from '../../lib/normalizeCourse';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
 import toast from 'react-hot-toast';
+
+interface TrilhaEmAndamento extends Trilha {
+  cursos_progresso?: Array<{
+    curso_id: string;
+    curso_titulo: string;
+    curso_thumbnail?: string;
+    curso_duracao?: number;
+    progresso: number;
+  }>;
+  progresso_total?: number;
+}
 
 export default function StudentDashboard() {
   const user = useAuthStore((state) => state.user);
   const [stats, setStats] = useState<DashboardStats>({});
   const [recentCourses, setRecentCourses] = useState<Enrollment[]>([]);
   const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const [trilhasEmAndamento, setTrilhasEmAndamento] = useState<TrilhaEmAndamento[]>([]);
   const [loading, setLoading] = useState(true);
   const [avgProgress, setAvgProgress] = useState(0);
   const [suggestion, setSuggestion] = useState({
@@ -155,6 +168,56 @@ export default function StudentDashboard() {
           },
         }))
       );
+
+      // Carregar trilhas em andamento
+      if (userId) {
+        const { data: matriculasTrilha, error: trilhasError } = await supabase
+          .from('matriculas_trilha')
+          .select(`
+            *,
+            trilhas(
+              *,
+              trilha_cursos(
+                *,
+                cursos(*)
+              )
+            )
+          `)
+          .eq('usuario_id', userId);
+
+        if (!trilhasError && matriculasTrilha) {
+          const trilhasComProgresso: TrilhaEmAndamento[] = matriculasTrilha
+            .filter((mt: any) => mt.trilhas)
+            .map((mt: any) => {
+              const trilha = mt.trilhas;
+              const cursosProgresso = trilha.trilha_cursos?.map((tc: any) => {
+                const curso = tc.cursos ? normalizeCourse(tc.cursos) : null;
+                const enrollment = enrollmentsWithProgress.find(
+                  e => String(e.course_id) === String(tc.curso_id)
+                );
+                return {
+                  curso_id: tc.curso_id,
+                  curso_titulo: curso?.title || 'Curso',
+                  curso_thumbnail: curso?.thumbnail,
+                  curso_duracao: curso?.duration_hours,
+                  progresso: enrollment?.progress || 0,
+                };
+              }) || [];
+
+              const progressoTotal = cursosProgresso.length > 0
+                ? Math.round(cursosProgresso.reduce((sum: number, c: any) => sum + c.progresso, 0) / cursosProgresso.length)
+                : 0;
+
+              return {
+                ...trilha,
+                cursos_progresso: cursosProgresso,
+                progresso_total: progressoTotal,
+              };
+            });
+
+          setTrilhasEmAndamento(trilhasComProgresso);
+        }
+      }
     } catch (error) {
       console.error('Error loading dashboard:', error);
     } finally {
@@ -368,6 +431,79 @@ export default function StudentDashboard() {
           </div>
         )}
       </div>
+
+      {/* Trilhas em Andamento */}
+      {trilhasEmAndamento.length > 0 && (
+        <div className="card mt-8">
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center gap-2">
+              <FaRoute className="text-orange-500" />
+              <h2 className="text-xl font-semibold">Trilhas em andamento</h2>
+            </div>
+            <Link to="/student/my-courses" className="text-[hsl(var(--primary))] hover:text-[hsl(var(--accent))]">
+              Ver todas
+            </Link>
+          </div>
+          <div className="space-y-6">
+            {trilhasEmAndamento.map((trilha) => (
+              <div key={trilha.id} className="border border-[hsl(var(--border))] rounded-[12px] p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold">{trilha.nome}</h3>
+                  <span className="text-sm font-medium text-orange-500">
+                    {trilha.progresso_total}% concluido
+                  </span>
+                </div>
+                <div className="w-full bg-[hsl(var(--muted))] rounded-full h-2 mb-4">
+                  <div
+                    className="bg-orange-500 h-2 rounded-full transition-all"
+                    style={{ width: `${trilha.progresso_total}%` }}
+                  />
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {trilha.cursos_progresso?.map((curso) => (
+                    <Link
+                      key={curso.curso_id}
+                      to={`/student/course/${curso.curso_id}`}
+                      className="flex items-center gap-3 p-2 rounded-lg bg-[hsl(var(--muted))] hover:bg-[hsl(var(--border))] transition"
+                    >
+                      <div className="w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden">
+                        {curso.curso_thumbnail ? (
+                          <img
+                            src={curso.curso_thumbnail}
+                            alt={curso.curso_titulo}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--secondary))]">
+                            <span className="text-xs font-bold text-white">
+                              {curso.curso_titulo?.charAt(0)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{curso.curso_titulo}</p>
+                        <div className="flex items-center gap-2 text-xs text-[hsl(var(--muted-foreground))]">
+                          <span>{curso.progresso}%</span>
+                          {curso.curso_duracao && (
+                            <>
+                              <span>•</span>
+                              <span className="flex items-center gap-1">
+                                <FaClock className="text-xs" />
+                                {curso.curso_duracao}h
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="card mt-10">
         <div className="flex items-center justify-between mb-4">

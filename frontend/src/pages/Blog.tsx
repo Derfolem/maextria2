@@ -336,7 +336,7 @@ export default function Blog() {
                   <p className="text-sm text-white/80">
                     Descubra como escolher a trilha certa, criar prova pratica e acelerar sua entrada em vagas reais.
                   </p>
-                  <Link to="/courses" className="btn-accent w-full text-center">Explorar trilhas</Link>
+                  <Link to="/courses?filter=trilhas" className="btn-accent w-full text-center">Explorar trilhas</Link>
                   </div>
                 </div>
               </section>

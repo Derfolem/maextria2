@@ -1,15 +1,27 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Enrollment } from '../../types';
+import { Enrollment, Trilha } from '../../types';
 import { supabase } from '../../lib/supabase';
-import { FaPlay, FaCertificate , FaClock } from 'react-icons/fa';
+import { FaPlay, FaCertificate, FaClock, FaRoute } from 'react-icons/fa';
 import { normalizeEnrollment } from '../../lib/normalizeEnrollment';
+import { normalizeCourse } from '../../lib/normalizeCourse';
 import { useAuthStore } from '../../lib/store';
+
+interface TrilhaComProgresso extends Trilha {
+  cursos_progresso?: Array<{
+    curso_id: string;
+    curso_titulo: string;
+    curso_thumbnail?: string;
+    progresso: number;
+  }>;
+  progresso_total?: number;
+}
 
 export default function MyCourses() {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [trilhas, setTrilhas] = useState<TrilhaComProgresso[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'in-progress' | 'completed'>('all');
+  const [filter, setFilter] = useState<'all' | 'in-progress' | 'completed' | 'trilhas'>('all');
   const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
 
@@ -126,6 +138,53 @@ export default function MyCourses() {
       });
 
       setEnrollments(withProgress);
+
+      // Carregar trilhas do aluno
+      const { data: matriculasTrilha, error: trilhasError } = await supabase
+        .from('matriculas_trilha')
+        .select(`
+          *,
+          trilhas(
+            *,
+            trilha_cursos(
+              *,
+              cursos(*)
+            )
+          )
+        `)
+        .eq('usuario_id', user.id);
+
+      if (!trilhasError && matriculasTrilha) {
+        const trilhasComProgresso: TrilhaComProgresso[] = matriculasTrilha
+          .filter((mt: any) => mt.trilhas)
+          .map((mt: any) => {
+            const trilha = mt.trilhas;
+            const cursosProgresso = trilha.trilha_cursos?.map((tc: any) => {
+              const curso = tc.cursos ? normalizeCourse(tc.cursos) : null;
+              const enrollment = withProgress.find(
+                e => String(e.course_id) === String(tc.curso_id)
+              );
+              return {
+                curso_id: tc.curso_id,
+                curso_titulo: curso?.title || 'Curso',
+                curso_thumbnail: curso?.thumbnail,
+                progresso: enrollment?.progress || 0,
+              };
+            }) || [];
+
+            const progressoTotal = cursosProgresso.length > 0
+              ? Math.round(cursosProgresso.reduce((sum: number, c: any) => sum + c.progresso, 0) / cursosProgresso.length)
+              : 0;
+
+            return {
+              ...trilha,
+              cursos_progresso: cursosProgresso,
+              progresso_total: progressoTotal,
+            };
+          });
+
+        setTrilhas(trilhasComProgresso);
+      }
     } catch (error) {
       console.error('Error loading enrollments:', error);
     } finally {
@@ -156,7 +215,7 @@ export default function MyCourses() {
       <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-8">
         <div>
           <p className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--primary))]">Meus cursos</p>
-          <h1 className="headline-font text-4xl md:text-5xl">Sua trilha ativa</h1>
+          <h1 className="headline-font text-4xl md:text-5xl">Minhas capacitacoes ativas</h1>
         </div>
         <Link to="/courses" className="btn-accent">
           Explorar cursos
@@ -182,9 +241,105 @@ export default function MyCourses() {
         >
           Concluidos ({enrollments.filter((e) => e.completed).length})
         </button>
+        {trilhas.length > 0 && (
+          <button
+            onClick={() => setFilter('trilhas')}
+            className={`${filter === 'trilhas' ? 'bg-orange-500 text-white' : 'btn-outline'} px-4 py-2 rounded-lg flex items-center gap-2`}
+          >
+            <FaRoute />
+            Trilhas ({trilhas.length})
+          </button>
+        )}
       </div>
 
-      {filteredEnrollments.length === 0 ? (
+      {/* Visualizacao de Trilhas */}
+      {filter === 'trilhas' ? (
+        trilhas.length === 0 ? (
+          <div className="card text-center py-12">
+            <FaRoute className="text-4xl text-[hsl(var(--muted-foreground))] mx-auto mb-4" />
+            <p className="text-[hsl(var(--muted-foreground))] mb-4">
+              Voce nao esta inscrito em nenhuma trilha.
+            </p>
+            <Link to="/courses?filter=trilhas" className="btn-accent">
+              Explorar trilhas
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {trilhas.map((trilha) => (
+              <div key={trilha.id} className="card">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-orange-500/10 flex items-center justify-center">
+                      <FaRoute className="text-orange-500" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold">{trilha.nome}</h3>
+                      <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                        {trilha.cursos_progresso?.length || 0} curso(s)
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-orange-500">{trilha.progresso_total}%</p>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))]">concluido</p>
+                  </div>
+                </div>
+
+                <div className="w-full bg-[hsl(var(--muted))] rounded-full h-2 mb-4">
+                  <div
+                    className="bg-orange-500 h-2 rounded-full transition-all"
+                    style={{ width: `${trilha.progresso_total}%` }}
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  {trilha.cursos_progresso?.map((curso) => (
+                    <Link
+                      key={curso.curso_id}
+                      to={`/student/course/${curso.curso_id}`}
+                      className="flex items-center justify-between p-3 rounded-lg bg-[hsl(var(--muted))] hover:bg-[hsl(var(--border))] transition"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden">
+                          {curso.curso_thumbnail ? (
+                            <img
+                              src={curso.curso_thumbnail}
+                              alt={curso.curso_titulo}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--secondary))]">
+                              <span className="text-sm font-bold text-white">
+                                {curso.curso_titulo?.charAt(0)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium">{curso.curso_titulo}</p>
+                          <div className="w-24 bg-[hsl(var(--border))] rounded-full h-1.5 mt-1">
+                            <div
+                              className="bg-[hsl(var(--primary))] h-1.5 rounded-full"
+                              style={{ width: `${curso.progresso}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-medium text-[hsl(var(--primary))]">
+                          {curso.progresso}%
+                        </span>
+                        <FaPlay className="text-[hsl(var(--muted-foreground))]" />
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      ) : filteredEnrollments.length === 0 ? (
         <div className="card text-center py-12">
           <p className="text-[hsl(var(--muted-foreground))] mb-4">
             Voce nao possui cursos ativos no momento.

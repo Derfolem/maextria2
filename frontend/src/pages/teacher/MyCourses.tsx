@@ -1,18 +1,23 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Course } from '../../types';
+import { Course, Trilha } from '../../types';
 import toast from 'react-hot-toast';
-import { FaEye, FaPlus, FaEdit, FaTrash, FaCopy, FaPaperPlane, FaExclamationTriangle, FaClock, FaFilter } from 'react-icons/fa';
+import { FaEye, FaPlus, FaEdit, FaTrash, FaCopy, FaPaperPlane, FaExclamationTriangle, FaClock, FaFilter, FaRoute } from 'react-icons/fa';
 import { normalizeCourse } from '../../lib/normalizeCourse';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
+import TrilhaModal from '../../components/TrilhaModal';
 
-type FilterOption = 'recentes' | 'modificados' | 'publicados' | 'reprovados' | 'curadoria' | 'az';
+type FilterOption = 'recentes' | 'modificados' | 'publicados' | 'reprovados' | 'curadoria' | 'trilhas' | 'az';
 
 export default function TeacherMyCourses() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterOption>('recentes');
+  const [trilhas, setTrilhas] = useState<Trilha[]>([]);
+  const [trilhaModal, setTrilhaModal] = useState(false);
+  const [editingTrilha, setEditingTrilha] = useState<Trilha | null>(null);
+  const [cursosTrilhaMap, setCursosTrilhaMap] = useState<Record<string, string[]>>({});
   const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
 
@@ -30,9 +35,13 @@ export default function TeacherMyCourses() {
       case 'curadoria':
         result = result.filter(c => c.em_curadoria);
         break;
+      case 'trilhas':
+        // Mostrar apenas cursos que estao em alguma trilha
+        result = result.filter(c => cursosTrilhaMap[String(c.id)]?.length > 0);
+        break;
     }
 
-    // Aplicar ordenação
+    // Aplicar ordenacao
     switch (filter) {
       case 'recentes':
         result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -48,11 +57,50 @@ export default function TeacherMyCourses() {
     }
 
     return result;
-  }, [courses, filter]);
+  }, [courses, filter, cursosTrilhaMap]);
 
   useEffect(() => {
     loadCourses();
+    loadTrilhas();
   }, [user?.id, user?.role]);
+
+  const loadTrilhas = async () => {
+    if (!user?.id) return;
+
+    try {
+      const { data: trilhasData, error } = await supabase
+        .from('trilhas')
+        .select(`
+          *,
+          trilha_cursos(*)
+        `)
+        .eq('professor_id', user.id)
+        .order('criado_em', { ascending: false });
+
+      if (error) throw error;
+
+      const trilhasNormalizadas = (trilhasData || []).map(t => ({
+        ...t,
+        cursos: t.trilha_cursos || [],
+      }));
+
+      setTrilhas(trilhasNormalizadas);
+
+      // Criar mapa de curso -> trilhas (um curso pode estar em multiplas trilhas)
+      const map: Record<string, string[]> = {};
+      trilhasNormalizadas.forEach(trilha => {
+        trilha.cursos?.forEach((tc: any) => {
+          if (!map[tc.curso_id]) {
+            map[tc.curso_id] = [];
+          }
+          map[tc.curso_id].push(trilha.nome);
+        });
+      });
+      setCursosTrilhaMap(map);
+    } catch (error) {
+      console.error('Erro ao carregar trilhas:', error);
+    }
+  };
 
   const resolveCourseOwnerId = (course: Record<string, any>) =>
     course.professor_id ?? course.teacher_id ?? course.autor_id ?? course.criado_por ?? course.user_id;
@@ -351,9 +399,22 @@ export default function TeacherMyCourses() {
               <option value="publicados">Publicados</option>
               <option value="reprovados">Reprovados</option>
               <option value="curadoria">Em curadoria</option>
+              <option value="trilhas">Em trilhas</option>
               <option value="az">A-Z</option>
             </select>
           </div>
+          <button
+            onClick={() => {
+              setEditingTrilha(null);
+              setTrilhaModal(true);
+            }}
+            disabled={trilhas.length >= 3}
+            className="btn-outline flex items-center space-x-2"
+            title={trilhas.length >= 3 ? 'Limite de 3 trilhas atingido' : 'Montar trilha'}
+          >
+            <FaRoute />
+            <span>Montar Trilha</span>
+          </button>
           <Link to="/teacher/course/new-glass" className="btn-accent flex items-center space-x-2">
             <FaPlus />
             <span>Novo curso</span>
@@ -404,9 +465,17 @@ export default function TeacherMyCourses() {
                     )}
                     {course.curso_original_id && !course.is_published && (
                       <span className="px-2 py-0.5 rounded bg-purple-100 text-purple-700 text-xs font-medium">
-                        Nova versão em edição
+                        Nova versao em edicao
                       </span>
                     )}
+                    {cursosTrilhaMap[String(course.id)]?.map((trilhaNome, idx) => (
+                      <span
+                        key={idx}
+                        className="px-2 py-0.5 rounded bg-orange-500 text-white text-xs font-medium"
+                      >
+                        {trilhaNome}
+                      </span>
+                    ))}
                   </div>
                   <p className="text-[hsl(var(--muted-foreground))] mb-3">{course.description}</p>
                   <div className="flex items-center space-x-4 text-sm text-[hsl(var(--muted-foreground))]">
@@ -484,6 +553,73 @@ export default function TeacherMyCourses() {
           ))}
         </div>
       )}
+
+      {/* Secao de Trilhas */}
+      {trilhas.length > 0 && (
+        <div className="mt-12">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <p className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--primary))]">Organizacao</p>
+              <h2 className="headline-font text-2xl md:text-3xl">Suas Trilhas ({trilhas.length}/3)</h2>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {trilhas.map((trilha) => (
+              <div key={trilha.id} className="card">
+                <div className="flex items-start justify-between mb-3">
+                  <h3 className="font-semibold text-lg">{trilha.nome}</h3>
+                  <button
+                    onClick={() => {
+                      setEditingTrilha(trilha);
+                      setTrilhaModal(true);
+                    }}
+                    className="p-2 rounded hover:bg-[hsl(var(--muted))] transition"
+                    title="Editar trilha"
+                  >
+                    <FaEdit className="text-[hsl(var(--muted-foreground))]" />
+                  </button>
+                </div>
+                <p className="text-sm text-[hsl(var(--muted-foreground))] mb-3">
+                  {trilha.cursos?.length || 0} curso(s)
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {trilha.cursos?.slice(0, 3).map((tc) => {
+                    const curso = courses.find(c => String(c.id) === tc.curso_id);
+                    return (
+                      <span
+                        key={tc.id}
+                        className="px-2 py-1 text-xs bg-[hsl(var(--muted))] rounded truncate max-w-[120px]"
+                        title={curso?.title}
+                      >
+                        {curso?.title || 'Curso'}
+                      </span>
+                    );
+                  })}
+                  {(trilha.cursos?.length || 0) > 3 && (
+                    <span className="px-2 py-1 text-xs bg-[hsl(var(--muted))] rounded">
+                      +{(trilha.cursos?.length || 0) - 3}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Trilha */}
+      <TrilhaModal
+        isOpen={trilhaModal}
+        onClose={() => {
+          setTrilhaModal(false);
+          setEditingTrilha(null);
+        }}
+        onSave={loadTrilhas}
+        courses={courses}
+        trilha={editingTrilha}
+        professorId={String(user?.id || '')}
+      />
     </div>
   );
 }

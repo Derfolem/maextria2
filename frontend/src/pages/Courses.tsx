@@ -1,7 +1,9 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { Course } from '../types';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { Course, Trilha } from '../types';
 import { supabase } from '../lib/supabase';
+import { useAuthStore } from '../lib/store';
+import toast from 'react-hot-toast';
 import {
   FaSearch,
   FaTimes,
@@ -13,7 +15,9 @@ import {
   FaChevronUp,
   FaFire,
   FaStar,
-  FaBookOpen
+  FaBookOpen,
+  FaRoute,
+  FaPlay
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { normalizeCourse } from '../lib/normalizeCourse';
@@ -80,6 +84,8 @@ const LEVEL_OPTIONS = [
 
 export default function Courses() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuthStore();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState(searchParams.get('q') || '');
@@ -88,21 +94,30 @@ export default function Courses() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
+  // Trilhas
+  const [trilhas, setTrilhas] = useState<Trilha[]>([]);
+  const [showTrilhas, setShowTrilhas] = useState(searchParams.get('filter') === 'trilhas');
+  const [selectedTrilha, setSelectedTrilha] = useState<string>(searchParams.get('trilha') || '');
+  const [cursoTrilhaMap, setCursoTrilhaMap] = useState<Record<string, Trilha[]>>({});
+  const [enrollingTrilha, setEnrollingTrilha] = useState<string | null>(null);
+
   // Filtros
   const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('category') || '');
   const [selectedLevel, setSelectedLevel] = useState<string>(searchParams.get('level') || '');
   const [durationRange, setDurationRange] = useState<string>(searchParams.get('duration') || '');
   const [sortBy, setSortBy] = useState<SortOption>((searchParams.get('sort') as SortOption) || 'popular');
 
-  // Seções colapsáveis
+  // Secoes colapsaveis
   const [expandedSections, setExpandedSections] = useState({
     category: true,
     level: true,
     duration: true,
+    trilhas: true,
   });
 
   useEffect(() => {
     loadCourses();
+    loadTrilhas();
   }, []);
 
   // Sincronizar URL com filtros
@@ -113,8 +128,75 @@ export default function Courses() {
     if (selectedLevel) params.set('level', selectedLevel);
     if (durationRange) params.set('duration', durationRange);
     if (sortBy !== 'popular') params.set('sort', sortBy);
+    if (showTrilhas) params.set('filter', 'trilhas');
+    if (selectedTrilha) params.set('trilha', selectedTrilha);
     setSearchParams(params, { replace: true });
-  }, [search, selectedCategory, selectedLevel, durationRange, sortBy, setSearchParams]);
+  }, [search, selectedCategory, selectedLevel, durationRange, sortBy, showTrilhas, selectedTrilha, setSearchParams]);
+
+  const loadTrilhas = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('trilhas')
+        .select(`
+          *,
+          trilha_cursos(
+            *,
+            cursos(*)
+          )
+        `)
+        .eq('ativa', true);
+
+      if (error) throw error;
+
+      const trilhasNormalizadas = (data || []).map(t => ({
+        ...t,
+        cursos: t.trilha_cursos?.map((tc: any) => ({
+          ...tc,
+          curso: tc.cursos ? normalizeCourse(tc.cursos) : null,
+        })) || [],
+      }));
+
+      setTrilhas(trilhasNormalizadas);
+
+      // Criar mapa de curso -> trilhas
+      const map: Record<string, Trilha[]> = {};
+      trilhasNormalizadas.forEach(trilha => {
+        trilha.cursos?.forEach((tc: any) => {
+          if (!map[tc.curso_id]) {
+            map[tc.curso_id] = [];
+          }
+          map[tc.curso_id].push(trilha);
+        });
+      });
+      setCursoTrilhaMap(map);
+    } catch (error) {
+      console.error('Erro ao carregar trilhas:', error);
+    }
+  };
+
+  const handleIniciarTrilha = async (trilhaId: string) => {
+    if (!isAuthenticated) {
+      navigate(`/login?redirect=/courses?filter=trilhas&trilha=${trilhaId}`);
+      return;
+    }
+
+    setEnrollingTrilha(trilhaId);
+    try {
+      const { data, error } = await supabase.rpc('matricular_trilha', {
+        p_trilha_id: trilhaId,
+      });
+
+      if (error) throw error;
+
+      toast.success(`Matriculado em ${data.cursos_matriculados} curso(s)!`);
+      navigate('/student/dashboard');
+    } catch (error: any) {
+      console.error('Erro ao matricular na trilha:', error);
+      toast.error(error?.message || 'Erro ao iniciar trilha');
+    } finally {
+      setEnrollingTrilha(null);
+    }
+  };
 
   const loadCourses = async () => {
     try {
@@ -242,7 +324,7 @@ export default function Courses() {
     return result.map((item) => item.course);
   }, [courses, search, selectedCategory, selectedLevel, durationRange, sortBy]);
 
-  const activeFiltersCount = [selectedCategory, selectedLevel, durationRange].filter(Boolean).length;
+  const activeFiltersCount = [selectedCategory, selectedLevel, durationRange, showTrilhas ? 'trilhas' : ''].filter(Boolean).length;
 
   const clearFilters = () => {
     setSearch('');
@@ -250,6 +332,8 @@ export default function Courses() {
     setSelectedLevel('');
     setDurationRange('');
     setSortBy('popular');
+    setShowTrilhas(false);
+    setSelectedTrilha('');
   };
 
   const toggleSection = (section: keyof typeof expandedSections) => {
@@ -382,6 +466,65 @@ export default function Courses() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Trilhas */}
+      {trilhas.length > 0 && (
+        <div className="card p-4">
+          <button
+            onClick={() => toggleSection('trilhas')}
+            className="flex items-center justify-between w-full text-left font-semibold mb-3"
+          >
+            <span className="flex items-center gap-2">
+              <FaRoute className="text-orange-500" />
+              Trilhas
+            </span>
+            {expandedSections.trilhas ? <FaChevronUp /> : <FaChevronDown />}
+          </button>
+          <AnimatePresence>
+            {expandedSections.trilhas && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="space-y-1 overflow-hidden"
+              >
+                <button
+                  onClick={() => {
+                    setShowTrilhas(!showTrilhas);
+                    setSelectedTrilha('');
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition ${
+                    showTrilhas && !selectedTrilha
+                      ? 'bg-orange-500 text-white'
+                      : 'hover:bg-[hsl(var(--muted))]'
+                  }`}
+                >
+                  Ver todas as trilhas
+                </button>
+                {trilhas.map((trilha) => (
+                  <button
+                    key={trilha.id}
+                    onClick={() => {
+                      setShowTrilhas(true);
+                      setSelectedTrilha(trilha.id);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition ${
+                      selectedTrilha === trilha.id
+                        ? 'bg-orange-500 text-white'
+                        : 'hover:bg-[hsl(var(--muted))]'
+                    }`}
+                  >
+                    {trilha.nome}
+                    <span className="text-xs opacity-70 ml-1">
+                      ({trilha.cursos?.length || 0})
+                    </span>
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
 
       {/* Limpar filtros */}
       {activeFiltersCount > 0 && (
@@ -623,10 +766,106 @@ export default function Courses() {
                       </button>
                     </span>
                   )}
+                  {showTrilhas && (
+                    <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-500/10 text-orange-500 text-sm">
+                      <FaRoute className="text-xs" />
+                      {selectedTrilha ? trilhas.find(t => t.id === selectedTrilha)?.nome : 'Trilhas'}
+                      <button onClick={() => { setShowTrilhas(false); setSelectedTrilha(''); }}>
+                        <FaTimes className="text-xs" />
+                      </button>
+                    </span>
+                  )}
                 </div>
               )}
 
-              {/* Grid/Lista de cursos */}
+              {/* Visualizacao de Trilhas */}
+              {showTrilhas && !loading && (
+                <div className="space-y-8 mb-8">
+                  {(selectedTrilha
+                    ? trilhas.filter(t => t.id === selectedTrilha)
+                    : trilhas
+                  ).map((trilha) => (
+                    <motion.div
+                      key={trilha.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="card p-6"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <FaRoute className="text-orange-500" />
+                            <h2 className="text-xl font-semibold">{trilha.nome}</h2>
+                          </div>
+                          <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                            {trilha.cursos?.length || 0} curso(s) nesta trilha
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleIniciarTrilha(trilha.id)}
+                          disabled={enrollingTrilha === trilha.id}
+                          className="btn-accent flex items-center justify-center gap-2 w-full sm:w-auto"
+                        >
+                          <FaPlay className="text-sm" />
+                          {enrollingTrilha === trilha.id ? 'Matriculando...' : 'Iniciar Trilha'}
+                        </button>
+                      </div>
+
+                      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {trilha.cursos?.sort((a: any, b: any) => a.ordem - b.ordem).map((tc: any) => {
+                          const course = tc.curso;
+                          if (!course) return null;
+                          return (
+                            <Link
+                              key={tc.id}
+                              to={`/courses/${course.id}`}
+                              className="group flex gap-3 p-3 rounded-lg bg-[hsl(var(--muted))] hover:bg-[hsl(var(--border))] transition"
+                            >
+                              <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
+                                {course.thumbnail ? (
+                                  <img
+                                    src={course.thumbnail}
+                                    alt={course.title}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--secondary))]">
+                                    <span className="text-lg font-bold text-white">
+                                      {course.title?.charAt(0)}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm truncate group-hover:text-[hsl(var(--primary))] transition">
+                                  {course.title}
+                                </p>
+                                {course.duration_hours && (
+                                  <p className="text-xs text-[hsl(var(--muted-foreground))] flex items-center gap-1 mt-1">
+                                    <FaClock className="text-xs" />
+                                    {course.duration_hours}h
+                                  </p>
+                                )}
+                              </div>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  ))}
+
+                  {trilhas.length === 0 && (
+                    <div className="text-center py-12">
+                      <FaRoute className="text-4xl text-[hsl(var(--muted-foreground))] mx-auto mb-4" />
+                      <p className="text-[hsl(var(--muted-foreground))]">
+                        Nenhuma trilha disponivel no momento
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Grid/Lista de cursos (oculto quando visualizando trilhas) */}
               {loading ? (
                 <div className={viewMode === 'grid' ? 'grid md:grid-cols-2 xl:grid-cols-3 gap-6' : 'space-y-4'}>
                   {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -637,7 +876,7 @@ export default function Courses() {
                     </div>
                   ))}
                 </div>
-              ) : filteredCourses.length === 0 ? (
+              ) : showTrilhas ? null : filteredCourses.length === 0 ? (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -688,6 +927,11 @@ export default function Courses() {
                           {course.category && (
                             <span className="absolute top-3 left-3 px-2 py-1 rounded-md bg-black/50 backdrop-blur-sm text-white text-xs">
                               {course.category}
+                            </span>
+                          )}
+                          {cursoTrilhaMap[String(course.id)]?.length > 0 && (
+                            <span className="absolute top-3 right-3 px-2 py-1 rounded-md bg-orange-500 text-white text-xs font-medium">
+                              Trilha
                             </span>
                           )}
                         </div>
