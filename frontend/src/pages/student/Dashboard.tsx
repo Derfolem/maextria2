@@ -527,20 +527,43 @@ export default function StudentDashboard() {
 
         {/* Grafico de Certificacoes */}
         <div className="card">
-          <h2 className="text-xl font-semibold mb-4">Certificacoes ao longo do tempo</h2>
+          <h2 className="text-xl font-semibold mb-2">Certificacoes ao longo do tempo</h2>
           {objetivo && chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="mes" stroke="hsl(var(--muted-foreground))" />
-                <YAxis stroke="hsl(var(--muted-foreground))" />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="concluidos" name="Cursos concluidos" fill="hsl(var(--primary))" />
-                <Bar dataKey="certificados" name="Certificados obtidos" fill="hsl(var(--secondary))" />
-                <ReferenceLine y={chartData[0]?.meta || 0} stroke="orange" strokeDasharray="5 5" label={{ value: 'Meta', fill: 'orange', fontSize: 12 }} />
-              </BarChart>
-            </ResponsiveContainer>
+            <>
+              <p className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
+                A linha laranja indica quantas certificacoes voce precisa obter por mes para atingir seu objetivo em {objetivo.prazo_meses} meses ({chartData[0]?.meta?.toFixed(1) || 0} cert./mes)
+              </p>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="mes" stroke="hsl(var(--muted-foreground))" />
+                  <YAxis stroke="hsl(var(--muted-foreground))" />
+                  <Tooltip
+                    formatter={(value: number, name: string) => {
+                      if (name === 'meta') return [`${value.toFixed(1)} por mes`, 'Meta mensal'];
+                      return [value, name];
+                    }}
+                  />
+                  <Legend />
+                  <Bar dataKey="concluidos" name="Cursos concluidos" fill="hsl(var(--primary))" />
+                  <Bar dataKey="certificados" name="Certificados obtidos" fill="hsl(var(--secondary))" />
+                  <ReferenceLine
+                    y={chartData[0]?.meta || 0}
+                    stroke="orange"
+                    strokeDasharray="5 5"
+                    label={{
+                      value: `Meta: ${chartData[0]?.meta?.toFixed(1) || 0}/mes`,
+                      fill: 'orange',
+                      fontSize: 11,
+                      position: 'insideTopRight'
+                    }}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+              <p className="text-xs text-[hsl(var(--muted-foreground))] mt-2 text-center">
+                Mantenha-se acima da linha laranja para atingir suas {objetivo.cursos?.length || 0} certificacoes no prazo
+              </p>
+            </>
           ) : (
             <div className="flex items-center justify-center h-[250px] text-[hsl(var(--muted-foreground))]">
               <p>Defina um objetivo para ver seu progresso</p>

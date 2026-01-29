@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaTimes, FaCheck, FaTrash } from 'react-icons/fa';
+import { FaTimes, FaCheck, FaTrash, FaSearch } from 'react-icons/fa';
 import { Course, Trilha } from '../types';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
@@ -28,8 +28,44 @@ export default function TrilhaModal({
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
+  // Filtros
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+
   const isEditing = !!trilha;
   const MAX_CURSOS = isAdmin ? 999 : 5;
+
+  // Extrair categorias unicas dos cursos
+  const categories = useMemo(() => {
+    const cats = new Set<string>();
+    courses.forEach(c => {
+      if (c.category) cats.add(c.category);
+    });
+    return Array.from(cats).sort();
+  }, [courses]);
+
+  // Filtrar cursos publicados com base nos filtros
+  const filteredCourses = useMemo(() => {
+    let result = courses.filter(c => c.is_published);
+
+    // Filtrar por palavra-chave
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      result = result.filter(c => {
+        const title = (c.title || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const desc = (c.description || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const cat = (c.category || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return title.includes(term) || desc.includes(term) || cat.includes(term);
+      });
+    }
+
+    // Filtrar por categoria
+    if (selectedCategory) {
+      result = result.filter(c => c.category === selectedCategory);
+    }
+
+    return result;
+  }, [courses, searchTerm, selectedCategory]);
 
   useEffect(() => {
     if (trilha) {
@@ -39,6 +75,9 @@ export default function TrilhaModal({
       setNome('');
       setSelectedCourses([]);
     }
+    // Limpar filtros ao abrir
+    setSearchTerm('');
+    setSelectedCategory('');
   }, [trilha, isOpen]);
 
   const toggleCourse = (courseId: string) => {
@@ -67,7 +106,6 @@ export default function TrilhaModal({
     setSaving(true);
     try {
       if (isEditing && trilha) {
-        // Atualizar trilha existente
         const { error: updateError } = await supabase
           .from('trilhas')
           .update({ nome: nome.trim(), atualizado_em: new Date().toISOString() })
@@ -75,13 +113,11 @@ export default function TrilhaModal({
 
         if (updateError) throw updateError;
 
-        // Remover cursos antigos
         await supabase
           .from('trilha_cursos')
           .delete()
           .eq('trilha_id', trilha.id);
 
-        // Inserir novos cursos
         const cursosToInsert = selectedCourses.map((cursoId, index) => ({
           trilha_id: trilha.id,
           curso_id: cursoId,
@@ -96,7 +132,6 @@ export default function TrilhaModal({
 
         toast.success('Trilha atualizada com sucesso!');
       } else {
-        // Criar nova trilha
         const { data: newTrilha, error: trilhaError } = await supabase
           .from('trilhas')
           .insert({
@@ -109,7 +144,6 @@ export default function TrilhaModal({
 
         if (trilhaError) throw trilhaError;
 
-        // Inserir cursos na trilha
         const cursosToInsert = selectedCourses.map((cursoId, index) => ({
           trilha_id: newTrilha.id,
           curso_id: cursoId,
@@ -151,7 +185,7 @@ export default function TrilhaModal({
 
       if (error) throw error;
 
-      toast.success('Trilha excluída com sucesso!');
+      toast.success('Trilha excluida com sucesso!');
       onSave();
       onClose();
     } catch (error: any) {
@@ -161,8 +195,8 @@ export default function TrilhaModal({
     }
   };
 
-  // Filtrar apenas cursos publicados
-  const publishedCourses = courses.filter(c => c.is_published);
+  // Cursos selecionados (para mostrar no topo)
+  const selectedCoursesData = courses.filter(c => selectedCourses.includes(String(c.id)));
 
   return (
     <AnimatePresence>
@@ -178,7 +212,7 @@ export default function TrilhaModal({
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="bg-[hsl(var(--card))] rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden"
+            className="bg-[hsl(var(--card))] rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden"
             onClick={e => e.stopPropagation()}
           >
             {/* Header */}
@@ -209,25 +243,96 @@ export default function TrilhaModal({
                 />
               </div>
 
-              {/* Seletor de cursos */}
+              {/* Cursos selecionados */}
+              {selectedCoursesData.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Cursos selecionados ({selectedCourses.length}{isAdmin ? '' : `/${MAX_CURSOS}`})
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedCoursesData.map(course => (
+                      <span
+                        key={course.id}
+                        className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[hsl(var(--primary))] text-white text-sm"
+                      >
+                        <span className="truncate max-w-[150px]">{course.title}</span>
+                        <button
+                          type="button"
+                          onClick={() => toggleCourse(String(course.id))}
+                          className="ml-1 hover:bg-white/20 rounded-full p-0.5"
+                        >
+                          <FaTimes className="text-xs" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Filtros de cursos */}
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  Cursos ({selectedCourses.length}{isAdmin ? '' : `/${MAX_CURSOS}`})
-                </label>
+                <label className="block text-sm font-medium mb-2">Adicionar cursos</label>
                 <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
                   {isAdmin
-                    ? 'Selecione os cursos que compoem esta trilha (todos os cursos publicados)'
-                    : 'Selecione os cursos que compoem esta trilha (apenas seus cursos publicados)'
+                    ? 'Busque e selecione cursos de qualquer professor'
+                    : 'Busque e selecione seus cursos publicados'
                   }
                 </p>
 
-                {publishedCourses.length === 0 ? (
-                  <p className="text-sm text-[hsl(var(--muted-foreground))] p-4 bg-[hsl(var(--muted))] rounded-lg">
-                    Voce ainda nao tem cursos publicados para adicionar a uma trilha
+                {/* Busca por palavra-chave */}
+                <div className="relative mb-3">
+                  <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))]" />
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                    placeholder="Buscar por nome ou descricao..."
+                    className="input-field w-full pl-10"
+                  />
+                </div>
+
+                {/* Filtro por categoria (tags) */}
+                {categories.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCategory('')}
+                      className={`px-3 py-1 rounded-full text-sm transition ${
+                        selectedCategory === ''
+                          ? 'bg-[hsl(var(--primary))] text-white'
+                          : 'bg-[hsl(var(--muted))] hover:bg-[hsl(var(--border))]'
+                      }`}
+                    >
+                      Todas
+                    </button>
+                    {categories.map(cat => (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setSelectedCategory(cat === selectedCategory ? '' : cat)}
+                        className={`px-3 py-1 rounded-full text-sm transition ${
+                          selectedCategory === cat
+                            ? 'bg-[hsl(var(--primary))] text-white'
+                            : 'bg-[hsl(var(--muted))] hover:bg-[hsl(var(--border))]'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Lista de cursos filtrados */}
+                {filteredCourses.length === 0 ? (
+                  <p className="text-sm text-[hsl(var(--muted-foreground))] p-4 bg-[hsl(var(--muted))] rounded-lg text-center">
+                    {searchTerm || selectedCategory
+                      ? 'Nenhum curso encontrado com os filtros aplicados'
+                      : 'Nenhum curso publicado disponivel'
+                    }
                   </p>
                 ) : (
-                  <div className="space-y-2">
-                    {publishedCourses.map(course => {
+                  <div className="space-y-2 max-h-[250px] overflow-y-auto">
+                    {filteredCourses.map(course => {
                       const isSelected = selectedCourses.includes(String(course.id));
                       return (
                         <button
@@ -241,7 +346,7 @@ export default function TrilhaModal({
                           }`}
                         >
                           <div
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition ${
+                            className={`w-5 h-5 flex-shrink-0 rounded border-2 flex items-center justify-center transition ${
                               isSelected
                                 ? 'bg-[hsl(var(--primary))] border-[hsl(var(--primary))]'
                                 : 'border-[hsl(var(--muted-foreground))]'
@@ -251,17 +356,29 @@ export default function TrilhaModal({
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium truncate">{course.title}</p>
-                            {course.duration_hours && (
-                              <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                                {course.duration_hours}h de duracao
-                              </p>
-                            )}
+                            <div className="flex items-center gap-2 text-xs text-[hsl(var(--muted-foreground))]">
+                              {course.category && (
+                                <span className="px-1.5 py-0.5 bg-[hsl(var(--muted))] rounded">
+                                  {course.category}
+                                </span>
+                              )}
+                              {course.duration_hours && (
+                                <span>{course.duration_hours}h</span>
+                              )}
+                              {isAdmin && course.teacher_name && (
+                                <span>• {course.teacher_name}</span>
+                              )}
+                            </div>
                           </div>
                         </button>
                       );
                     })}
                   </div>
                 )}
+
+                <p className="text-xs text-[hsl(var(--muted-foreground))] mt-2">
+                  {filteredCourses.length} curso(s) encontrado(s)
+                </p>
               </div>
             </div>
 
