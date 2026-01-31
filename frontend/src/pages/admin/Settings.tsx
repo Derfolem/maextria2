@@ -366,10 +366,10 @@ export default function AdminSettings() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-[clamp(24px,5vw,80px)] py-[clamp(40px,6vh,80px)]">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
       <div className="mb-8">
-        <p className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--primary))]">Configuracoes</p>
-        <h1 className="headline-font text-4xl md:text-5xl">Parametros do sistema</h1>
+        <p className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--primary))] mb-2">Configuracoes</p>
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[hsl(var(--foreground))]ont-bold text-[hsl(var(--foreground))]">Parametros do sistema</h1>
       </div>
 
       <div className="card">
@@ -437,7 +437,7 @@ export default function AdminSettings() {
           <button
             type="submit"
             disabled={saving}
-            className="btn-accent flex items-center space-x-2 w-full sm:w-auto justify-center"
+            className="btn-accent flex items-center justify-center gap-2 w-full sm:w-auto"
           >
             <FaSave />
             <span>{saving ? 'Salvando...' : 'Salvar Configurações'}</span>
@@ -458,17 +458,17 @@ export default function AdminSettings() {
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row gap-3">
           <button
             type="button"
-            className="btn-accent w-full sm:w-auto"
+            className="btn-accent flex-1 sm:flex-none"
             onClick={() => window.open('https://platform.openai.com/usage', '_blank', 'noopener')}
           >
             Abrir painel OpenAI
           </button>
           <button
             type="button"
-            className="btn-outline w-full sm:w-auto"
+            className="btn-outline flex-1 sm:flex-none"
             onClick={() => window.location.assign('/admin/payments')}
           >
             Abrir painel de pagamentos
@@ -479,7 +479,7 @@ export default function AdminSettings() {
       <div className="card mt-8">
         <h2 className="text-xl font-semibold mb-4">Consumo IA por professor</h2>
         <div className="space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="space-y-4 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-4">
             <div>
               <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
                 Limite mensal padrao (US$)
@@ -492,10 +492,10 @@ export default function AdminSettings() {
                 placeholder="Ex: 5"
               />
             </div>
-            <div className="flex flex-wrap items-end gap-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-2">
               <button
                 type="button"
-                className="btn-outline w-full sm:w-auto"
+                className="btn-outline flex-1 sm:flex-none"
                 onClick={handleSaveAiDefaultLimit}
                 disabled={aiDefaultSaving}
               >
@@ -503,7 +503,7 @@ export default function AdminSettings() {
               </button>
               <button
                 type="button"
-                className="btn-accent w-full sm:w-auto"
+                className="btn-accent flex-1 sm:flex-none"
                 onClick={loadAiUsage}
                 disabled={aiUsageLoading}
               >
@@ -519,35 +519,37 @@ export default function AdminSettings() {
           ) : (
             <div className="space-y-3">
               {aiUsageRows.map((row) => (
-                <div key={row.userId} className="border border-[hsl(var(--border))] rounded-[12px] p-4">
-                  <div className="flex flex-wrap justify-between gap-3">
-                    <div>
-                      <p className="font-semibold">{row.name}</p>
+                <div key={row.userId} className="border border-[hsl(var(--border))] rounded-[12px] p-4 space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <p className="font-semibold text-[hsl(var(--foreground))]">{row.name}</p>
                       <p className="text-sm text-[hsl(var(--muted-foreground))]">{row.email}</p>
                       <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                        Consumo atual: US$ {row.totalUsd.toFixed(4)}
+                        Consumo: US$ {row.totalUsd.toFixed(4)}
                       </p>
                     </div>
-                    <div className="min-w-[220px] space-y-2">
+                    <div className="space-y-2">
                       <label className="block text-sm font-medium text-[hsl(var(--foreground))]">
                         Limite mensal (US$)
                       </label>
-                      <input
-                        type="text"
-                        value={aiLimitEdits[row.userId] ?? row.limitUsd.toString()}
-                        onChange={(event) =>
-                          setAiLimitEdits((prev) => ({ ...prev, [row.userId]: event.target.value }))
-                        }
-                        className="input-field"
-                      />
-                      <button
-                        type="button"
-                        className="btn-outline w-full sm:w-auto"
-                        onClick={() => handleSaveUserLimit(row.userId)}
-                        disabled={aiLimitSaving[row.userId]}
-                      >
-                        {aiLimitSaving[row.userId] ? 'Salvando...' : 'Salvar limite'}
-                      </button>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={aiLimitEdits[row.userId] ?? row.limitUsd.toString()}
+                          onChange={(event) =>
+                            setAiLimitEdits((prev) => ({ ...prev, [row.userId]: event.target.value }))
+                          }
+                          className="input-field flex-1"
+                        />
+                        <button
+                          type="button"
+                          className="btn-outline px-4"
+                          onClick={() => handleSaveUserLimit(row.userId)}
+                          disabled={aiLimitSaving[row.userId]}
+                        >
+                          {aiLimitSaving[row.userId] ? 'Salvando...' : 'Salvar'}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -559,13 +561,13 @@ export default function AdminSettings() {
 
       <div className="card mt-8">
         <h2 className="text-xl font-semibold mb-4">Outras configuracoes</h2>
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-[hsl(var(--muted))] rounded-lg">
-            <div>
-              <h3 className="font-semibold">Modo de Manutenção</h3>
-              <p className="text-sm text-[hsl(var(--muted-foreground))]">Desabilitar acesso temporariamente</p>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-4 p-4 bg-[hsl(var(--muted))] rounded-lg hover:bg-[hsl(var(--muted))]/80 transition-colors">
+            <div className="min-w-0">
+              <h3 className="font-semibold text-[hsl(var(--foreground))]">Modo de Manutenção</h3>
+              <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">Desabilitar acesso temporariamente</p>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
+            <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
               <input
                 type="checkbox"
                 className="sr-only peer"
@@ -577,12 +579,12 @@ export default function AdminSettings() {
             </label>
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-[hsl(var(--muted))] rounded-lg">
-            <div>
-              <h3 className="font-semibold">Novos Cadastros</h3>
-              <p className="text-sm text-[hsl(var(--muted-foreground))]">Permitir registro de novos usuários</p>
+          <div className="flex items-center justify-between gap-4 p-4 bg-[hsl(var(--muted))] rounded-lg hover:bg-[hsl(var(--muted))]/80 transition-colors">
+            <div className="min-w-0">
+              <h3 className="font-semibold text-[hsl(var(--foreground))]">Novos Cadastros</h3>
+              <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">Permitir registro de novos usuários</p>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
+            <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
               <input
                 type="checkbox"
                 className="sr-only peer"
@@ -623,7 +625,7 @@ export default function AdminSettings() {
               Ativar banner global
             </label>
 
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-4 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-4">
               <input
                 name="bannerImageUrl"
                 value={marketing.bannerImageUrl}
@@ -657,7 +659,7 @@ export default function AdminSettings() {
               <p>Evite texto nas bordas. Use fundo transparente se possivel.</p>
             </div>
 
-            <button type="submit" className="btn-accent inline-flex items-center gap-2 w-full sm:w-auto justify-center" disabled={marketingSaving}>
+            <button type="submit" className="btn-accent flex items-center justify-center gap-2 w-full sm:w-auto" disabled={marketingSaving}>
               <FaSave />
               <span>{marketingSaving ? 'Salvando...' : 'Salvar marketing'}</span>
             </button>
@@ -689,7 +691,7 @@ export default function AdminSettings() {
             Ativar banner da landing de professores
           </label>
 
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="space-y-4 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-4">
             <input
               name="teacherBannerImageUrl"
               value={marketing.teacherBannerImageUrl}
@@ -723,9 +725,10 @@ export default function AdminSettings() {
             <p>Evite texto nas bordas. Use fundo transparente se possivel.</p>
           </div>
 
-          <button type="submit" className="btn-accent inline-flex items-center gap-2 w-full sm:w-auto justify-center" disabled={marketingSaving}>
+          <button type="submit" className="btn-accent flex items-center justify-center gap-2 w-full sm:w-auto" disabled={marketingSaving}>
             <FaSave />
-            <span>{marketingSaving ? 'Salvando...' : 'Salvar banner professores'}</span>
+            <span className="hidden sm:inline">{marketingSaving ? 'Salvando...' : 'Salvar banner professores'}</span>
+            <span className="sm:hidden">{marketingSaving ? 'Salvando...' : 'Salvar'}</span>
           </button>
         </form>
       </div>
@@ -758,7 +761,7 @@ export default function AdminSettings() {
             placeholder="Codigo para inserir no <body>"
             className="input-field min-h-[140px] font-mono text-xs"
           />
-          <button type="submit" className="btn-accent inline-flex items-center gap-2 w-full sm:w-auto justify-center" disabled={marketingSaving}>
+          <button type="submit" className="btn-accent flex items-center justify-center gap-2 w-full sm:w-auto" disabled={marketingSaving}>
             <FaSave />
             <span>{marketingSaving ? 'Salvando...' : 'Salvar pixels'}</span>
           </button>
@@ -800,7 +803,7 @@ export default function AdminSettings() {
             placeholder="Palavras-chave (separadas por virgula)"
             className="input-field"
           />
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="space-y-4 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-4">
             <input
               name="seoRobots"
               value={marketing.seoRobots}
@@ -823,7 +826,7 @@ export default function AdminSettings() {
             placeholder="Backlinks (um por linha ou anotações)"
             className="input-field min-h-[140px]"
           />
-          <button type="submit" className="btn-accent inline-flex items-center gap-2 w-full sm:w-auto justify-center" disabled={marketingSaving}>
+          <button type="submit" className="btn-accent flex items-center justify-center gap-2 w-full sm:w-auto" disabled={marketingSaving}>
             <FaSave />
             <span>{marketingSaving ? 'Salvando...' : 'Salvar SEO'}</span>
           </button>
