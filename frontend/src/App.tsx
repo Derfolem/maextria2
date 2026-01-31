@@ -31,6 +31,7 @@ function lazyWithRetry(importFn: () => Promise<any>) {
 
 
 const Home = lazyWithRetry(() => import('./pages/Home'));
+const About = lazyWithRetry(() => import('./pages/About'));
 const FAQ = lazyWithRetry(() => import('./pages/FAQ'));
 const Login = lazyWithRetry(() => import('./pages/Login'));
 const Register = lazyWithRetry(() => import('./pages/Register'));
@@ -138,6 +139,7 @@ function App() {
       >
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/sobre" element={<About />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />

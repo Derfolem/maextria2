@@ -19,6 +19,15 @@ const getDefaultSeo = (pathname: string) => {
         canonical: `${SITE_BASE_URL}/courses`,
         ogImage: `${SITE_BASE_URL}/hero-01.png`,
       };
+    case '/sobre':
+      return {
+        title: 'Sobre a MAEXTRIA | Educação Premium e Aplicação Prática',
+        description: 'Conheça a história, missão e valores da MAEXTRIA. Uma plataforma de educação premium com foco em aprendizado profundo e aplicação prática.',
+        keywords: '',
+        robots: 'index,follow',
+        canonical: `${SITE_BASE_URL}/sobre`,
+        ogImage: `${SITE_BASE_URL}/hero-04.png`,
+      };
     case '/sou-professor':
       return {
         title: 'Sou Professor | MAEXTRIA',
@@ -384,6 +393,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <FaBook />
                 <span>Cursos</span>
               </Link>
+              <Link to="/sobre" className="nav-link">
+                Sobre
+              </Link>
               <Link to="/vagas" className="nav-link">
                 Vagas
               </Link>
@@ -479,6 +491,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
             <Link to="/courses" className="nav-link md:hidden" onClick={() => setMobileOpen(false)}>
               Cursos
+            </Link>
+            <Link to="/sobre" className="nav-link md:hidden" onClick={() => setMobileOpen(false)}>
+              Sobre
             </Link>
             <Link to="/vagas" className="nav-link md:hidden" onClick={() => setMobileOpen(false)}>
               Vagas
