@@ -15,7 +15,7 @@ interface AuthState {
   login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   register: (name: string, email: string, password: string, cpf: string) => Promise<{ needsEmailConfirmation: boolean }>;
   logout: () => void;
-  loadUser: () => void;
+  loadUser: () => Promise<void>;
 }
 
 const resolveRole = (roles: Array<{ role: string }> | null) => {
@@ -208,7 +208,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  loadUser: () => {
+  loadUser: async () => {
     set({ isLoading: true }); // Ensure loading state is true when trying to load user
 
     if (USE_LOCAL_AUTH) {
