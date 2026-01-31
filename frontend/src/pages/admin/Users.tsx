@@ -231,17 +231,17 @@ export default function AdminUsers() {
                 <th className="px-6 py-3">Nome</th>
                 <th className="px-6 py-3">Email</th>
                 <th className="px-6 py-3">Tipo</th>
-                <th className="px-6 py-3">IA Cursos</th>
+                <th className="px-6 py-3 min-w-[180px]">IA Cursos</th>
                 <th className="px-6 py-3">Cadastro</th>
-                <th className="px-6 py-3">Acoes</th>
+                <th className="px-6 py-3 min-w-[220px]">Acoes</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[hsl(var(--border))]">
               {filteredUsers.map((user) => (
                 <tr key={user.id} className="hover:bg-[hsl(var(--muted))]">
                   <td className="px-6 py-4 whitespace-nowrap">{user.id}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2 whitespace-nowrap">
                       {getRoleIcon(user.role)}
                       <span className="font-medium">{user.name}</span>
                     </div>
@@ -258,7 +258,7 @@ export default function AdminUsers() {
                       <option value="admin">Admin</option>
                     </select>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  <td className="px-6 py-4 text-sm">
                     {user.role === 'teacher' ? (
                       <div className="flex items-center gap-2">
                         <span className="text-[hsl(var(--muted-foreground))]">
@@ -270,7 +270,7 @@ export default function AdminUsers() {
                           <button
                             type="button"
                             onClick={() => revokeAiAccess(user.id)}
-                            className="btn-outline text-xs"
+                            className="btn-outline text-xs px-3 py-2 whitespace-nowrap"
                             disabled={aiUpdating[String(user.id)]}
                           >
                             Revogar
@@ -279,7 +279,7 @@ export default function AdminUsers() {
                           <button
                             type="button"
                             onClick={() => grantAiAccess(user.id)}
-                            className="btn-accent text-xs"
+                            className="btn-accent text-xs px-3 py-2 whitespace-nowrap"
                             disabled={aiUpdating[String(user.id)]}
                           >
                             Liberar
@@ -298,7 +298,7 @@ export default function AdminUsers() {
                       {user.role === 'student' && (
                         <button
                           onClick={() => changeUserRole(user.id, 'teacher')}
-                          className="btn-accent text-xs"
+                          className="btn-accent text-xs px-3 py-2 whitespace-nowrap"
                         >
                           Aprovar professor
                         </button>

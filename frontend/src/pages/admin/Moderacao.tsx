@@ -150,13 +150,13 @@ export default function Moderacao() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleAprovar(item)}
-                    className="btn-primary text-sm py-1 px-3 flex items-center gap-1"
+                    className="btn-primary text-sm py-1 px-3 flex items-center gap-1 whitespace-nowrap"
                   >
                     <FaCheck /> Aprovar
                   </button>
                   <button
                     onClick={() => handleRemover(item)}
-                    className="btn-outline text-red-600 border-red-300 hover:bg-red-50 text-sm py-1 px-3 flex items-center gap-1"
+                    className="btn-outline text-red-600 border-red-300 hover:bg-red-50 text-sm py-1 px-3 flex items-center gap-1 whitespace-nowrap"
                   >
                     <FaTrash /> Remover
                   </button>
