@@ -108,6 +108,7 @@ export async function initDatabase() {
       password TEXT NOT NULL,
       name TEXT NOT NULL,
       role TEXT NOT NULL CHECK(role IN ('student', 'teacher', 'admin')),
+      cpf TEXT UNIQUE NOT NULL,
       phone TEXT,
       document TEXT,
       address TEXT,
@@ -120,6 +121,12 @@ export async function initDatabase() {
       updated_at INTEGER NOT NULL
     )
   `);
+
+  const cpfColumn = dbWrapper.prepare("SELECT 1 FROM pragma_table_info('users') WHERE name = 'cpf'").get();
+  if (!cpfColumn) {
+    dbWrapper.exec(`ALTER TABLE users ADD COLUMN cpf TEXT`);
+  }
+  dbWrapper.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_cpf ON users(cpf)`);
 
   // ... resto das tabelas igual ao schema original
   console.log('✅ Database initialized with sql.js');

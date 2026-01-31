@@ -4,16 +4,23 @@ import db from '../database/schema';
 import { hashPassword, comparePassword, generateToken, generateVerificationToken } from '../utils/auth';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../utils/email';
 import { User } from '../types';
+import { isValidCpf, normalizeCpf } from '../utils/cpf';
 
 const router = Router();
 
 // Registro de usuário
 router.post('/register', async (req: Request, res: Response) => {
   try {
-    const { email, password, name } = req.body;
+    const { email, password, name, cpf } = req.body;
 
-    if (!email || !password || !name) {
-      res.status(400).json({ error: 'Email, password, and name are required' });
+    if (!email || !password || !name || !cpf) {
+      res.status(400).json({ error: 'Email, password, name, and CPF are required' });
+      return;
+    }
+
+    const normalizedCpf = normalizeCpf(cpf);
+    if (!isValidCpf(normalizedCpf)) {
+      res.status(400).json({ error: 'CPF inválido' });
       return;
     }
 
@@ -26,6 +33,12 @@ router.post('/register', async (req: Request, res: Response) => {
       return;
     }
 
+    const existingCpf = db.prepare('SELECT id FROM users WHERE cpf = ?').get(normalizedCpf);
+    if (existingCpf) {
+      res.status(400).json({ error: 'CPF já cadastrado' });
+      return;
+    }
+
     const hashedPassword = await hashPassword(password);
     const userId = uuidv4();
     const verificationToken = generateVerificationToken();
@@ -34,11 +47,22 @@ router.post('/register', async (req: Request, res: Response) => {
     const emailVerified = isDev ? 1 : 0;
 
     const stmt = db.prepare(`
-      INSERT INTO users (id, email, password, name, role, email_verified, verification_token, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO users (id, email, password, name, role, cpf, email_verified, verification_token, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
-    stmt.run(userId, email, hashedPassword, name, role, emailVerified, emailVerified ? null : verificationToken, now, now);
+    stmt.run(
+      userId,
+      email,
+      hashedPassword,
+      name,
+      role,
+      normalizedCpf,
+      emailVerified,
+      emailVerified ? null : verificationToken,
+      now,
+      now
+    );
 
     // Enviar email de verificação
     if (!emailVerified) {
@@ -120,6 +144,9 @@ router.post('/login', async (req: Request, res: Response) => {
         email: user.email,
         name: user.name,
         role: user.role,
+        cpf: user.cpf,
+        phone: user.phone,
+        address: user.address,
       },
     });
   } catch (error) {

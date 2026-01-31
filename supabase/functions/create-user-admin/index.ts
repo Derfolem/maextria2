@@ -6,6 +6,28 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const normalizeCpf = (value: string) => value.replace(/\D/g, '');
+
+const isValidCpf = (value: string) => {
+  const cpf = normalizeCpf(value);
+  if (cpf.length !== 11) return false;
+  if (/^(\d)\1{10}$/.test(cpf)) return false;
+
+  let sum = 0;
+  for (let i = 0; i < 9; i += 1) {
+    sum += Number(cpf[i]) * (10 - i);
+  }
+  const firstDigit = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+
+  sum = 0;
+  for (let i = 0; i < 10; i += 1) {
+    sum += Number(cpf[i]) * (11 - i);
+  }
+  const secondDigit = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+
+  return cpf[9] === String(firstDigit) && cpf[10] === String(secondDigit);
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -46,12 +68,19 @@ serve(async (req) => {
 
     const { email, senha, nome_completo, cpf } = await req.json();
 
-    if (!email || !senha || !nome_completo) {
-      return new Response(JSON.stringify({ error: 'Email, senha e nome completo são obrigatórios' }), {
+    if (!email || !senha || !nome_completo || !cpf) {
+      return new Response(JSON.stringify({ error: 'Email, senha, nome completo e CPF são obrigatórios' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
       });
     }
+    if (!isValidCpf(cpf)) {
+      return new Response(JSON.stringify({ error: 'CPF inválido' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
+    const normalizedCpf = normalizeCpf(cpf);
 
     // Criar usuário no Auth
     const { data: newUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -60,6 +89,7 @@ serve(async (req) => {
       email_confirm: true,
       user_metadata: {
         nome_completo,
+        cpf: normalizedCpf,
       },
     });
 
@@ -71,10 +101,10 @@ serve(async (req) => {
     }
 
     // Atualizar tabela usuarios com CPF se fornecido
-    if (cpf && newUser.user) {
+    if (newUser.user) {
       await supabaseAdmin
         .from('usuarios')
-        .update({ cpf })
+        .update({ cpf: normalizedCpf })
         .eq('id', newUser.user.id);
     }
 

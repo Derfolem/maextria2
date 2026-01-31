@@ -2,13 +2,16 @@ import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../lib/store';
 import toast from 'react-hot-toast';
-import { FaUser, FaEnvelope, FaLock, FaHourglassHalf, FaGoogle, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaLock, FaHourglassHalf, FaGoogle, FaEye, FaEyeSlash, FaIdCard } from 'react-icons/fa';
 import { supabase } from '../lib/supabase';
+import { formatCpf, isValidCpf, normalizeCpf } from '../lib/validators';
 
 export default function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [cpf, setCpf] = useState('');
+  const [cpfTouched, setCpfTouched] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [allowNewSignups, setAllowNewSignups] = useState(true);
@@ -45,16 +48,22 @@ export default function Register() {
       window.setTimeout(() => setBlockedPulse(false), 800);
       return;
     }
+    const normalizedCpf = normalizeCpf(cpf);
+    if (!isValidCpf(normalizedCpf)) {
+      setCpfTouched(true);
+      toast.error('CPF inválido. Verifique e tente novamente.');
+      return;
+    }
     setLoading(true);
 
     try {
-      const result = await register(name, email, password);
+      const result = await register(name, email, password, normalizedCpf);
       if (result.needsEmailConfirmation) {
-        toast.success('Conta criada! Verifique seu email para confirmar.');
+        toast.success('Conta criada! Verifique seu email e complete seu cadastro ao entrar.');
         navigate('/login');
       } else {
-        toast.success('Conta criada com sucesso!');
-        navigate('/student/dashboard');
+        toast.success('Conta criada com sucesso! Complete seu cadastro para continuar.');
+        navigate('/settings?complete=1');
       }
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao criar conta');
@@ -70,6 +79,8 @@ export default function Register() {
       window.setTimeout(() => setBlockedPulse(false), 800);
       return;
     }
+    toast.error('Cadastro com Google indisponível. Informe seu CPF para criar a conta.');
+    return;
 
     try {
       const { error } = await supabase.auth.signInWithOAuth({
@@ -166,6 +177,28 @@ export default function Register() {
                 disabled={!allowNewSignups || configLoading}
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              CPF
+            </label>
+            <div className="relative">
+              <FaIdCard className="absolute left-3 top-3 text-gray-400" />
+              <input
+                type="text"
+                value={cpf}
+                onChange={(e) => setCpf(formatCpf(e.target.value))}
+                onBlur={() => setCpfTouched(true)}
+                className={`input-field pl-10 ${cpfTouched && !isValidCpf(cpf) ? 'border-red-400 focus:border-red-500' : ''}`}
+                placeholder="000.000.000-00"
+                required
+                disabled={!allowNewSignups || configLoading}
+              />
+            </div>
+            {cpfTouched && !isValidCpf(cpf) && (
+              <p className="mt-2 text-xs text-red-600">Informe um CPF válido.</p>
+            )}
           </div>
 
           <div>

@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import db from '../database/schema';
 import { authenticate, authorize } from '../middleware/auth';
 import { hashPassword } from '../utils/auth';
+import { isValidCpf, normalizeCpf } from '../utils/cpf';
 import { User } from '../types';
 
 const router = Router();
@@ -10,7 +11,7 @@ const router = Router();
 router.get('/me', authenticate, (req: Request, res: Response) => {
   try {
     const user = db.prepare(`
-      SELECT id, email, name, role, phone, document, address, payment_info, email_verified, created_at
+      SELECT id, email, name, role, cpf, phone, document, address, payment_info, email_verified, created_at
       FROM users WHERE id = ?
     `).get(req.user!.userId) as Omit<User, 'password'> | undefined;
 
@@ -29,7 +30,7 @@ router.get('/me', authenticate, (req: Request, res: Response) => {
 // Update user profile
 router.put('/me', authenticate, async (req: Request, res: Response) => {
   try {
-    const { name, phone, document, address, payment_info } = req.body;
+    const { name, phone, document, address, payment_info, cpf } = req.body;
     const updates: string[] = [];
     const values: any[] = [];
 
@@ -44,6 +45,21 @@ router.put('/me', authenticate, async (req: Request, res: Response) => {
     if (document !== undefined) {
       updates.push('document = ?');
       values.push(document);
+    }
+    if (cpf !== undefined) {
+      const normalizedCpf = normalizeCpf(cpf);
+      if (!isValidCpf(normalizedCpf)) {
+        res.status(400).json({ error: 'CPF inválido' });
+        return;
+      }
+
+      const existingCpf = db.prepare('SELECT id FROM users WHERE cpf = ? AND id != ?').get(normalizedCpf, req.user!.userId);
+      if (existingCpf) {
+        res.status(400).json({ error: 'CPF já cadastrado' });
+        return;
+      }
+      updates.push('cpf = ?');
+      values.push(normalizedCpf);
     }
     if (address !== undefined) {
       updates.push('address = ?');
@@ -105,6 +121,17 @@ router.put('/me/password', authenticate, async (req: Request, res: Response) => 
     res.json({ message: 'Password changed successfully' });
   } catch (error) {
     console.error('Change password error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Delete own account
+router.delete('/me', authenticate, (req: Request, res: Response) => {
+  try {
+    db.prepare('DELETE FROM users WHERE id = ?').run(req.user!.userId);
+    res.json({ message: 'Account deleted successfully' });
+  } catch (error) {
+    console.error('Delete account error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

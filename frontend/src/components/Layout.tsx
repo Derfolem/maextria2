@@ -114,6 +114,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     location.pathname.startsWith('/professor');
   const isTeacherLanding = location.pathname === '/sou-professor';
   const showBanner = bannerEnabled && !isMemberArea && !isTeacherLanding;
+  const needsProfileCompletion = isAuthenticated && user?.role !== 'admin' && user?.profile_completed === false;
 
   const pageViewKey = useMemo(() => {
     const base = location.pathname + location.search;
@@ -126,6 +127,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       window.sessionStorage.setItem('maextria_admin_bypass', '1');
     }
   }, [location.search, user?.role]);
+
+  useEffect(() => {
+    if (needsProfileCompletion && location.pathname !== '/settings') {
+      navigate('/settings?complete=1', { replace: true });
+    }
+  }, [needsProfileCompletion, location.pathname, navigate]);
 
   // Afiliados (em breve): tracking desativado
 
@@ -448,6 +455,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </nav>
 
       <main className="flex-grow page-fade pt-16">
+        {needsProfileCompletion && (
+          <div className="w-full bg-red-50 border-b border-red-200">
+            <div className="max-w-6xl mx-auto px-[clamp(24px,5vw,80px)] py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm text-red-700">
+              <span>Cadastro incompleto. Preencha seus dados para continuar usando a plataforma.</span>
+              <Link to="/settings?complete=1" className="btn-outline border-red-300 text-red-700 hover:bg-red-600 hover:text-white">
+                Completar cadastro
+              </Link>
+            </div>
+          </div>
+        )}
         {showBanner && (
           <div className="w-full bg-transparent">
             {banner.linkUrl ? (

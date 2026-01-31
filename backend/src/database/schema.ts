@@ -23,6 +23,7 @@ export function initDatabase() {
       password TEXT NOT NULL,
       name TEXT NOT NULL,
       role TEXT NOT NULL CHECK(role IN ('student', 'teacher', 'admin')),
+      cpf TEXT UNIQUE NOT NULL,
       phone TEXT,
       document TEXT,
       address TEXT,
@@ -35,6 +36,12 @@ export function initDatabase() {
       updated_at INTEGER NOT NULL
     )
   `);
+
+  const cpfColumn = db.prepare("SELECT 1 FROM pragma_table_info('users') WHERE name = 'cpf'").get();
+  if (!cpfColumn) {
+    db.exec(`ALTER TABLE users ADD COLUMN cpf TEXT`);
+  }
+  db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_cpf ON users(cpf)`);
 
   // Tabela de categorias
   db.exec(`

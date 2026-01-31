@@ -25,6 +25,7 @@ async function seed() {
       password: hashedPassword,
       name: 'Administrador MAEXTRIA',
       role: 'admin',
+      cpf: '24860890205',
       email_verified: 1
     },
     {
@@ -33,6 +34,7 @@ async function seed() {
       password: hashedPassword,
       name: 'Professora Maria Silva',
       role: 'teacher',
+      cpf: '37203855317',
       email_verified: 1
     },
     {
@@ -41,6 +43,7 @@ async function seed() {
       password: hashedPassword,
       name: 'Professor João Santos',
       role: 'teacher',
+      cpf: '69777727437',
       email_verified: 1
     },
     {
@@ -49,6 +52,7 @@ async function seed() {
       password: hashedPassword,
       name: 'Ana Oliveira',
       role: 'student',
+      cpf: '80165640383',
       email_verified: 1
     },
     {
@@ -57,17 +61,28 @@ async function seed() {
       password: hashedPassword,
       name: 'Carlos Mendes',
       role: 'student',
+      cpf: '99687615915',
       email_verified: 1
     }
   ];
 
   const userStmt = db.prepare(`
-    INSERT INTO users (id, email, password, name, role, email_verified, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO users (id, email, password, name, role, cpf, email_verified, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   for (const user of users) {
-    userStmt.run(user.id, user.email, user.password, user.name, user.role, user.email_verified, now, now);
+    userStmt.run(
+      user.id,
+      user.email,
+      user.password,
+      user.name,
+      user.role,
+      user.cpf,
+      user.email_verified,
+      now,
+      now
+    );
   }
 
   console.log('✅ Users created');

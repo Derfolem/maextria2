@@ -13,7 +13,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<{ needsEmailConfirmation: boolean }>;
+  register: (name: string, email: string, password: string, cpf: string) => Promise<{ needsEmailConfirmation: boolean }>;
   logout: () => void;
   loadUser: () => void;
 }
@@ -28,14 +28,41 @@ const resolveRole = (roles: Array<{ role: string }> | null) => {
   return 'student' as const;
 };
 
+const isProfileComplete = (profile: { cpf?: string | null; phone?: string | null; address?: string | null }) =>
+  Boolean(profile.cpf?.trim()) && Boolean(profile.phone?.trim()) && Boolean(profile.address?.trim());
+
+const toSafeStoredUser = (user: User) => ({
+  id: user.id,
+  name: user.name,
+  email: user.email,
+  role: user.role,
+  is_admin: user.is_admin,
+  created_at: user.created_at,
+  profile_completed: user.profile_completed ?? false,
+});
+
 // Simplified fetchProfileAndRole for local auth
-const fetchProfileAndRoleLocal = (user: { id: string | number, email: string, name: string, role: string }): User => {
+const fetchProfileAndRoleLocal = (user: {
+  id: string | number,
+  email: string,
+  name: string,
+  role: string,
+  cpf?: string,
+  phone?: string,
+  address?: string,
+  created_at?: string,
+}): User => {
+  const createdAt = user.created_at ? new Date(user.created_at).toISOString() : new Date().toISOString();
   return {
     id: user.id,
     email: user.email,
     name: user.name,
     role: user.role as 'student' | 'teacher' | 'admin',
-    created_at: new Date().toISOString(), // Placeholder for local dev
+    cpf: user.cpf,
+    phone: user.phone,
+    address: user.address,
+    profile_completed: isProfileComplete({ cpf: user.cpf, phone: user.phone, address: user.address }),
+    created_at: createdAt,
     is_admin: user.role === 'admin', // Add is_admin property
   };
 };
@@ -43,7 +70,7 @@ const fetchProfileAndRoleLocal = (user: { id: string | number, email: string, na
 const fetchProfileAndRoleSupabase = async (userId: string, email: string, fallbackName?: string, createdAt?: string) => {
   const { data: profile } = await supabase
     .from('usuarios')
-    .select('nome_completo')
+    .select('nome_completo, cpf, telefone, endereco')
     .eq('id', userId)
     .maybeSingle();
 
@@ -56,6 +83,14 @@ const fetchProfileAndRoleSupabase = async (userId: string, email: string, fallba
     id: userId,
     email,
     name: profile?.nome_completo || fallbackName || email,
+    cpf: profile?.cpf || undefined,
+    phone: profile?.telefone || undefined,
+    address: profile?.endereco || undefined,
+    profile_completed: isProfileComplete({
+      cpf: profile?.cpf || undefined,
+      phone: profile?.telefone || undefined,
+      address: profile?.endereco || undefined,
+    }),
     role: resolveRole(roles ?? null),
     created_at: createdAt || new Date().toISOString(),
   };
@@ -82,7 +117,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
         const user = fetchProfileAndRoleLocal(userData); // Use local helper
         storage.setItem('token', token);
-        storage.setItem('user', JSON.stringify(user));
+        storage.setItem('user', JSON.stringify(toSafeStoredUser(user)));
         set({ user, token, isAuthenticated: true, isLoading: false });
         return;
       } catch (error: any) {
@@ -105,15 +140,15 @@ export const useAuthStore = create<AuthState>((set) => ({
       );
 
       storage.setItem('token', session.access_token);
-      storage.setItem('user', JSON.stringify(user));
+      storage.setItem('user', JSON.stringify(toSafeStoredUser(user)));
       set({ user, token: session.access_token, isAuthenticated: true, isLoading: false });
     }
   },
 
-  register: async (name: string, email: string, password: string) => {
+  register: async (name: string, email: string, password: string, cpf: string) => {
     if (USE_LOCAL_AUTH) {
       try {
-        const response = await api.post('/auth/register', { name, email, password });
+        const response = await api.post('/auth/register', { name, email, password, cpf });
         if (response.status === 201) {
           toast.success('Usuário registrado com sucesso no backend local. Por favor, faça login.');
           return { needsEmailConfirmation: false }; // Assuming no email confirmation needed for local dev
@@ -129,7 +164,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         email,
         password,
         options: {
-          data: { nome_completo: name },
+          data: { nome_completo: name, cpf },
         },
       });
 
@@ -146,7 +181,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           session.user.created_at
         );
         window.localStorage.setItem('token', session.access_token);
-        window.localStorage.setItem('user', JSON.stringify(user));
+        window.localStorage.setItem('user', JSON.stringify(toSafeStoredUser(user)));
         set({ user, token: session.access_token, isAuthenticated: true, isLoading: false });
         return { needsEmailConfirmation: false };
       }
@@ -180,11 +215,23 @@ export const useAuthStore = create<AuthState>((set) => ({
       const storedToken = localStorage.getItem('token') || sessionStorage.getItem('token');
       const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
 
-      if (storedToken && storedUser) {
+      if (storedToken) {
+        try {
+          const response = await api.get('/users/me');
+          const user = fetchProfileAndRoleLocal(response.data);
+          const rememberMe = getRememberMeDefault();
+          const storage = rememberMe ? window.localStorage : window.sessionStorage;
+          storage.setItem('user', JSON.stringify(toSafeStoredUser(user)));
+          set({ user, token: storedToken, isAuthenticated: true, isLoading: false });
+          return;
+        } catch (error) {
+          console.error('Local Auth load profile error:', error);
+        }
+      }
+
+      if (storedUser) {
         try {
           const user = JSON.parse(storedUser);
-          // Basic token validation (e.g., check for expiry in a real app)
-          // For now, just check presence
           set({ user, token: storedToken, isAuthenticated: true, isLoading: false });
           return;
         } catch (e) {
@@ -211,7 +258,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         const rememberMe = getRememberMeDefault();
         const storage = rememberMe ? window.localStorage : window.sessionStorage;
         storage.setItem('token', session.access_token);
-        storage.setItem('user', JSON.stringify(user));
+        storage.setItem('user', JSON.stringify(toSafeStoredUser(user)));
         set({ user, token: session.access_token, isAuthenticated: true, isLoading: false });
       }).catch((e) => {
         console.error('Supabase getSession error:', e);

@@ -3,6 +3,10 @@ export interface User {
   name: string;
   email: string;
   role: 'student' | 'teacher' | 'admin';
+  cpf?: string;
+  phone?: string;
+  address?: string;
+  profile_completed?: boolean;
   is_admin?: boolean; // Added for local auth handling
   created_at: string;
 }
