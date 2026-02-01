@@ -464,12 +464,13 @@ export default function StudentDashboard() {
               <h2 className="text-xl font-semibold">Meu Objetivo Profissional</h2>
             </div>
             <div className="flex items-center gap-2">
-              <Link to="/student/curriculum" className="btn-outline text-sm flex items-center gap-1">
-                <FaFileAlt size={12} />
-                Curriculo
+              <Link to="/student/curriculum" className="btn-outline text-sm flex items-center gap-1 px-2 sm:px-4">
+                <FaFileAlt size={12} className="flex-shrink-0" />
+                <span className="hidden sm:inline">Curriculo</span>
               </Link>
-              <button onClick={openObjetivoModal} className="btn-outline text-sm">
-                {objetivo ? 'Editar' : 'Definir'}
+              <button onClick={openObjetivoModal} className="btn-outline text-sm px-2 sm:px-4">
+                <span className="hidden sm:inline">{objetivo ? 'Editar' : 'Definir'}</span>
+                <span className="sm:hidden">{objetivo ? '✏️' : '+'}</span>
               </button>
             </div>
           </div>

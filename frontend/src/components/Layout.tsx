@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../lib/store';
 import { FaBook, FaBars, FaTimes, FaInstagram, FaLinkedinIn, FaYoutube, FaBell } from 'react-icons/fa';
+import ThemeToggle from './ThemeToggle';
 import { supabase } from '../lib/supabase';
 import DOMPurify from 'dompurify';
 
@@ -429,6 +430,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   Minha Area
                 </Link>
               )}
+              <ThemeToggle />
               {user && (user.role === 'student' || user.role === 'teacher') && (
                 <Link
                   to={notificationLink}
