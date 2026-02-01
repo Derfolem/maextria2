@@ -725,40 +725,51 @@ export default function StudentDashboard() {
               onClick={e => e.stopPropagation()}
             >
               <div className="flex items-center justify-between p-6 border-b border-[hsl(var(--border))]">
-                <h2 className="text-xl font-semibold">Definir Objetivo Profissional</h2>
-                <button onClick={() => setShowObjetivoModal(false)} className="p-2 rounded-lg hover:bg-[hsl(var(--muted))] transition">
+                <h2 className="text-xl font-semibold text-[hsl(var(--member-strong))]">
+                  Definir Objetivo Profissional
+                </h2>
+                <button
+                  onClick={() => setShowObjetivoModal(false)}
+                  className="p-2 rounded-lg hover:bg-[hsl(var(--muted))] transition text-[hsl(var(--member-strong))]"
+                >
                   <FaTimes />
                 </button>
               </div>
 
               <div className="p-6 space-y-6 overflow-y-auto max-h-[60vh]">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Qual seu objetivo profissional? *</label>
+                  <label className="block text-sm font-medium mb-2 text-[hsl(var(--member-strong))]">
+                    Qual seu objetivo profissional? *
+                  </label>
                   <input
                     type="text"
                     value={objetivoForm.objetivo_profissional}
                     onChange={e => setObjetivoForm(prev => ({ ...prev, objetivo_profissional: e.target.value }))}
                     placeholder="Ex: Me tornar desenvolvedor full-stack"
-                    className="input-field w-full"
+                    className="input-field w-full text-[hsl(var(--member-strong))]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">O que voce quer alcancar?</label>
+                  <label className="block text-sm font-medium mb-2 text-[hsl(var(--member-strong))]">
+                    O que voce quer alcancar?
+                  </label>
                   <textarea
                     value={objetivoForm.o_que_quer_alcancar}
                     onChange={e => setObjetivoForm(prev => ({ ...prev, o_que_quer_alcancar: e.target.value }))}
                     placeholder="Ex: Conseguir uma vaga em empresa de tecnologia, aumentar meu salario..."
-                    className="input-field w-full min-h-[80px]"
+                    className="input-field w-full min-h-[80px] text-[hsl(var(--member-strong))]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Em quanto tempo quer alcancar? *</label>
+                  <label className="block text-sm font-medium mb-2 text-[hsl(var(--member-strong))]">
+                    Em quanto tempo quer alcancar? *
+                  </label>
                   <select
                     value={objetivoForm.prazo_meses}
                     onChange={e => setObjetivoForm(prev => ({ ...prev, prazo_meses: Number(e.target.value) }))}
-                    className="input-field w-full"
+                    className="input-field w-full text-[hsl(var(--member-strong))]"
                   >
                     <option value={3}>3 meses</option>
                     <option value={6}>6 meses</option>
@@ -769,10 +780,10 @@ export default function StudentDashboard() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">
+                  <label className="block text-sm font-medium mb-2 text-[hsl(var(--member-strong))]">
                     Quais certificacoes voce precisa? ({objetivoForm.cursos_selecionados.length} selecionado(s))
                   </label>
-                  <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
+                  <p className="text-xs text-[hsl(var(--member-strong))] mb-3">
                     Selecione os cursos que fazem parte do seu objetivo
                   </p>
                   <div className="space-y-2 max-h-[200px] overflow-y-auto">
@@ -795,9 +806,11 @@ export default function StudentDashboard() {
                             {isSelected && <FaCheck className="text-white text-xs" />}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium truncate">{course.title}</p>
+                            <p className="font-medium truncate text-[hsl(var(--member-strong))]">
+                              {course.title}
+                            </p>
                             {course.category && (
-                              <p className="text-xs text-[hsl(var(--muted-foreground))]">{course.category}</p>
+                              <p className="text-xs text-[hsl(var(--member-strong))]">{course.category}</p>
                             )}
                           </div>
                         </button>

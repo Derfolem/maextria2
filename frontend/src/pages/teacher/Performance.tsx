@@ -145,8 +145,10 @@ export default function TeacherPerformance() {
             <FaArrowLeft />
             <span>Voltar ao Painel</span>
           </Link>
-          <h1 className="headline-font text-3xl md:text-4xl mb-2">Desempenho dos Cursos</h1>
-          <p className="text-[hsl(var(--muted-foreground))]">
+          <h1 className="headline-font text-3xl md:text-4xl mb-2 text-[hsl(var(--member-strong))]">
+            Desempenho dos Cursos
+          </h1>
+          <p className="text-[hsl(var(--member-strong))]">
             Acompanhe as métricas e o desempenho de todos os seus cursos.
           </p>
         </div>

@@ -89,14 +89,14 @@ export default function AdminNotifications() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <label className="text-sm text-[hsl(var(--muted-foreground))]" htmlFor="filter">
+          <label className="text-sm text-[hsl(var(--member-strong))]" htmlFor="filter">
             Filtrar
           </label>
           <select
             id="filter"
             value={filter}
             onChange={(event) => setFilter(event.target.value)}
-            className="input-field max-w-[220px]"
+            className="input-field max-w-[220px] text-[hsl(var(--member-strong))]"
           >
             <option value="all">Todos</option>
             {Object.entries(typeLabels).map(([key, label]) => (

@@ -151,7 +151,7 @@ export default function StudentCurriculum() {
               <FaArrowLeft size={20} />
             </button>
             <div>
-              <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">Meu Curriculo</h1>
+              <h1 className="text-2xl font-bold text-[hsl(var(--muted-foreground))]">Meu Curriculo</h1>
               <p className="text-sm text-[hsl(var(--muted-foreground))]">
                 Monte seu curriculo profissional
               </p>

@@ -105,8 +105,10 @@ export default function TeacherTutorial() {
             <FaArrowLeft />
             <span>Voltar ao Painel</span>
           </Link>
-          <h1 className="headline-font text-3xl md:text-4xl mb-2">Tutorial do Professor</h1>
-          <p className="text-[hsl(var(--muted-foreground))]">
+          <h1 className="headline-font text-3xl md:text-4xl mb-2 text-[hsl(var(--member-strong))]">
+            Tutorial do Professor
+          </h1>
+          <p className="text-[hsl(var(--member-strong))]">
             Aprenda a usar a plataforma MAEXTRIA para criar cursos e gerenciar suas comissões.
           </p>
         </div>

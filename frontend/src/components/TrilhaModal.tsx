@@ -217,7 +217,7 @@ export default function TrilhaModal({
           >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-[hsl(var(--border))]">
-              <h2 className="text-xl font-semibold">
+              <h2 className="text-xl font-semibold text-[hsl(var(--member-strong))]">
                 {isEditing ? 'Editar Trilha' : 'Criar Trilha'}
               </h2>
               <button
@@ -276,7 +276,7 @@ export default function TrilhaModal({
                 <label className="block text-sm font-medium mb-2 text-[hsl(var(--member-strong))]">
                   Adicionar cursos
                 </label>
-                <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
+                <p className="text-xs text-[hsl(var(--member-strong))] mb-3">
                   {isAdmin
                     ? 'Busque e selecione cursos de qualquer professor'
                     : 'Busque e selecione seus cursos publicados'
@@ -285,7 +285,7 @@ export default function TrilhaModal({
 
                 {/* Busca por palavra-chave */}
                 <div className="relative mb-3">
-                  <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))]" />
+                  <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--member-strong))]" />
                   <input
                     type="text"
                     value={searchTerm}
@@ -328,7 +328,7 @@ export default function TrilhaModal({
 
                 {/* Lista de cursos filtrados */}
                 {filteredCourses.length === 0 ? (
-                  <p className="text-sm text-[hsl(var(--muted-foreground))] p-4 bg-[hsl(var(--muted))] rounded-lg text-center">
+                  <p className="text-sm text-[hsl(var(--member-strong))] p-4 bg-[hsl(var(--muted))] rounded-lg text-center">
                     {searchTerm || selectedCategory
                       ? 'Nenhum curso encontrado com os filtros aplicados'
                       : 'Nenhum curso publicado disponivel'
@@ -359,7 +359,9 @@ export default function TrilhaModal({
                             {isSelected && <FaCheck className="text-white text-xs" />}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium truncate">{course.title}</p>
+                            <p className="font-medium truncate text-[hsl(var(--member-strong))]">
+                              {course.title}
+                            </p>
                             <div className="flex items-center gap-2 text-xs text-[hsl(var(--muted-foreground))]">
                               {course.category && (
                                 <span className="px-1.5 py-0.5 bg-[hsl(var(--muted))] text-[hsl(var(--member-strong))] rounded">
@@ -380,7 +382,7 @@ export default function TrilhaModal({
                   </div>
                 )}
 
-                <p className="text-xs text-[hsl(var(--muted-foreground))] mt-2">
+                <p className="text-xs text-[hsl(var(--member-strong))] mt-2">
                   {filteredCourses.length} curso(s) encontrado(s)
                 </p>
               </div>

@@ -661,7 +661,9 @@ export default function CoursePlayer() {
           <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
             <div>
               <p className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--primary))]">Player do curso</p>
-              <h1 className="headline-font text-4xl md:text-5xl">{course.title}</h1>
+              <h1 className="headline-font text-4xl md:text-5xl text-[hsl(var(--member-strong))]">
+                {course.title}
+              </h1>
             </div>
             <div className="min-w-[240px]">
               <div className="w-full bg-[hsl(var(--muted))] rounded-full h-2">

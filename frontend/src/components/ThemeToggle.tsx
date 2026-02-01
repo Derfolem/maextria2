@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useAuthStore } from '../lib/store';
 
 type Theme = 'night' | 'day' | 'entardecer' | 'crepusculo';
 
@@ -10,13 +11,17 @@ const THEME_OPTIONS: Array<{ value: Theme; label: string; hint: string }> = [
 ];
 
 export default function ThemeToggle() {
+  const user = useAuthStore((state) => state.user);
+  const themeKey = user?.id ? `maextria-theme:${user.id}` : 'maextria-theme';
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('maextria-theme') as Theme | 'dark' | 'light' | null;
-      if (saved === 'dark') return 'night';
-      if (saved === 'light') return 'day';
-      if (saved && THEME_OPTIONS.some((option) => option.value === saved)) {
-        return saved;
+      const saved = localStorage.getItem(themeKey) as Theme | 'dark' | 'light' | null;
+      const legacy = localStorage.getItem('maextria-theme') as Theme | 'dark' | 'light' | null;
+      const candidate = saved || legacy;
+      if (candidate === 'dark') return 'night';
+      if (candidate === 'light') return 'day';
+      if (candidate && THEME_OPTIONS.some((option) => option.value === candidate)) {
+        return candidate;
       }
     }
     return 'night';
@@ -26,8 +31,18 @@ export default function ThemeToggle() {
     if (typeof document !== 'undefined') {
       document.body.dataset.memberTheme = theme;
     }
-    localStorage.setItem('maextria-theme', theme);
-  }, [theme]);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(themeKey, theme);
+    }
+  }, [theme, themeKey]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const saved = localStorage.getItem(themeKey) as Theme | null;
+    if (saved && THEME_OPTIONS.some((option) => option.value === saved)) {
+      setTheme(saved);
+    }
+  }, [themeKey]);
 
   return (
     <div

@@ -355,13 +355,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isMemberArea || typeof document === 'undefined') return;
-    const saved = window.localStorage.getItem('maextria-theme');
+    const key = user?.id ? `maextria-theme:${user.id}` : 'maextria-theme';
+    const saved = window.localStorage.getItem(key) || window.localStorage.getItem('maextria-theme');
     const normalized =
       saved === 'dark' ? 'night' :
       saved === 'light' ? 'day' :
       saved || 'night';
     document.body.dataset.memberTheme = normalized;
-  }, [isMemberArea]);
+  }, [isMemberArea, user?.id]);
 
   const notificationLink = user?.role === 'teacher' ? '/teacher/notifications' : '/student/notifications';
 
