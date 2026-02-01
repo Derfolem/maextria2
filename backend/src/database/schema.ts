@@ -202,6 +202,97 @@ export function initDatabase() {
 
   defaultProfitShare.run('admin_profit_share', '30', Date.now());
 
+  // Tabela principal do currículo (1 por aluno)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS curricula (
+      id TEXT PRIMARY KEY,
+      student_id TEXT NOT NULL UNIQUE,
+      professional_objective TEXT,
+      additional_info TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Tabela de formação acadêmica
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS curriculum_education (
+      id TEXT PRIMARY KEY,
+      curriculum_id TEXT NOT NULL,
+      institution TEXT NOT NULL,
+      degree TEXT NOT NULL,
+      field_of_study TEXT,
+      start_date TEXT,
+      end_date TEXT,
+      is_current INTEGER DEFAULT 0,
+      description TEXT,
+      order_index INTEGER DEFAULT 0,
+      created_at INTEGER NOT NULL,
+      FOREIGN KEY (curriculum_id) REFERENCES curricula(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Tabela de experiência profissional
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS curriculum_experience (
+      id TEXT PRIMARY KEY,
+      curriculum_id TEXT NOT NULL,
+      company TEXT NOT NULL,
+      position TEXT NOT NULL,
+      location TEXT,
+      start_date TEXT,
+      end_date TEXT,
+      is_current INTEGER DEFAULT 0,
+      description TEXT,
+      order_index INTEGER DEFAULT 0,
+      created_at INTEGER NOT NULL,
+      FOREIGN KEY (curriculum_id) REFERENCES curricula(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Tabela de certificados externos
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS curriculum_external_certs (
+      id TEXT PRIMARY KEY,
+      curriculum_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      institution TEXT NOT NULL,
+      issue_date TEXT,
+      expiration_date TEXT,
+      credential_url TEXT,
+      order_index INTEGER DEFAULT 0,
+      created_at INTEGER NOT NULL,
+      FOREIGN KEY (curriculum_id) REFERENCES curricula(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Tabela de habilidades
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS curriculum_skills (
+      id TEXT PRIMARY KEY,
+      curriculum_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      level TEXT CHECK(level IN ('basic', 'intermediate', 'advanced', 'expert')),
+      order_index INTEGER DEFAULT 0,
+      created_at INTEGER NOT NULL,
+      FOREIGN KEY (curriculum_id) REFERENCES curricula(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Tabela de idiomas
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS curriculum_languages (
+      id TEXT PRIMARY KEY,
+      curriculum_id TEXT NOT NULL,
+      language TEXT NOT NULL,
+      proficiency TEXT CHECK(proficiency IN ('basic', 'intermediate', 'advanced', 'fluent', 'native')),
+      order_index INTEGER DEFAULT 0,
+      created_at INTEGER NOT NULL,
+      FOREIGN KEY (curriculum_id) REFERENCES curricula(id) ON DELETE CASCADE
+    )
+  `);
+
   console.log('✅ Database schema initialized successfully');
 }
 

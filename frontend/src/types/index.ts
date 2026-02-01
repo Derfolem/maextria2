@@ -160,3 +160,95 @@ export interface ObjetivoCurso {
   criado_em?: string;
   curso?: Course;
 }
+
+// Curriculum types
+export interface Curriculum {
+  id: string;
+  student_id: string;
+  professional_objective?: string;
+  additional_info?: string;
+  created_at: number;
+  updated_at: number;
+  user?: CurriculumUser;
+  education: EducationEntry[];
+  experience: ExperienceEntry[];
+  external_certs: ExternalCertEntry[];
+  skills: SkillEntry[];
+  languages: LanguageEntry[];
+}
+
+export interface CurriculumUser {
+  id: string;
+  name: string;
+  email: string;
+  cpf?: string;
+  phone?: string;
+  address?: string;
+}
+
+export interface EducationEntry {
+  id: string;
+  curriculum_id: string;
+  institution: string;
+  degree: string;
+  field_of_study?: string;
+  start_date?: string;
+  end_date?: string;
+  is_current: number;
+  description?: string;
+  order_index: number;
+  created_at: number;
+}
+
+export interface ExperienceEntry {
+  id: string;
+  curriculum_id: string;
+  company: string;
+  position: string;
+  location?: string;
+  start_date?: string;
+  end_date?: string;
+  is_current: number;
+  description?: string;
+  order_index: number;
+  created_at: number;
+}
+
+export interface ExternalCertEntry {
+  id: string;
+  curriculum_id: string;
+  name: string;
+  institution: string;
+  issue_date?: string;
+  expiration_date?: string;
+  credential_url?: string;
+  order_index: number;
+  created_at: number;
+}
+
+export interface SkillEntry {
+  id: string;
+  curriculum_id: string;
+  name: string;
+  level: 'basic' | 'intermediate' | 'advanced' | 'expert';
+  order_index: number;
+  created_at: number;
+}
+
+export interface LanguageEntry {
+  id: string;
+  curriculum_id: string;
+  language: string;
+  proficiency: 'basic' | 'intermediate' | 'advanced' | 'fluent' | 'native';
+  order_index: number;
+  created_at: number;
+}
+
+export interface PlatformCertificate {
+  id: string;
+  course_title: string;
+  teacher_name: string;
+  duration_hours?: number;
+  issued_at: number;
+  payment_date?: number;
+}

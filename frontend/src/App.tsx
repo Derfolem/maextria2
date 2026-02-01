@@ -48,6 +48,7 @@ const StudentDashboard = lazyWithRetry(() => import('./pages/student/Dashboard')
 const StudentMyCourses = lazyWithRetry(() => import('./pages/student/MyCourses'));
 const CoursePlayer = lazyWithRetry(() => import('./pages/student/CoursePlayer'));
 const StudentNotifications = lazyWithRetry(() => import('./pages/student/Notifications'));
+const StudentCurriculum = lazyWithRetry(() => import('./pages/student/Curriculum'));
 const TeacherDashboard = lazyWithRetry(() => import('./pages/teacher/Dashboard'));
 const TeacherMyCourses = lazyWithRetry(() => import('./pages/teacher/MyCourses'));
 const CourseEditor = lazyWithRetry(() => import('./pages/teacher/CourseEditor'));
@@ -209,6 +210,14 @@ function App() {
             element={
               <ProtectedRoute roles={['student']}>
                 <StudentNotifications />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/curriculum"
+            element={
+              <ProtectedRoute roles={['student']}>
+                <StudentCurriculum />
               </ProtectedRoute>
             }
           />

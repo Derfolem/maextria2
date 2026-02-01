@@ -10,6 +10,7 @@ import dashboardRoutes from './dashboard';
 import aiRoutes from './ai';
 import settingsRoutes from './settings';
 import sitemapRoutes from './sitemap';
+import curriculumRoutes from './curriculum';
 
 const router = Router();
 
@@ -23,6 +24,7 @@ router.use('/certificates', certificatesRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/ai', aiRoutes);
 router.use('/settings', settingsRoutes);
+router.use('/curriculum', curriculumRoutes);
 
 // Sitemap dinâmico para SEO
 router.use('/', sitemapRoutes);

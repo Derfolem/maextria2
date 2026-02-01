@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { DashboardStats, Enrollment, Certificate, Trilha, Course, ObjetivoAluno } from '../../types';
-import { FaBook, FaCertificate, FaTrophy, FaChartLine, FaArrowRight, FaPaperPlane, FaRoute, FaClock, FaBullseye, FaLightbulb, FaTimes, FaCheck, FaPlus } from 'react-icons/fa';
+import { FaBook, FaCertificate, FaTrophy, FaChartLine, FaArrowRight, FaPaperPlane, FaRoute, FaClock, FaBullseye, FaLightbulb, FaTimes, FaCheck, FaPlus, FaFileAlt } from 'react-icons/fa';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend } from 'recharts';
 import { normalizeEnrollment } from '../../lib/normalizeEnrollment';
 import { normalizeCourse } from '../../lib/normalizeCourse';
@@ -463,9 +463,15 @@ export default function StudentDashboard() {
               <FaBullseye className="text-[hsl(var(--primary))]" />
               <h2 className="text-xl font-semibold">Meu Objetivo Profissional</h2>
             </div>
-            <button onClick={openObjetivoModal} className="btn-outline text-sm">
-              {objetivo ? 'Editar' : 'Definir'}
-            </button>
+            <div className="flex items-center gap-2">
+              <Link to="/student/curriculum" className="btn-outline text-sm flex items-center gap-1">
+                <FaFileAlt size={12} />
+                Curriculo
+              </Link>
+              <button onClick={openObjetivoModal} className="btn-outline text-sm">
+                {objetivo ? 'Editar' : 'Definir'}
+              </button>
+            </div>
           </div>
 
           {objetivo ? (
