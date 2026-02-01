@@ -335,7 +335,7 @@ export async function getPlatformCerts(userId: string): Promise<PlatformCertific
 
 // ==================== PDF EXPORT ====================
 
-export async function exportCurriculumPdf(userId: string) {
+export async function exportCurriculumPdf(_userId: string) {
   if (USE_LOCAL_AUTH) {
     const response = await api.get('/curriculum/export/pdf', { responseType: 'blob' });
     return response.data;
