@@ -145,7 +145,7 @@ export default function StudentCurriculum() {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => navigate('/student')}
+              onClick={() => navigate('/student/dashboard')}
               className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
             >
               <FaArrowLeft size={20} />
