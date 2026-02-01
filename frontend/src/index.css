@@ -91,23 +91,23 @@
 
   body[data-member-theme="day"] .member-theme {
     --background: 48 60% 97%;
-    --foreground: 210 30% 12%;
-    --primary: 205 80% 45%;
+    --foreground: 215 35% 8%;
+    --primary: 205 85% 42%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 145 55% 35%;
+    --secondary: 145 60% 30%;
     --secondary-foreground: 0 0% 100%;
-    --accent: 45 85% 55%;
-    --accent-foreground: 210 30% 12%;
-    --muted: 50 30% 92%;
-    --muted-foreground: 215 16% 38%;
+    --accent: 45 85% 50%;
+    --accent-foreground: 215 35% 8%;
+    --muted: 50 28% 90%;
+    --muted-foreground: 215 18% 30%;
     --card: 0 0% 100%;
-    --card-foreground: 210 30% 12%;
-    --border: 45 20% 85%;
+    --card-foreground: 215 35% 8%;
+    --border: 45 20% 82%;
     --graphite: 45 30% 94%;
     --glass-bg: 0 0% 100%;
-    --glass-border: 45 20% 75%;
-    --glass-strong: 45 35% 96%;
-    --glass-ring: 205 80% 45%;
+    --glass-border: 45 20% 72%;
+    --glass-strong: 45 32% 96%;
+    --glass-ring: 205 85% 42%;
   }
 
   body[data-member-theme="entardecer"] .member-theme {
