@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaSave, FaMagic, FaImage, FaVideo } from 'react-icons/fa';
+import ThemeToggle from '../../components/ThemeToggle';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../lib/store';
 import { supabase } from '../../lib/supabase';
@@ -369,18 +370,19 @@ export default function CourseCreatorGlass() {
     <div className="max-w-7xl mx-auto px-[clamp(24px,5vw,80px)] py-[clamp(40px,6vh,80px)]">
       <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
         <h1 className="text-3xl font-bold text-white">Criar Novo Curso (Glass)</h1>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <ThemeToggle />
           <button
             type="button"
             onClick={handleParseText}
-            className="btn-glass flex items-center space-x-2" // New class for glass button
+            className="btn-glass flex items-center space-x-2"
           >
             <FaMagic />
             <span>Extrair Texto</span>
           </button>
           <button
             onClick={handleSaveCourse}
-            className="btn-glass-primary flex items-center space-x-2" // New class for primary glass button
+            className="btn-glass-primary flex items-center space-x-2"
           >
             <FaSave />
             <span>Salvar Curso</span>

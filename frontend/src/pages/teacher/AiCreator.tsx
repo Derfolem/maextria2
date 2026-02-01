@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { FaThumbsDown, FaThumbsUp } from 'react-icons/fa';
+import ThemeToggle from '../../components/ThemeToggle';
 import { getValidAccessToken, supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
 
@@ -455,7 +456,8 @@ export default function AiCreator() {
             </p>
             <h1 className="text-2xl font-semibold">Imagens e textos para aulas</h1>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <ThemeToggle />
             <button type="button" className="btn-outline" onClick={() => navigate('/teacher/course/new')}>
               Voltar para criar curso
             </button>
