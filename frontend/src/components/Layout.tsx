@@ -401,12 +401,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <nav className="fixed inset-x-0 top-0 z-50 bg-[hsl(var(--background))]/95 backdrop-blur border-b border-[hsl(var(--border))]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <Link to="/" className="flex items-center space-x-3 text-[hsl(var(--foreground))] hover:text-[hsl(var(--secondary))] transition">
+            <Link to="/" className="flex items-center space-x-3 text-[hsl(var(--nav-foreground))] hover:text-[hsl(var(--secondary))] transition">
               <img src="/maextria-logo.png" alt="MAEXTRIA" className="h-9 w-9 x-glow" />
               <span className="text-xl font-semibold tracking-wide">MAEXTRIA</span>
             </Link>
 
-            <div className="hidden md:flex items-center space-x-6 text-sm text-[hsl(var(--foreground))]">
+            <div className="hidden md:flex items-center space-x-6 text-sm text-[hsl(var(--nav-foreground))]">
               <Link to="/courses" className="nav-link flex items-center space-x-1">
                 <FaBook />
                 <span>Cursos</span>
@@ -454,7 +454,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               )}
               <button
                 type="button"
-                className="text-[hsl(var(--foreground))]"
+                className="text-[hsl(var(--nav-foreground))]"
                 onClick={() => setMobileOpen((prev) => !prev)}
                 aria-label="Abrir menu do usuario"
               >

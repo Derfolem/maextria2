@@ -24,6 +24,7 @@
     --glass-border: 220 20% 30%;
     --glass-strong: 220 24% 20%;
     --glass-ring: 200 90% 60%;
+    --nav-foreground: var(--foreground);
   }
 
   .dark {
@@ -45,6 +46,7 @@
     --glass-border: 220 20% 30%;
     --glass-strong: 220 24% 20%;
     --glass-ring: 200 90% 60%;
+    --nav-foreground: var(--foreground);
   }
 
   .light {
@@ -66,6 +68,7 @@
     --glass-border: 210 18% 75%;
     --glass-strong: 210 30% 96%;
     --glass-ring: 205 90% 45%;
+    --nav-foreground: var(--foreground);
   }
 
   body[data-member-theme="night"] .member-theme {
@@ -87,6 +90,7 @@
     --glass-border: 210 12% 30%;
     --glass-strong: 220 24% 20%;
     --glass-ring: 200 80% 55%;
+    --nav-foreground: var(--foreground);
   }
 
   body[data-member-theme="day"] .member-theme {
@@ -98,16 +102,17 @@
     --secondary-foreground: 0 0% 100%;
     --accent: 45 85% 50%;
     --accent-foreground: 215 35% 8%;
-    --muted: 50 28% 90%;
+    --muted: 45 30% 90%;
     --muted-foreground: 215 18% 30%;
-    --card: 0 0% 100%;
+    --card: 44 45% 96%;
     --card-foreground: 215 35% 8%;
     --border: 45 20% 82%;
-    --graphite: 45 30% 94%;
-    --glass-bg: 0 0% 100%;
+    --graphite: 44 35% 94%;
+    --glass-bg: 44 45% 96%;
     --glass-border: 45 20% 72%;
-    --glass-strong: 45 32% 96%;
+    --glass-strong: 44 40% 95%;
     --glass-ring: 205 85% 42%;
+    --nav-foreground: 204 65% 28%;
   }
 
   body[data-member-theme="entardecer"] .member-theme {
@@ -129,6 +134,7 @@
     --glass-border: 20 30% 40%;
     --glass-strong: 18 35% 24%;
     --glass-ring: 330 70% 65%;
+    --nav-foreground: var(--foreground);
   }
 
   body[data-member-theme="crepusculo"] .member-theme {
@@ -150,6 +156,7 @@
     --glass-border: 215 22% 35%;
     --glass-strong: 215 30% 22%;
     --glass-ring: 275 75% 65%;
+    --nav-foreground: var(--foreground);
   }
 
   * {
