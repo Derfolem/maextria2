@@ -232,13 +232,15 @@ export default function TrilhaModal({
             <div className="p-6 space-y-6 overflow-y-auto max-h-[60vh]">
               {/* Nome da trilha */}
               <div>
-                <label className="block text-sm font-medium mb-2">Nome da Trilha</label>
+                <label className="block text-sm font-medium mb-2 text-[hsl(var(--member-strong))]">
+                  Nome da Trilha
+                </label>
                 <input
                   type="text"
                   value={nome}
                   onChange={e => setNome(e.target.value)}
                   placeholder="Ex: Desenvolvimento Web Completo"
-                  className="input-field w-full"
+                  className="input-field w-full text-[hsl(var(--member-strong))]"
                   maxLength={100}
                 />
               </div>
@@ -246,7 +248,7 @@ export default function TrilhaModal({
               {/* Cursos selecionados */}
               {selectedCoursesData.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium mb-2">
+                  <label className="block text-sm font-medium mb-2 text-[hsl(var(--member-strong))]">
                     Cursos selecionados ({selectedCourses.length}{isAdmin ? '' : `/${MAX_CURSOS}`})
                   </label>
                   <div className="flex flex-wrap gap-2">
@@ -271,7 +273,9 @@ export default function TrilhaModal({
 
               {/* Filtros de cursos */}
               <div>
-                <label className="block text-sm font-medium mb-2">Adicionar cursos</label>
+                <label className="block text-sm font-medium mb-2 text-[hsl(var(--member-strong))]">
+                  Adicionar cursos
+                </label>
                 <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
                   {isAdmin
                     ? 'Busque e selecione cursos de qualquer professor'
@@ -287,7 +291,7 @@ export default function TrilhaModal({
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
                     placeholder="Buscar por nome ou descricao..."
-                    className="input-field w-full pl-10"
+                    className="input-field w-full pl-10 text-[hsl(var(--member-strong))]"
                   />
                 </div>
 

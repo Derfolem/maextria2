@@ -392,7 +392,7 @@ export default function TeacherMyCourses() {
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value as FilterOption)}
-              className="input-field py-2 pr-8"
+              className="input-field py-2 pr-8 text-[hsl(var(--member-strong))]"
             >
               <option value="recentes">Mais recentes</option>
               <option value="modificados">Modificados recentemente</option>
