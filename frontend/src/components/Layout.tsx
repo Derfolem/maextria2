@@ -510,7 +510,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             onClick={() => setMobileOpen(false)}
             aria-label="Fechar menu"
           />
-          <div className="absolute right-0 top-0 h-full w-72 bg-[hsl(var(--graphite))] shadow-xl p-6 flex flex-col gap-6 transition-transform duration-200 translate-x-0 overflow-y-auto overscroll-contain md:top-16 md:right-6 md:h-auto md:max-h-[80vh] md:rounded-[18px]">
+          <div className="absolute right-0 top-0 h-full w-72 bg-[hsl(var(--graphite))] text-[hsl(var(--nav-foreground))] shadow-xl p-6 flex flex-col gap-6 transition-transform duration-200 translate-x-0 overflow-y-auto overscroll-contain md:top-16 md:right-6 md:h-auto md:max-h-[80vh] md:rounded-[18px]">
             <div className="flex items-center justify-between">
               <span className="text-lg font-semibold">MAEXTRIA</span>
               <button type="button" onClick={() => setMobileOpen(false)} aria-label="Fechar menu">
