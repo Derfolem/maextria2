@@ -22,7 +22,6 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useAuthStore } from '../../lib/store';
 import { getCurriculum, getPlatformCerts } from '../../lib/curriculumApi';
-import Layout from '../../components/Layout';
 import AccordionSection from '../../components/curriculum/AccordionSection';
 import PersonalDataSection from '../../components/curriculum/sections/PersonalDataSection';
 import ObjectiveSection from '../../components/curriculum/sections/ObjectiveSection';
@@ -133,16 +132,14 @@ export default function StudentCurriculum() {
 
   if (isLoading) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <FaSpinner className="animate-spin text-4xl text-[hsl(var(--primary))]" />
-        </div>
-      </Layout>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <FaSpinner className="animate-spin text-4xl text-[hsl(var(--primary))]" />
+      </div>
     );
   }
 
   return (
-    <Layout>
+    <>
       <div className="max-w-4xl mx-auto py-8 px-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -368,6 +365,6 @@ export default function StudentCurriculum() {
           </motion.div>
         )}
       </AnimatePresence>
-    </Layout>
+    </>
   );
 }
