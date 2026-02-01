@@ -25,6 +25,8 @@
     --glass-strong: 220 24% 20%;
     --glass-ring: 200 90% 60%;
     --nav-foreground: var(--foreground);
+    --footer-foreground: var(--muted-foreground);
+    --member-strong: var(--foreground);
   }
 
   .dark {
@@ -47,6 +49,8 @@
     --glass-strong: 220 24% 20%;
     --glass-ring: 200 90% 60%;
     --nav-foreground: var(--foreground);
+    --footer-foreground: var(--muted-foreground);
+    --member-strong: var(--foreground);
   }
 
   .light {
@@ -69,6 +73,8 @@
     --glass-strong: 210 30% 96%;
     --glass-ring: 205 90% 45%;
     --nav-foreground: var(--foreground);
+    --footer-foreground: var(--muted-foreground);
+    --member-strong: var(--foreground);
   }
 
   body[data-member-theme="night"] .member-theme {
@@ -91,6 +97,8 @@
     --glass-strong: 220 24% 20%;
     --glass-ring: 200 80% 55%;
     --nav-foreground: var(--foreground);
+    --footer-foreground: var(--muted-foreground);
+    --member-strong: var(--foreground);
   }
 
   body[data-member-theme="day"] .member-theme {
@@ -113,6 +121,8 @@
     --glass-strong: 44 40% 95%;
     --glass-ring: 205 85% 42%;
     --nav-foreground: 205 70% 24%;
+    --footer-foreground: 205 70% 24%;
+    --member-strong: 205 70% 24%;
   }
 
   body[data-member-theme="entardecer"] .member-theme {
@@ -135,6 +145,8 @@
     --glass-strong: 18 35% 24%;
     --glass-ring: 330 70% 65%;
     --nav-foreground: var(--foreground);
+    --footer-foreground: var(--muted-foreground);
+    --member-strong: var(--foreground);
   }
 
   body[data-member-theme="crepusculo"] .member-theme {
@@ -157,6 +169,8 @@
     --glass-strong: 215 30% 22%;
     --glass-ring: 275 75% 65%;
     --nav-foreground: var(--foreground);
+    --footer-foreground: var(--muted-foreground);
+    --member-strong: var(--foreground);
   }
 
   * {

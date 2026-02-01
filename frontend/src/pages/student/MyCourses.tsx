@@ -225,26 +225,26 @@ export default function MyCourses() {
       <div className="flex flex-wrap gap-3 mb-8">
         <button
           onClick={() => setFilter('all')}
-          className={filter === 'all' ? 'btn-accent' : 'btn-outline'}
+          className={filter === 'all' ? 'btn-accent' : 'btn-outline text-[hsl(var(--member-strong))]'}
         >
           Todos ({enrollments.length})
         </button>
         <button
           onClick={() => setFilter('in-progress')}
-          className={filter === 'in-progress' ? 'btn-accent' : 'btn-outline'}
+          className={filter === 'in-progress' ? 'btn-accent' : 'btn-outline text-[hsl(var(--member-strong))]'}
         >
           Em andamento ({enrollments.filter((e) => !e.completed).length})
         </button>
         <button
           onClick={() => setFilter('completed')}
-          className={filter === 'completed' ? 'btn-accent' : 'btn-outline'}
+          className={filter === 'completed' ? 'btn-accent' : 'btn-outline text-[hsl(var(--member-strong))]'}
         >
           Concluidos ({enrollments.filter((e) => e.completed).length})
         </button>
         {trilhas.length > 0 && (
           <button
             onClick={() => setFilter('trilhas')}
-            className={`${filter === 'trilhas' ? 'bg-orange-500 text-white' : 'btn-outline'} px-4 py-2 rounded-lg flex items-center gap-2`}
+            className={`${filter === 'trilhas' ? 'bg-orange-500 text-white' : 'btn-outline text-[hsl(var(--member-strong))]'} px-4 py-2 rounded-lg flex items-center gap-2`}
           >
             <FaRoute />
             Trilhas ({trilhas.length})

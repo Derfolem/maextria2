@@ -253,7 +253,7 @@ export default function TrilhaModal({
                     {selectedCoursesData.map(course => (
                       <span
                         key={course.id}
-                        className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[hsl(var(--primary))] text-white text-sm"
+                        className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] text-sm"
                       >
                         <span className="truncate max-w-[150px]">{course.title}</span>
                         <button
@@ -299,8 +299,8 @@ export default function TrilhaModal({
                       onClick={() => setSelectedCategory('')}
                       className={`px-3 py-1 rounded-full text-sm transition ${
                         selectedCategory === ''
-                          ? 'bg-[hsl(var(--primary))] text-white'
-                          : 'bg-[hsl(var(--muted))] hover:bg-[hsl(var(--border))]'
+                          ? 'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]'
+                          : 'bg-[hsl(var(--muted))] text-[hsl(var(--member-strong))] hover:bg-[hsl(var(--border))]'
                       }`}
                     >
                       Todas
@@ -312,8 +312,8 @@ export default function TrilhaModal({
                         onClick={() => setSelectedCategory(cat === selectedCategory ? '' : cat)}
                         className={`px-3 py-1 rounded-full text-sm transition ${
                           selectedCategory === cat
-                            ? 'bg-[hsl(var(--primary))] text-white'
-                            : 'bg-[hsl(var(--muted))] hover:bg-[hsl(var(--border))]'
+                            ? 'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]'
+                            : 'bg-[hsl(var(--muted))] text-[hsl(var(--member-strong))] hover:bg-[hsl(var(--border))]'
                         }`}
                       >
                         {cat}
@@ -358,7 +358,7 @@ export default function TrilhaModal({
                             <p className="font-medium truncate">{course.title}</p>
                             <div className="flex items-center gap-2 text-xs text-[hsl(var(--muted-foreground))]">
                               {course.category && (
-                                <span className="px-1.5 py-0.5 bg-[hsl(var(--muted))] rounded">
+                                <span className="px-1.5 py-0.5 bg-[hsl(var(--muted))] text-[hsl(var(--member-strong))] rounded">
                                   {course.category}
                                 </span>
                               )}
