@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
 import toast from 'react-hot-toast';
-import api from '../../../lib/api';
+import { addLanguage, updateLanguage, deleteLanguage } from '../../../lib/curriculumApi';
 import type { LanguageEntry } from '../../../types';
 import EntryModal from '../EntryModal';
 
 interface LanguagesSectionProps {
   entries: LanguageEntry[];
+  curriculumId?: string;
   onUpdate: () => void;
 }
 
@@ -42,7 +43,7 @@ const fields = [
   },
 ];
 
-export default function LanguagesSection({ entries, onUpdate }: LanguagesSectionProps) {
+export default function LanguagesSection({ entries, curriculumId, onUpdate }: LanguagesSectionProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<LanguageEntry | null>(null);
   const [formValues, setFormValues] = useState<Record<string, any>>({});
@@ -72,10 +73,14 @@ export default function LanguagesSection({ entries, onUpdate }: LanguagesSection
     setIsSaving(true);
     try {
       if (editingEntry) {
-        await api.put(`/curriculum/languages/${editingEntry.id}`, formValues);
+        await updateLanguage(editingEntry.id, formValues);
         toast.success('Idioma atualizado!');
       } else {
-        await api.post('/curriculum/languages', formValues);
+        if (!curriculumId) {
+          toast.error('Erro: curriculo nao encontrado');
+          return;
+        }
+        await addLanguage(curriculumId, formValues);
         toast.success('Idioma adicionado!');
       }
       setIsModalOpen(false);
@@ -92,7 +97,7 @@ export default function LanguagesSection({ entries, onUpdate }: LanguagesSection
     if (!confirm('Tem certeza que deseja excluir este idioma?')) return;
 
     try {
-      await api.delete(`/curriculum/languages/${id}`);
+      await deleteLanguage(id);
       toast.success('Idioma removido!');
       onUpdate();
     } catch (error) {

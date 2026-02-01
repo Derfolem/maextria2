@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { FaPlus } from 'react-icons/fa';
 import toast from 'react-hot-toast';
-import api from '../../../lib/api';
+import { addEducation, updateEducation, deleteEducation } from '../../../lib/curriculumApi';
 import type { EducationEntry } from '../../../types';
 import EntryCard from '../EntryCard';
 import EntryModal from '../EntryModal';
 
 interface EducationSectionProps {
   entries: EducationEntry[];
+  curriculumId?: string;
   onUpdate: () => void;
 }
 
@@ -21,7 +22,7 @@ const fields = [
   { name: 'description', label: 'Descricao', type: 'textarea' as const, placeholder: 'Descreva atividades, projetos relevantes...' },
 ];
 
-export default function EducationSection({ entries, onUpdate }: EducationSectionProps) {
+export default function EducationSection({ entries, curriculumId, onUpdate }: EducationSectionProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<EducationEntry | null>(null);
   const [formValues, setFormValues] = useState<Record<string, any>>({});
@@ -56,10 +57,14 @@ export default function EducationSection({ entries, onUpdate }: EducationSection
     setIsSaving(true);
     try {
       if (editingEntry) {
-        await api.put(`/curriculum/education/${editingEntry.id}`, formValues);
+        await updateEducation(editingEntry.id, formValues);
         toast.success('Formacao atualizada!');
       } else {
-        await api.post('/curriculum/education', formValues);
+        if (!curriculumId) {
+          toast.error('Erro: curriculo nao encontrado');
+          return;
+        }
+        await addEducation(curriculumId, formValues);
         toast.success('Formacao adicionada!');
       }
       setIsModalOpen(false);
@@ -76,7 +81,7 @@ export default function EducationSection({ entries, onUpdate }: EducationSection
     if (!confirm('Tem certeza que deseja excluir esta formacao?')) return;
 
     try {
-      await api.delete(`/curriculum/education/${id}`);
+      await deleteEducation(id);
       toast.success('Formacao removida!');
       onUpdate();
     } catch (error) {

@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { FaPlus, FaCertificate, FaExternalLinkAlt } from 'react-icons/fa';
 import toast from 'react-hot-toast';
-import api from '../../../lib/api';
+import { useAuthStore } from '../../../lib/store';
+import { getPlatformCerts, addExternalCert, updateExternalCert, deleteExternalCert } from '../../../lib/curriculumApi';
 import type { ExternalCertEntry, PlatformCertificate } from '../../../types';
 import EntryCard from '../EntryCard';
 import EntryModal from '../EntryModal';
 
 interface CertificationsSectionProps {
   externalCerts: ExternalCertEntry[];
+  curriculumId?: string;
   onUpdate: () => void;
 }
 
@@ -19,7 +21,8 @@ const fields = [
   { name: 'credential_url', label: 'URL da Credencial', type: 'text' as const, placeholder: 'https://...' },
 ];
 
-export default function CertificationsSection({ externalCerts, onUpdate }: CertificationsSectionProps) {
+export default function CertificationsSection({ externalCerts, curriculumId, onUpdate }: CertificationsSectionProps) {
+  const user = useAuthStore((state) => state.user);
   const [platformCerts, setPlatformCerts] = useState<PlatformCertificate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -28,13 +31,16 @@ export default function CertificationsSection({ externalCerts, onUpdate }: Certi
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    loadPlatformCerts();
-  }, []);
+    if (user?.id) {
+      loadPlatformCerts();
+    }
+  }, [user?.id]);
 
   const loadPlatformCerts = async () => {
+    if (!user?.id) return;
     try {
-      const response = await api.get('/curriculum/platform-certs');
-      setPlatformCerts(response.data);
+      const certs = await getPlatformCerts(String(user.id));
+      setPlatformCerts(certs);
     } catch (error) {
       console.error('Error loading platform certs:', error);
     } finally {
@@ -69,10 +75,14 @@ export default function CertificationsSection({ externalCerts, onUpdate }: Certi
     setIsSaving(true);
     try {
       if (editingEntry) {
-        await api.put(`/curriculum/external-certs/${editingEntry.id}`, formValues);
+        await updateExternalCert(editingEntry.id, formValues);
         toast.success('Certificado atualizado!');
       } else {
-        await api.post('/curriculum/external-certs', formValues);
+        if (!curriculumId) {
+          toast.error('Erro: curriculo nao encontrado');
+          return;
+        }
+        await addExternalCert(curriculumId, formValues);
         toast.success('Certificado adicionado!');
       }
       setIsModalOpen(false);
@@ -89,7 +99,7 @@ export default function CertificationsSection({ externalCerts, onUpdate }: Certi
     if (!confirm('Tem certeza que deseja excluir este certificado?')) return;
 
     try {
-      await api.delete(`/curriculum/external-certs/${id}`);
+      await deleteExternalCert(id);
       toast.success('Certificado removido!');
       onUpdate();
     } catch (error) {

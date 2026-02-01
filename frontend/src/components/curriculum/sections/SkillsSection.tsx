@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
 import toast from 'react-hot-toast';
-import api from '../../../lib/api';
+import { addSkill, updateSkill, deleteSkill } from '../../../lib/curriculumApi';
 import type { SkillEntry } from '../../../types';
 import EntryModal from '../EntryModal';
 
 interface SkillsSectionProps {
   entries: SkillEntry[];
+  curriculumId?: string;
   onUpdate: () => void;
 }
 
@@ -39,7 +40,7 @@ const fields = [
   },
 ];
 
-export default function SkillsSection({ entries, onUpdate }: SkillsSectionProps) {
+export default function SkillsSection({ entries, curriculumId, onUpdate }: SkillsSectionProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<SkillEntry | null>(null);
   const [formValues, setFormValues] = useState<Record<string, any>>({});
@@ -69,10 +70,14 @@ export default function SkillsSection({ entries, onUpdate }: SkillsSectionProps)
     setIsSaving(true);
     try {
       if (editingEntry) {
-        await api.put(`/curriculum/skills/${editingEntry.id}`, formValues);
+        await updateSkill(editingEntry.id, formValues);
         toast.success('Habilidade atualizada!');
       } else {
-        await api.post('/curriculum/skills', formValues);
+        if (!curriculumId) {
+          toast.error('Erro: curriculo nao encontrado');
+          return;
+        }
+        await addSkill(curriculumId, formValues);
         toast.success('Habilidade adicionada!');
       }
       setIsModalOpen(false);
@@ -89,7 +94,7 @@ export default function SkillsSection({ entries, onUpdate }: SkillsSectionProps)
     if (!confirm('Tem certeza que deseja excluir esta habilidade?')) return;
 
     try {
-      await api.delete(`/curriculum/skills/${id}`);
+      await deleteSkill(id);
       toast.success('Habilidade removida!');
       onUpdate();
     } catch (error) {

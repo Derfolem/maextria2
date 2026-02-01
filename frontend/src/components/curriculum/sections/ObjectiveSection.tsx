@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { FaSave } from 'react-icons/fa';
 import toast from 'react-hot-toast';
-import api from '../../../lib/api';
+import { useAuthStore } from '../../../lib/store';
+import { updateCurriculum } from '../../../lib/curriculumApi';
 
 interface ObjectiveSectionProps {
   initialValue?: string;
@@ -9,6 +10,7 @@ interface ObjectiveSectionProps {
 }
 
 export default function ObjectiveSection({ initialValue, onUpdate }: ObjectiveSectionProps) {
+  const user = useAuthStore((state) => state.user);
   const [objective, setObjective] = useState(initialValue || '');
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -24,9 +26,10 @@ export default function ObjectiveSection({ initialValue, onUpdate }: ObjectiveSe
   };
 
   const handleSave = async () => {
+    if (!user?.id) return;
     setIsSaving(true);
     try {
-      await api.put('/curriculum', { professional_objective: objective });
+      await updateCurriculum(String(user.id), { professional_objective: objective });
       toast.success('Objetivo salvo com sucesso!');
       setHasChanges(false);
       onUpdate?.();

@@ -14,7 +14,8 @@ import {
   FaSpinner
 } from 'react-icons/fa';
 import toast from 'react-hot-toast';
-import api from '../../lib/api';
+import { useAuthStore } from '../../lib/store';
+import { getCurriculum, exportCurriculumPdf } from '../../lib/curriculumApi';
 import Layout from '../../components/Layout';
 import AccordionSection from '../../components/curriculum/AccordionSection';
 import PersonalDataSection from '../../components/curriculum/sections/PersonalDataSection';
@@ -29,18 +30,22 @@ import type { Curriculum } from '../../types';
 
 export default function StudentCurriculum() {
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
   const [curriculum, setCurriculum] = useState<Curriculum | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
-    loadCurriculum();
-  }, []);
+    if (user?.id) {
+      loadCurriculum();
+    }
+  }, [user?.id]);
 
   const loadCurriculum = async () => {
+    if (!user?.id) return;
     try {
-      const response = await api.get('/curriculum');
-      setCurriculum(response.data);
+      const data = await getCurriculum(String(user.id));
+      setCurriculum(data);
     } catch (error) {
       toast.error('Erro ao carregar curriculo');
       console.error(error);
@@ -50,13 +55,12 @@ export default function StudentCurriculum() {
   };
 
   const handleExportPdf = async () => {
+    if (!user?.id) return;
     setIsExporting(true);
     try {
-      const response = await api.get('/curriculum/export/pdf', {
-        responseType: 'blob'
-      });
+      const pdfBlob = await exportCurriculumPdf(String(user.id));
 
-      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const blob = new Blob([pdfBlob], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -67,8 +71,8 @@ export default function StudentCurriculum() {
       window.URL.revokeObjectURL(url);
 
       toast.success('PDF exportado com sucesso!');
-    } catch (error) {
-      toast.error('Erro ao exportar PDF');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao exportar PDF');
       console.error(error);
     } finally {
       setIsExporting(false);
@@ -146,6 +150,7 @@ export default function StudentCurriculum() {
         >
           <EducationSection
             entries={curriculum?.education || []}
+            curriculumId={curriculum?.id}
             onUpdate={loadCurriculum}
           />
         </AccordionSection>
@@ -157,6 +162,7 @@ export default function StudentCurriculum() {
         >
           <ExperienceSection
             entries={curriculum?.experience || []}
+            curriculumId={curriculum?.id}
             onUpdate={loadCurriculum}
           />
         </AccordionSection>
@@ -168,6 +174,7 @@ export default function StudentCurriculum() {
         >
           <CertificationsSection
             externalCerts={curriculum?.external_certs || []}
+            curriculumId={curriculum?.id}
             onUpdate={loadCurriculum}
           />
         </AccordionSection>
@@ -179,6 +186,7 @@ export default function StudentCurriculum() {
         >
           <SkillsSection
             entries={curriculum?.skills || []}
+            curriculumId={curriculum?.id}
             onUpdate={loadCurriculum}
           />
         </AccordionSection>
@@ -190,6 +198,7 @@ export default function StudentCurriculum() {
         >
           <LanguagesSection
             entries={curriculum?.languages || []}
+            curriculumId={curriculum?.id}
             onUpdate={loadCurriculum}
           />
         </AccordionSection>

@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { FaPlus } from 'react-icons/fa';
 import toast from 'react-hot-toast';
-import api from '../../../lib/api';
+import { addExperience, updateExperience, deleteExperience } from '../../../lib/curriculumApi';
 import type { ExperienceEntry } from '../../../types';
 import EntryCard from '../EntryCard';
 import EntryModal from '../EntryModal';
 
 interface ExperienceSectionProps {
   entries: ExperienceEntry[];
+  curriculumId?: string;
   onUpdate: () => void;
 }
 
@@ -21,7 +22,7 @@ const fields = [
   { name: 'description', label: 'Descricao', type: 'textarea' as const, placeholder: 'Descreva suas principais atividades e conquistas...' },
 ];
 
-export default function ExperienceSection({ entries, onUpdate }: ExperienceSectionProps) {
+export default function ExperienceSection({ entries, curriculumId, onUpdate }: ExperienceSectionProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<ExperienceEntry | null>(null);
   const [formValues, setFormValues] = useState<Record<string, any>>({});
@@ -56,10 +57,14 @@ export default function ExperienceSection({ entries, onUpdate }: ExperienceSecti
     setIsSaving(true);
     try {
       if (editingEntry) {
-        await api.put(`/curriculum/experience/${editingEntry.id}`, formValues);
+        await updateExperience(editingEntry.id, formValues);
         toast.success('Experiencia atualizada!');
       } else {
-        await api.post('/curriculum/experience', formValues);
+        if (!curriculumId) {
+          toast.error('Erro: curriculo nao encontrado');
+          return;
+        }
+        await addExperience(curriculumId, formValues);
         toast.success('Experiencia adicionada!');
       }
       setIsModalOpen(false);
@@ -76,7 +81,7 @@ export default function ExperienceSection({ entries, onUpdate }: ExperienceSecti
     if (!confirm('Tem certeza que deseja excluir esta experiencia?')) return;
 
     try {
-      await api.delete(`/curriculum/experience/${id}`);
+      await deleteExperience(id);
       toast.success('Experiencia removida!');
       onUpdate();
     } catch (error) {

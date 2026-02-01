@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { FaSave } from 'react-icons/fa';
 import toast from 'react-hot-toast';
-import api from '../../../lib/api';
+import { useAuthStore } from '../../../lib/store';
+import { updateCurriculum } from '../../../lib/curriculumApi';
 
 interface AdditionalInfoSectionProps {
   initialValue?: string;
@@ -9,6 +10,7 @@ interface AdditionalInfoSectionProps {
 }
 
 export default function AdditionalInfoSection({ initialValue, onUpdate }: AdditionalInfoSectionProps) {
+  const user = useAuthStore((state) => state.user);
   const [info, setInfo] = useState(initialValue || '');
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -24,9 +26,10 @@ export default function AdditionalInfoSection({ initialValue, onUpdate }: Additi
   };
 
   const handleSave = async () => {
+    if (!user?.id) return;
     setIsSaving(true);
     try {
-      await api.put('/curriculum', { additional_info: info });
+      await updateCurriculum(String(user.id), { additional_info: info });
       toast.success('Informacoes salvas com sucesso!');
       setHasChanges(false);
       onUpdate?.();
