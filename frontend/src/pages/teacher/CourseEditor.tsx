@@ -818,7 +818,7 @@ const loadCourse = async () => {
           <h2 className="text-xl font-semibold mb-4">Informações Básicas</h2>
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-2">
                 Título do Curso *
               </label>
               <input
@@ -831,7 +831,7 @@ const loadCourse = async () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-2">
                 Preço (R$) *
               </label>
               <input
@@ -845,7 +845,7 @@ const loadCourse = async () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-2">
                 Categoria
               </label>
               <input
@@ -858,7 +858,7 @@ const loadCourse = async () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-2">
                 Nível
               </label>
               <select value={level} onChange={(e) => setLevel(e.target.value)} className="input-field">
@@ -870,7 +870,7 @@ const loadCourse = async () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-2">
                 Carga Horária
               </label>
               <select value={cargaHoraria} onChange={(e) => setCargaHoraria(e.target.value)} className="input-field">
@@ -888,7 +888,7 @@ const loadCourse = async () => {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-2">
                 URL da Imagem
               </label>
               <input
@@ -907,7 +907,7 @@ const loadCourse = async () => {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-2">
                 Descrição *
               </label>
               <textarea
@@ -921,7 +921,7 @@ const loadCourse = async () => {
 
             {(user?.role === 'admin' || user?.role === 'teacher') && (
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-2">
                   Nome exibido do professor
                 </label>
                 <input
@@ -948,13 +948,16 @@ const loadCourse = async () => {
               </div>
 
               {modules.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">
+                <p className="text-[hsl(var(--muted-foreground))] text-center py-8">
                   Nenhum módulo criado. Clique em "Adicionar Módulo" para começar.
                 </p>
               ) : (
                 <div className="space-y-6">
                   {modules.map((module) => (
-                    <div key={module.id} className="border rounded-lg p-4 bg-gray-50">
+                    <div
+                      key={module.id}
+                      className="border border-[hsl(var(--border))] rounded-lg p-4 bg-[hsl(var(--muted))]"
+                    >
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex-grow mr-4">
                           <input
@@ -1016,7 +1019,7 @@ const loadCourse = async () => {
 
                         {moduleQuizzes[String(module.id)] &&
                           questionDrafts[moduleQuizzes[String(module.id)].id] && (
-                            <div className="border border-[hsl(var(--border))] rounded-[12px] p-4 mb-4 bg-white">
+                            <div className="border border-[hsl(var(--border))] rounded-[12px] p-4 mb-4 bg-[hsl(var(--card))]">
                               <h4 className="font-semibold mb-3">Nova questão</h4>
                               <textarea
                                 value={questionDrafts[moduleQuizzes[String(module.id)].id].enunciado || ''}
@@ -1073,7 +1076,10 @@ const loadCourse = async () => {
                           )}
 
                         {module.lessons?.map((lesson) => (
-                          <div key={lesson.id} className="bg-white border rounded-lg p-4 mb-3">
+                          <div
+                            key={lesson.id}
+                            className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg p-4 mb-3"
+                          >
                             <div className="flex justify-between items-start mb-3">
                               <input
                                 type="text"
@@ -1182,7 +1188,7 @@ const loadCourse = async () => {
                 )}
               </div>
               {finalQuiz && questionDrafts[finalQuiz.id] && (
-                <div className="border border-[hsl(var(--border))] rounded-[12px] p-4 mb-4 bg-white">
+                <div className="border border-[hsl(var(--border))] rounded-[12px] p-4 mb-4 bg-[hsl(var(--card))]">
                   <h4 className="font-semibold mb-3">Nova questão</h4>
                   <textarea
                     value={questionDrafts[finalQuiz.id].enunciado || ''}

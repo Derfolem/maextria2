@@ -369,7 +369,7 @@ export default function CourseCreatorGlass() {
   return (
     <div className="max-w-7xl mx-auto px-[clamp(24px,5vw,80px)] py-[clamp(40px,6vh,80px)]">
       <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
-        <h1 className="text-3xl font-bold text-white">Criar Novo Curso (Glass)</h1>
+        <h1 className="text-3xl font-bold text-[hsl(var(--foreground))]">Criar Novo Curso (Glass)</h1>
         <div className="flex flex-wrap items-center gap-3">
           <ThemeToggle />
           <button
@@ -393,28 +393,36 @@ export default function CourseCreatorGlass() {
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Left side: Basic Course Info & Text Extractor */}
         <div className="glass-panel p-6 rounded-lg shadow-lg backdrop-blur-md"> {/* New class for glass panel */}
-          <h2 className="text-xl font-semibold text-white mb-4">Informações Básicas</h2>
+          <h2 className="text-xl font-semibold text-[hsl(var(--foreground))] mb-4">Informações Básicas</h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-white/70 mb-1">Título do Curso *</label>
+              <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-1">
+                Título do Curso *
+              </label>
               <input type="text" value={title} onChange={(e) => setTitle(e.target.value)}
                      className="input-glass" placeholder="Ex: Desenvolvimento Web Completo" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-white/70 mb-1">Descrição do Curso *</label>
+              <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-1">
+                Descrição do Curso *
+              </label>
               <textarea value={description} onChange={(e) => setDescription(e.target.value)}
                         className="input-glass w-full h-24 resize-y" placeholder="Descreva seu curso em detalhes..." />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-white/70 mb-1">Preço (R$) *</label>
+              <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-1">
+                Preço (R$) *
+              </label>
               <input type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)}
                      className="input-glass" placeholder="0.00" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-white/70 mb-1">Categoria</label>
+              <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-1">
+                Categoria
+              </label>
               {isAdmin ? (
                 <div className="space-y-2">
                   <select
@@ -432,7 +440,7 @@ export default function CourseCreatorGlass() {
                   <button
                     type="button"
                     onClick={handleOpenCategoryModal}
-                    className="btn-outline text-white/80"
+                    className="btn-outline"
                   >
                     Gerenciar categorias
                   </button>
@@ -446,7 +454,7 @@ export default function CourseCreatorGlass() {
                     placeholder="Definida pelo admin"
                     disabled
                   />
-                  <p className="text-xs text-white/50 mt-1">
+                  <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
                     Categoria somente o admin pode definir.
                   </p>
                 </>
@@ -454,7 +462,9 @@ export default function CourseCreatorGlass() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-white/70 mb-1">Nível</label>
+              <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-1">
+                Nível
+              </label>
               <select value={level} onChange={(e) => setLevel(e.target.value)} className="input-glass">
                 <option value="">Selecione</option>
                 <option value="Iniciante">Iniciante</option>
@@ -464,25 +474,31 @@ export default function CourseCreatorGlass() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-white/70 mb-1">URL da Imagem</label>
+              <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-1">
+                URL da Imagem
+              </label>
               <input type="text" value={thumbnail} onChange={(e) => setThumbnail(e.target.value)}
                      className="input-glass" placeholder="https://..." disabled={!isAdmin} />
               {!isAdmin && (
-                <p className="text-xs text-white/50 mt-1">
+                <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
                   Apenas o admin pode editar a URL da imagem.
                 </p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-white/70 mb-1">Nome exibido do professor</label>
+              <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-1">
+                Nome exibido do professor
+              </label>
               <input type="text" value={teacherName} onChange={(e) => setTeacherName(e.target.value)}
                      className="input-glass" placeholder="Ex: Equipe MAEXTRIA" />
             </div>
 
             <div className="pt-4">
-              <h3 className="text-lg font-semibold text-white mb-2">Cole o Texto do Curso Aqui</h3>
-              <p className="text-sm text-white/70 mb-3">
+              <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">
+                Cole o Texto do Curso Aqui
+              </h3>
+              <p className="text-sm text-[hsl(var(--muted-foreground))] mb-3">
                 Use o formato simples: `Título do Curso:`, `Módulo 1:`, `Aula 1:`, `Conteúdo da Aula:`.
               </p>
               <textarea
@@ -497,9 +513,11 @@ export default function CourseCreatorGlass() {
 
         {/* Right side: Preview of parsed course structure */}
         <div className="glass-panel p-6 rounded-lg shadow-lg backdrop-blur-md">
-          <h2 className="text-xl font-semibold text-white mb-4">Pré-visualização do Curso</h2>
+          <h2 className="text-xl font-semibold text-[hsl(var(--foreground))] mb-4">
+            Pré-visualização do Curso
+          </h2>
           {parsedCourse ? (
-            <div className="text-white/80 space-y-4">
+            <div className="text-[hsl(var(--foreground))] space-y-4">
               <p><span className="font-semibold">Título:</span> {parsedCourse.title}</p>
               <p><span className="font-semibold">Descrição:</span> {parsedCourse.description}</p>
               <p><span className="font-semibold">Categoria:</span> {isAdmin
@@ -511,19 +529,33 @@ export default function CourseCreatorGlass() {
 
               {parsedCourse.modules && parsedCourse.modules.length > 0 && (
                 <div className="space-y-3 mt-4">
-                  <h3 className="text-lg font-semibold text-white">Módulos:</h3>
+                  <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">Módulos:</h3>
                   {parsedCourse.modules.map((module: any, modIndex: number) => (
                     <div key={module.id} className="glass-card p-4 rounded-lg"> {/* New class for nested glass */}
                       <p><span className="font-semibold">Módulo {modIndex + 1}:</span> {module.title}</p>
-                      {module.description && <p className="text-sm text-white/70">{module.description}</p>}
+                      {module.description && (
+                        <p className="text-sm text-[hsl(var(--muted-foreground))]">{module.description}</p>
+                      )}
 
                       {module.lessons && module.lessons.length > 0 && (
-                        <div className="space-y-2 mt-3 pl-4 border-l border-white/20">
-                          <h4 className="text-md font-semibold text-white">Aulas:</h4>
+                        <div className="space-y-2 mt-3 pl-4 border-l border-[hsl(var(--border))]">
+                          <h4 className="text-md font-semibold text-[hsl(var(--foreground))]">Aulas:</h4>
                           {module.lessons.map((lesson: any, lessonIndex: number) => (
                             <div key={lesson.id} className="glass-card p-3 rounded-md text-sm">
                               <p><span className="font-semibold">Aula {modIndex + 1}.{lessonIndex + 1}:</span> {lesson.title}</p>
-                              {lesson.video_url && <p className="text-xs text-white/60">Vídeo: <a href={lesson.video_url} target="_blank" rel="noopener noreferrer" className="text-[hsl(var(--primary))] hover:underline">{lesson.video_url}</a></p>}
+                              {lesson.video_url && (
+                                <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                                  Vídeo:{' '}
+                                  <a
+                                    href={lesson.video_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[hsl(var(--primary))] hover:underline"
+                                  >
+                                    {lesson.video_url}
+                                  </a>
+                                </p>
+                              )}
                               <div className="flex gap-2 mt-1">
                                   <button
                                     type="button"
@@ -540,7 +572,11 @@ export default function CourseCreatorGlass() {
                                     <FaVideo /> Vídeo
                                   </button>
                                 </div>
-                                {lesson.content && <p className="text-xs text-white/60 mt-1">{lesson.content.substring(0, 100)}...</p>}
+                                {lesson.content && (
+                                  <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                                    {lesson.content.substring(0, 100)}...
+                                  </p>
+                                )}
                             </div>
                           ))}
                         </div>
@@ -551,13 +587,15 @@ export default function CourseCreatorGlass() {
               )}
             </div>
           ) : (
-            <p className="text-white/70">Cole e extraia o texto para ver a pré-visualização.</p>
+            <p className="text-[hsl(var(--muted-foreground))]">
+              Cole e extraia o texto para ver a pré-visualização.
+            </p>
           )}
         </div>
       </div>
       {categoryModalOpen && isAdmin && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="w-full max-w-2xl rounded-[20px] bg-[#0f172a] p-6 text-white shadow-2xl">
+          <div className="w-full max-w-2xl rounded-[20px] bg-[hsl(var(--card))] p-6 text-[hsl(var(--foreground))] shadow-2xl">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold">Gerenciar categorias</h3>
               <button
@@ -566,29 +604,36 @@ export default function CourseCreatorGlass() {
                   setCategoryModalOpen(false);
                   resetCategoryForm();
                 }}
-                className="text-white/70 hover:text-white"
+                className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
               >
                 Fechar
               </button>
             </div>
             <div className="grid md:grid-cols-[1.1fr_0.9fr] gap-6">
               <div className="space-y-3">
-                <h4 className="text-sm uppercase tracking-[0.25em] text-white/60">Categorias</h4>
+                <h4 className="text-sm uppercase tracking-[0.25em] text-[hsl(var(--muted-foreground))]">
+                  Categorias
+                </h4>
                 <div className="space-y-2 max-h-[320px] overflow-y-auto pr-2">
                   {categories.length === 0 && (
-                    <p className="text-sm text-white/60">Nenhuma categoria criada.</p>
+                    <p className="text-sm text-[hsl(var(--muted-foreground))]">Nenhuma categoria criada.</p>
                   )}
                   {categories.map((cat) => (
-                    <div key={cat.id} className="flex items-center justify-between rounded-lg border border-white/10 p-3">
+                    <div
+                      key={cat.id}
+                      className="flex items-center justify-between rounded-lg border border-[hsl(var(--border))] p-3"
+                    >
                       <div>
                         <p className="font-semibold">{cat.name}</p>
-                        {cat.description && <p className="text-xs text-white/60">{cat.description}</p>}
+                        {cat.description && (
+                          <p className="text-xs text-[hsl(var(--muted-foreground))]">{cat.description}</p>
+                        )}
                       </div>
                       <div className="flex gap-2">
                         <button
                           type="button"
                           onClick={() => handleEditCategory(cat)}
-                          className="text-xs text-white/70 hover:text-white"
+                          className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
                         >
                           Editar
                         </button>
@@ -605,7 +650,7 @@ export default function CourseCreatorGlass() {
                 </div>
               </div>
               <div className="space-y-3">
-                <h4 className="text-sm uppercase tracking-[0.25em] text-white/60">
+                <h4 className="text-sm uppercase tracking-[0.25em] text-[hsl(var(--muted-foreground))]">
                   {editingCategoryId ? 'Editar categoria' : 'Nova categoria'}
                 </h4>
                 <input
@@ -634,14 +679,14 @@ export default function CourseCreatorGlass() {
                     <button
                       type="button"
                       onClick={resetCategoryForm}
-                      className="btn-outline text-white/80"
+                      className="btn-outline"
                     >
                       Cancelar edicao
                     </button>
                   )}
                 </div>
                 {USE_LOCAL_AUTH && editingCategoryId && (
-                  <p className="text-xs text-white/50">
+                  <p className="text-xs text-[hsl(var(--muted-foreground))]">
                     Edicao de categoria nao suportada no modo local.
                   </p>
                 )}

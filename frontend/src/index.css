@@ -20,9 +20,14 @@
     --card-foreground: 220 20% 90%;
     --border: 220 18% 18%;
     --graphite: 220 20% 16%;
+    --glass-bg: 220 24% 14%;
+    --glass-border: 220 20% 30%;
+    --glass-strong: 220 24% 20%;
+    --glass-ring: 200 90% 60%;
   }
 
-  .dark {
+  .dark,
+  .theme-night {
     --background: 220 30% 5%;
     --foreground: 220 20% 92%;
     --primary: 205 95% 60%;
@@ -37,23 +42,74 @@
     --card-foreground: 220 20% 90%;
     --border: 220 18% 18%;
     --graphite: 220 20% 16%;
+    --glass-bg: 220 24% 14%;
+    --glass-border: 220 20% 30%;
+    --glass-strong: 220 24% 20%;
+    --glass-ring: 200 90% 60%;
   }
 
-  .light {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
+  .light,
+  .theme-day {
+    --background: 38 60% 97%;
+    --foreground: 222 35% 12%;
     --primary: 205 90% 45%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 150 80% 35%;
+    --secondary: 150 70% 35%;
     --secondary-foreground: 0 0% 100%;
-    --accent: 165 55% 45%;
+    --accent: 35 85% 50%;
     --accent-foreground: 0 0% 100%;
-    --muted: 210 30% 92%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 35 30% 92%;
+    --muted-foreground: 215 16% 40%;
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --border: 214 32% 85%;
-    --graphite: 210 20% 94%;
+    --card-foreground: 222 35% 12%;
+    --border: 210 20% 85%;
+    --graphite: 210 25% 93%;
+    --glass-bg: 0 0% 100%;
+    --glass-border: 210 18% 75%;
+    --glass-strong: 35 30% 96%;
+    --glass-ring: 205 90% 45%;
+  }
+
+  .theme-entardecer {
+    --background: 18 40% 12%;
+    --foreground: 30 30% 92%;
+    --primary: 20 90% 60%;
+    --primary-foreground: 18 40% 12%;
+    --secondary: 275 60% 65%;
+    --secondary-foreground: 18 40% 12%;
+    --accent: 340 70% 70%;
+    --accent-foreground: 18 40% 12%;
+    --muted: 18 28% 20%;
+    --muted-foreground: 24 18% 70%;
+    --card: 18 30% 16%;
+    --card-foreground: 30 25% 90%;
+    --border: 18 20% 26%;
+    --graphite: 18 22% 22%;
+    --glass-bg: 18 35% 20%;
+    --glass-border: 20 30% 40%;
+    --glass-strong: 18 35% 24%;
+    --glass-ring: 20 90% 60%;
+  }
+
+  .theme-crepusculo {
+    --background: 235 35% 8%;
+    --foreground: 215 25% 92%;
+    --primary: 270 80% 65%;
+    --primary-foreground: 235 35% 8%;
+    --secondary: 200 90% 55%;
+    --secondary-foreground: 235 35% 8%;
+    --accent: 15 85% 60%;
+    --accent-foreground: 235 35% 8%;
+    --muted: 235 24% 14%;
+    --muted-foreground: 220 12% 68%;
+    --card: 235 28% 12%;
+    --card-foreground: 210 25% 92%;
+    --border: 235 22% 20%;
+    --graphite: 235 20% 18%;
+    --glass-bg: 235 30% 18%;
+    --glass-border: 235 22% 35%;
+    --glass-strong: 235 30% 22%;
+    --glass-ring: 270 80% 65%;
   }
 
   * {
@@ -217,47 +273,57 @@
   }
 
   .glass-panel {
-    @apply relative bg-white/5 border border-white/10 rounded-xl shadow-lg overflow-hidden;
+    @apply relative rounded-xl shadow-lg overflow-hidden;
+    background: hsl(var(--glass-bg) / 0.55);
+    border: 1px solid hsl(var(--glass-border) / 0.5);
     backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px); /* For Safari support */
+    -webkit-backdrop-filter: blur(10px);
   }
 
   .input-glass {
-    @apply w-full px-4 py-2 outline-none transition duration-200 text-white placeholder-white/50;
-    background: rgba(255, 255, 255, 0.08); /* More subtle background */
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    @apply w-full px-4 py-2 outline-none transition duration-200;
+    background: hsl(var(--glass-strong) / 0.6);
+    border: 1px solid hsl(var(--glass-border) / 0.7);
     border-radius: 8px;
+    color: hsl(var(--foreground));
+  }
+
+  .input-glass::placeholder {
+    color: hsl(var(--muted-foreground));
   }
 
   .input-glass:focus {
-    @apply ring-2 ring-blue-500/50 border-transparent;
+    @apply ring-2 border-transparent;
+    --tw-ring-color: hsl(var(--glass-ring) / 0.5);
   }
 
   .input-glass:disabled {
-    @apply opacity-50 cursor-not-allowed;
-    background: rgba(255, 255, 255, 0.05);
+    @apply opacity-60 cursor-not-allowed;
+    background: hsl(var(--glass-bg) / 0.4);
   }
 
   .btn-glass {
     @apply transition duration-300 px-6 py-3 rounded-lg font-semibold uppercase tracking-wide text-sm;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: white;
+    background: hsl(var(--glass-strong) / 0.65);
+    border: 1px solid hsl(var(--glass-border) / 0.7);
+    color: hsl(var(--foreground));
     backdrop-filter: blur(5px);
     -webkit-backdrop-filter: blur(5px);
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
   }
 
   .btn-glass:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.3);
+    background: hsl(var(--glass-strong) / 0.8);
+    border-color: hsl(var(--glass-border) / 0.9);
     box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
   }
 
   .glass-card {
-    @apply relative bg-white/5 border border-white/10 rounded-md p-3;
+    @apply relative rounded-md p-3;
+    background: hsl(var(--glass-bg) / 0.55);
+    border: 1px solid hsl(var(--glass-border) / 0.5);
     backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px); /* For Safari support */
+    -webkit-backdrop-filter: blur(8px);
   }
 }
 
