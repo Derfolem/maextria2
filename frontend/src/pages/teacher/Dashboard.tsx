@@ -5,6 +5,7 @@ import { FaBook, FaUsers, FaDollarSign, FaChartLine, FaPlus, FaArrowRight, FaUni
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { normalizeCourse } from '../../lib/normalizeCourse';
 import toast from 'react-hot-toast';
+import ThemeToggle from '../../components/ThemeToggle';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
 
@@ -337,7 +338,8 @@ export default function TeacherDashboard() {
           <p className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--primary))]">Painel do professor</p>
           <h1 className="headline-font text-4xl md:text-5xl">Gestao com criterio</h1>
         </div>
-        <div className="flex flex-wrap gap-3 w-full lg:w-auto">
+        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+          <ThemeToggle />
           <Link to="/teacher/course/new-glass" className="btn-glass flex items-center gap-2 w-full sm:w-auto justify-center">
             <FaPlus />
             Novo Curso

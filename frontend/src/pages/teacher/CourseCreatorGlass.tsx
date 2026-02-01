@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaSave, FaMagic, FaImage, FaVideo } from 'react-icons/fa';
-import ThemeToggle from '../../components/ThemeToggle';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../lib/store';
 import { supabase } from '../../lib/supabase';
@@ -371,7 +370,6 @@ export default function CourseCreatorGlass() {
       <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
         <h1 className="text-3xl font-bold text-[hsl(var(--foreground))]">Criar Novo Curso (Glass)</h1>
         <div className="flex flex-wrap items-center gap-3">
-          <ThemeToggle />
           <button
             type="button"
             onClick={handleParseText}

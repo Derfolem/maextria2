@@ -5,6 +5,7 @@ import { FaUsers, FaBook, FaDollarSign, FaChartLine, FaBullhorn } from 'react-ic
 import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import ThemeToggle from '../../components/ThemeToggle';
 
 type AdminNotification = {
   id: string;
@@ -376,6 +377,7 @@ export default function AdminDashboard() {
           <p className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--primary))]">Administracao</p>
           <h1 className="headline-font text-4xl md:text-5xl">Visao geral da plataforma</h1>
         </div>
+        <ThemeToggle />
       </div>
 
       <div className="grid md:grid-cols-4 gap-6 mb-12">

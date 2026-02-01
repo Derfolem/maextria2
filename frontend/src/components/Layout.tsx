@@ -111,7 +111,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const isMemberArea =
     location.pathname.startsWith('/admin') ||
     location.pathname.startsWith('/teacher') ||
-    location.pathname.startsWith('/professor');
+    location.pathname.startsWith('/professor') ||
+    location.pathname.startsWith('/student');
   const isTeacherLanding = location.pathname === '/sou-professor';
   const showBanner = bannerEnabled && !isMemberArea && !isTeacherLanding;
   const needsProfileCompletion = isAuthenticated && user?.role !== 'admin' && user?.profile_completed === false;
@@ -352,6 +353,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('maextria-notifications-read', handler);
   }, [user?.id, user?.role]);
 
+  useEffect(() => {
+    if (!isMemberArea || typeof document === 'undefined') return;
+    const saved = window.localStorage.getItem('maextria-theme');
+    const normalized =
+      saved === 'dark' ? 'night' :
+      saved === 'light' ? 'day' :
+      saved || 'night';
+    document.body.dataset.memberTheme = normalized;
+  }, [isMemberArea]);
+
   const notificationLink = user?.role === 'teacher' ? '/teacher/notifications' : '/student/notifications';
 
   if (systemFlagsLoaded && maintenanceMode && user?.role !== 'admin' && !maintenanceBypass) {
@@ -386,7 +397,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className={`min-h-screen flex flex-col${isMemberArea ? ' member-theme' : ''}`}>
       <nav className="fixed inset-x-0 top-0 z-50 bg-[hsl(var(--background))]/95 backdrop-blur border-b border-[hsl(var(--border))]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">

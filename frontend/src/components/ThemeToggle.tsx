@@ -23,23 +23,8 @@ export default function ThemeToggle() {
   });
 
   useEffect(() => {
-    const root = document.documentElement;
-    root.classList.remove(
-      'dark',
-      'light',
-      'theme-night',
-      'theme-day',
-      'theme-entardecer',
-      'theme-crepusculo'
-    );
-    if (theme === 'night') {
-      root.classList.add('theme-night', 'dark');
-    } else if (theme === 'day') {
-      root.classList.add('theme-day', 'light');
-    } else if (theme === 'entardecer') {
-      root.classList.add('theme-entardecer', 'dark');
-    } else {
-      root.classList.add('theme-crepusculo', 'dark');
+    if (typeof document !== 'undefined') {
+      document.body.dataset.memberTheme = theme;
     }
     localStorage.setItem('maextria-theme', theme);
   }, [theme]);

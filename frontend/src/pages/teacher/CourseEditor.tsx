@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Module, Lesson } from '../../types';
 import toast from 'react-hot-toast';
 import { FaPlus, FaTrash, FaSave, FaRobot } from 'react-icons/fa';
-import ThemeToggle from '../../components/ThemeToggle';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
 
@@ -789,7 +788,6 @@ const loadCourse = async () => {
           {isEditing ? 'Editar Curso' : 'Criar Novo Curso'}
         </h1>
         <div className="flex flex-wrap items-center gap-3">
-          <ThemeToggle />
           <button
             type="button"
             onClick={handleAiArea}

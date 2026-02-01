@@ -26,8 +26,7 @@
     --glass-ring: 200 90% 60%;
   }
 
-  .dark,
-  .theme-night {
+  .dark {
     --background: 220 30% 5%;
     --foreground: 220 20% 92%;
     --primary: 205 95% 60%;
@@ -48,36 +47,77 @@
     --glass-ring: 200 90% 60%;
   }
 
-  .light,
-  .theme-day {
-    --background: 38 60% 97%;
-    --foreground: 222 35% 12%;
+  .light {
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
     --primary: 205 90% 45%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 150 70% 35%;
+    --secondary: 150 80% 35%;
     --secondary-foreground: 0 0% 100%;
-    --accent: 35 85% 50%;
+    --accent: 165 55% 45%;
     --accent-foreground: 0 0% 100%;
-    --muted: 35 30% 92%;
-    --muted-foreground: 215 16% 40%;
+    --muted: 210 30% 92%;
+    --muted-foreground: 215 16% 47%;
     --card: 0 0% 100%;
-    --card-foreground: 222 35% 12%;
-    --border: 210 20% 85%;
-    --graphite: 210 25% 93%;
+    --card-foreground: 222 47% 11%;
+    --border: 214 32% 85%;
+    --graphite: 210 20% 94%;
     --glass-bg: 0 0% 100%;
     --glass-border: 210 18% 75%;
-    --glass-strong: 35 30% 96%;
+    --glass-strong: 210 30% 96%;
     --glass-ring: 205 90% 45%;
   }
 
-  .theme-entardecer {
+  body[data-member-theme="night"] .member-theme {
+    --background: 220 30% 5%;
+    --foreground: 210 20% 92%;
+    --primary: 210 15% 80%;
+    --primary-foreground: 220 30% 5%;
+    --secondary: 200 80% 55%;
+    --secondary-foreground: 220 30% 5%;
+    --accent: 48 60% 70%;
+    --accent-foreground: 220 30% 5%;
+    --muted: 220 20% 12%;
+    --muted-foreground: 220 10% 65%;
+    --card: 220 24% 10%;
+    --card-foreground: 210 20% 92%;
+    --border: 220 18% 18%;
+    --graphite: 220 20% 16%;
+    --glass-bg: 220 24% 14%;
+    --glass-border: 210 12% 30%;
+    --glass-strong: 220 24% 20%;
+    --glass-ring: 200 80% 55%;
+  }
+
+  body[data-member-theme="day"] .member-theme {
+    --background: 48 60% 97%;
+    --foreground: 210 30% 12%;
+    --primary: 205 80% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 145 55% 35%;
+    --secondary-foreground: 0 0% 100%;
+    --accent: 45 85% 55%;
+    --accent-foreground: 210 30% 12%;
+    --muted: 50 30% 92%;
+    --muted-foreground: 215 16% 38%;
+    --card: 0 0% 100%;
+    --card-foreground: 210 30% 12%;
+    --border: 45 20% 85%;
+    --graphite: 45 30% 94%;
+    --glass-bg: 0 0% 100%;
+    --glass-border: 45 20% 75%;
+    --glass-strong: 45 35% 96%;
+    --glass-ring: 205 80% 45%;
+  }
+
+  body[data-member-theme="entardecer"] .member-theme {
     --background: 18 40% 12%;
     --foreground: 30 30% 92%;
-    --primary: 20 90% 60%;
+    --primary: 24 85% 55%;
     --primary-foreground: 18 40% 12%;
-    --secondary: 275 60% 65%;
+    --secondary: 330 70% 65%;
     --secondary-foreground: 18 40% 12%;
-    --accent: 340 70% 70%;
+    --accent: 25 40% 45%;
     --accent-foreground: 18 40% 12%;
     --muted: 18 28% 20%;
     --muted-foreground: 24 18% 70%;
@@ -88,28 +128,28 @@
     --glass-bg: 18 35% 20%;
     --glass-border: 20 30% 40%;
     --glass-strong: 18 35% 24%;
-    --glass-ring: 20 90% 60%;
+    --glass-ring: 330 70% 65%;
   }
 
-  .theme-crepusculo {
-    --background: 235 35% 8%;
-    --foreground: 215 25% 92%;
-    --primary: 270 80% 65%;
-    --primary-foreground: 235 35% 8%;
-    --secondary: 200 90% 55%;
-    --secondary-foreground: 235 35% 8%;
-    --accent: 15 85% 60%;
-    --accent-foreground: 235 35% 8%;
-    --muted: 235 24% 14%;
+  body[data-member-theme="crepusculo"] .member-theme {
+    --background: 210 45% 9%;
+    --foreground: 215 30% 92%;
+    --primary: 275 75% 65%;
+    --primary-foreground: 210 45% 9%;
+    --secondary: 200 55% 45%;
+    --secondary-foreground: 210 45% 9%;
+    --accent: 220 65% 55%;
+    --accent-foreground: 210 45% 9%;
+    --muted: 215 25% 14%;
     --muted-foreground: 220 12% 68%;
-    --card: 235 28% 12%;
-    --card-foreground: 210 25% 92%;
-    --border: 235 22% 20%;
-    --graphite: 235 20% 18%;
-    --glass-bg: 235 30% 18%;
-    --glass-border: 235 22% 35%;
-    --glass-strong: 235 30% 22%;
-    --glass-ring: 270 80% 65%;
+    --card: 215 30% 12%;
+    --card-foreground: 215 30% 92%;
+    --border: 215 22% 20%;
+    --graphite: 215 22% 18%;
+    --glass-bg: 215 30% 18%;
+    --glass-border: 215 22% 35%;
+    --glass-strong: 215 30% 22%;
+    --glass-ring: 275 75% 65%;
   }
 
   * {

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { DashboardStats, Enrollment, Certificate, Trilha, Course, ObjetivoAluno } from '../../types';
 import { FaBook, FaCertificate, FaTrophy, FaChartLine, FaArrowRight, FaPaperPlane, FaRoute, FaClock, FaBullseye, FaLightbulb, FaTimes, FaCheck, FaPlus, FaFileAlt } from 'react-icons/fa';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend } from 'recharts';
+import ThemeToggle from '../../components/ThemeToggle';
 import { normalizeEnrollment } from '../../lib/normalizeEnrollment';
 import { normalizeCourse } from '../../lib/normalizeCourse';
 import { supabase } from '../../lib/supabase';
@@ -427,10 +428,13 @@ export default function StudentDashboard() {
           <p className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--primary))]">Painel do aluno</p>
           <h1 className="headline-font text-4xl md:text-5xl">Sua jornada em progresso</h1>
         </div>
-        <Link to="/courses" className="btn-accent inline-flex items-center gap-2">
-          Explorar cursos
-          <FaArrowRight />
-        </Link>
+        <div className="flex flex-wrap items-center gap-3">
+          <ThemeToggle />
+          <Link to="/courses" className="btn-accent inline-flex items-center gap-2">
+            Explorar cursos
+            <FaArrowRight />
+          </Link>
+        </div>
       </div>
 
       {/* Stats Cards */}
