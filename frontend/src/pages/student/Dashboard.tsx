@@ -458,19 +458,26 @@ export default function StudentDashboard() {
       {/* Objetivo Profissional */}
       <div className="grid md:grid-cols-2 gap-8 mb-12">
         <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <FaBullseye className="text-[hsl(var(--primary))]" />
-              <h2 className="text-xl font-semibold">Meu Objetivo Profissional</h2>
+              <h2 className="text-lg sm:text-xl font-semibold whitespace-nowrap">Meu Objetivo</h2>
             </div>
-            <div className="flex items-center gap-2">
-              <Link to="/student/curriculum" className="btn-outline text-sm flex items-center gap-1 px-2 sm:px-4">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Link
+                to="/student/curriculum"
+                className="btn-outline text-xs sm:text-sm flex items-center gap-1.5 whitespace-nowrap"
+                style={{ minHeight: '36px', padding: '8px 12px' }}
+              >
                 <FaFileAlt size={12} className="flex-shrink-0" />
-                <span className="hidden sm:inline">Curriculo</span>
+                <span>Currículo</span>
               </Link>
-              <button onClick={openObjetivoModal} className="btn-outline text-sm px-2 sm:px-4">
-                <span className="hidden sm:inline">{objetivo ? 'Editar' : 'Definir'}</span>
-                <span className="sm:hidden">{objetivo ? '✏️' : '+'}</span>
+              <button
+                onClick={openObjetivoModal}
+                className="btn-outline text-xs sm:text-sm whitespace-nowrap"
+                style={{ minHeight: '36px', padding: '8px 12px' }}
+              >
+                {objetivo ? 'Editar' : 'Definir'}
               </button>
             </div>
           </div>
