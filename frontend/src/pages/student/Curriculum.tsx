@@ -14,7 +14,9 @@ import {
   FaSpinner,
   FaEye,
   FaTimes,
-  FaImage
+  FaImage,
+  FaLightbulb,
+  FaCheckCircle
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -22,6 +24,8 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useAuthStore } from '../../lib/store';
 import { getCurriculum, getPlatformCerts } from '../../lib/curriculumApi';
+import { supabase } from '../../lib/supabase';
+import { normalizeEnrollment } from '../../lib/normalizeEnrollment';
 import AccordionSection from '../../components/curriculum/AccordionSection';
 import PersonalDataSection from '../../components/curriculum/sections/PersonalDataSection';
 import ObjectiveSection from '../../components/curriculum/sections/ObjectiveSection';
@@ -32,7 +36,7 @@ import SkillsSection from '../../components/curriculum/sections/SkillsSection';
 import LanguagesSection from '../../components/curriculum/sections/LanguagesSection';
 import AdditionalInfoSection from '../../components/curriculum/sections/AdditionalInfoSection';
 import CurriculumPreview, { LayoutType } from '../../components/curriculum/CurriculumPreview';
-import type { Curriculum, PlatformCertificate } from '../../types';
+import type { Curriculum, PlatformCertificate, Enrollment } from '../../types';
 
 const LAYOUT_OPTIONS: { value: LayoutType; label: string; description: string }[] = [
   { value: 'simple', label: 'Simples', description: 'Layout limpo e tradicional' },
@@ -47,6 +51,7 @@ export default function StudentCurriculum() {
 
   const [curriculum, setCurriculum] = useState<Curriculum | null>(null);
   const [platformCerts, setPlatformCerts] = useState<PlatformCertificate[]>([]);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -57,6 +62,7 @@ export default function StudentCurriculum() {
     if (user?.id) {
       loadCurriculum();
       loadPlatformCerts();
+      loadEnrollments();
     }
   }, [user?.id]);
 
@@ -80,6 +86,24 @@ export default function StudentCurriculum() {
       setPlatformCerts(certs);
     } catch (error) {
       console.error('Error loading platform certs:', error);
+    }
+  };
+
+  const loadEnrollments = async () => {
+    if (!user?.id) return;
+    try {
+      const { data, error } = await supabase
+        .from('matriculas')
+        .select('*, cursos(*)')
+        .eq('usuario_id', user.id);
+
+      if (error) throw error;
+
+      const filteredData = (data || []).filter((row: any) => row.cursos);
+      const normalized = filteredData.map(normalizeEnrollment);
+      setEnrollments(normalized);
+    } catch (error) {
+      console.error('Error loading enrollments:', error);
     }
   };
 
@@ -138,6 +162,11 @@ export default function StudentCurriculum() {
     );
   }
 
+  // Calcular cursos incompletos
+  const incompleteCourses = enrollments.filter(e => !e.completed && e.progress < 100);
+  const completedWithoutCert = enrollments.filter(e => e.completed && !platformCerts.some(cert => cert.id === e.course_id));
+  const showSuggestion = incompleteCourses.length > 0 || completedWithoutCert.length > 0;
+
   return (
     <>
       <div className="max-w-4xl mx-auto py-8 px-4">
@@ -166,6 +195,69 @@ export default function StudentCurriculum() {
             Visualizar / Exportar
           </button>
         </div>
+
+        {/* Suggestion Banner */}
+        {showSuggestion && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gradient-to-r from-[hsl(var(--primary)/0.15)] to-[hsl(var(--accent)/0.15)] border-2 border-[hsl(var(--primary)/0.3)] rounded-lg p-6 mb-8"
+          >
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 mt-1">
+                <FaLightbulb className="text-[hsl(var(--primary))]" size={24} />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">
+                  Dica para fortalecer seu currículo
+                </h3>
+
+                {incompleteCourses.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-[hsl(var(--foreground))] mb-2">
+                      Você tem <strong>{incompleteCourses.length} curso{incompleteCourses.length > 1 ? 's' : ''} em andamento</strong>.
+                      Completar seus cursos e obter certificados pode aumentar significativamente suas chances no mercado de trabalho!
+                    </p>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {incompleteCourses.slice(0, 3).map((enrollment) => (
+                        <div
+                          key={enrollment.id}
+                          className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded px-3 py-1.5 text-sm"
+                        >
+                          <span className="text-[hsl(var(--foreground))]">{enrollment.course?.title}</span>
+                          <span className="text-[hsl(var(--muted-foreground))] ml-2">({Math.round(enrollment.progress)}%)</span>
+                        </div>
+                      ))}
+                      {incompleteCourses.length > 3 && (
+                        <div className="flex items-center px-3 py-1.5 text-sm text-[hsl(var(--muted-foreground))]">
+                          +{incompleteCourses.length - 3} mais
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {completedWithoutCert.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-[hsl(var(--foreground))]">
+                      Você completou <strong>{completedWithoutCert.length} curso{completedWithoutCert.length > 1 ? 's' : ''}</strong> mas
+                      ainda não adquiriu {completedWithoutCert.length > 1 ? 'os certificados' : 'o certificado'}.
+                      Certificados oficiais validam seu conhecimento!
+                    </p>
+                  </div>
+                )}
+
+                <button
+                  onClick={() => navigate('/student/dashboard')}
+                  className="btn-primary px-4 py-2 flex items-center gap-2 mt-3"
+                >
+                  <FaCheckCircle size={14} />
+                  Ver meus cursos
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Accordion Sections */}
         <AccordionSection
