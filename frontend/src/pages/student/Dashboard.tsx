@@ -51,6 +51,7 @@ export default function StudentDashboard() {
   const [savingObjetivo, setSavingObjetivo] = useState(false);
   const [showSuggestionModal, setShowSuggestionModal] = useState(false);
   const [savingSuggestion, setSavingSuggestion] = useState(false);
+  const [suggestionSuccess, setSuggestionSuccess] = useState(false);
   const [suggestionForm, setSuggestionForm] = useState({
     course_title: '',
     area: '',
@@ -401,6 +402,7 @@ export default function StudentDashboard() {
       tools_or_technologies: '',
       additional_context: '',
     });
+    setSuggestionSuccess(false);
   };
 
   const handleSubmitSuggestion = async () => {
@@ -421,9 +423,8 @@ export default function StudentDashboard() {
         },
       });
       if (error) throw error;
+      setSuggestionSuccess(true);
       toast.success('Sugestão enviada! Obrigado por compartilhar.');
-      setShowSuggestionModal(false);
-      resetSuggestionForm();
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao enviar sugestão.');
     } finally {
@@ -804,6 +805,11 @@ export default function StudentDashboard() {
               </div>
 
               <div className="p-6 space-y-5 overflow-y-auto max-h-[65vh]">
+                {suggestionSuccess && (
+                  <div className="rounded-[12px] border border-[hsl(var(--border))] bg-[hsl(var(--muted))] p-4 text-sm text-[hsl(var(--member-strong))]">
+                    Mensagem enviada. Obrigado pela sugestão! Nossa equipe vai analisar com carinho.
+                  </div>
+                )}
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-2 text-[hsl(var(--member-strong))]">
@@ -991,14 +997,14 @@ export default function StudentDashboard() {
                   disabled={savingSuggestion}
                   className="btn-outline"
                 >
-                  Cancelar
+                  {suggestionSuccess ? 'Fechar' : 'Cancelar'}
                 </button>
                 <button
                   onClick={handleSubmitSuggestion}
                   disabled={savingSuggestion}
                   className="btn-accent"
                 >
-                  {savingSuggestion ? 'Enviando...' : 'Enviar sugestão'}
+                  {savingSuggestion ? 'Enviando...' : suggestionSuccess ? 'Enviado' : 'Enviar sugestão'}
                 </button>
               </div>
             </motion.div>
