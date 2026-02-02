@@ -49,6 +49,23 @@ export default function StudentDashboard() {
     cursos_selecionados: [] as string[],
   });
   const [savingObjetivo, setSavingObjetivo] = useState(false);
+  const [showSuggestionModal, setShowSuggestionModal] = useState(false);
+  const [savingSuggestion, setSavingSuggestion] = useState(false);
+  const [suggestionForm, setSuggestionForm] = useState({
+    course_title: '',
+    area: '',
+    specialization: '',
+    desired_outcome: '',
+    skills_missing: '',
+    job_role: '',
+    job_link: '',
+    company: '',
+    urgency: '',
+    experience_level: '',
+    preferred_format: '',
+    tools_or_technologies: '',
+    additional_context: '',
+  });
 
   // Grafico de certificacoes
   const [chartData, setChartData] = useState<CertificadoPorMes[]>([]);
@@ -366,6 +383,54 @@ export default function StudentDashboard() {
         ? prev.cursos_selecionados.filter(id => id !== cursoId)
         : [...prev.cursos_selecionados, cursoId],
     }));
+  };
+
+  const resetSuggestionForm = () => {
+    setSuggestionForm({
+      course_title: '',
+      area: '',
+      specialization: '',
+      desired_outcome: '',
+      skills_missing: '',
+      job_role: '',
+      job_link: '',
+      company: '',
+      urgency: '',
+      experience_level: '',
+      preferred_format: '',
+      tools_or_technologies: '',
+      additional_context: '',
+    });
+  };
+
+  const handleSubmitSuggestion = async () => {
+    if (!user?.id) {
+      toast.error('Você precisa estar logado para enviar a sugestão.');
+      return;
+    }
+    setSavingSuggestion(true);
+    try {
+      const payload = {
+        tipo: 'course_suggestion',
+        titulo: suggestionForm.course_title?.trim() || 'Sugestão de curso',
+        descricao: suggestionForm.desired_outcome?.trim() || 'Aluno enviou uma sugestão de curso.',
+        metadata: {
+          student_id: user.id,
+          student_name: user.name,
+          ...suggestionForm,
+        },
+      };
+
+      const { error } = await supabase.from('admin_notifications').insert(payload);
+      if (error) throw error;
+      toast.success('Sugestão enviada! Obrigado por compartilhar.');
+      setShowSuggestionModal(false);
+      resetSuggestionForm();
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao enviar sugestão.');
+    } finally {
+      setSavingSuggestion(false);
+    }
   };
 
   // Gerar dica personalizada
@@ -698,14 +763,250 @@ export default function StudentDashboard() {
         <p className="text-[hsl(var(--muted-foreground))] mb-4">
           Sugira um curso que voce gostaria de ver na plataforma. Sua sugestao vai direto para nossa equipe!
         </p>
-        <Link to="#sugestao" onClick={() => {
-          const el = document.getElementById('sugestao-form');
-          if (el) el.scrollIntoView({ behavior: 'smooth' });
-        }} className="btn-accent inline-flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setShowSuggestionModal(true)}
+          className="btn-accent inline-flex items-center gap-2"
+        >
           Sugerir curso
           <FaPaperPlane />
-        </Link>
+        </button>
       </div>
+
+      {/* Modal de sugestao de curso */}
+      <AnimatePresence>
+        {showSuggestionModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+            onClick={() => setShowSuggestionModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[hsl(var(--card))] rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between p-6 border-b border-[hsl(var(--border))]">
+                <div>
+                  <h2 className="text-xl font-semibold text-[hsl(var(--member-strong))]">Sugira um curso</h2>
+                  <p className="text-sm text-[hsl(var(--member-strong))]">
+                    Conte detalhes para criarmos a trilha ideal para você.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowSuggestionModal(false)}
+                  className="p-2 rounded-lg hover:bg-[hsl(var(--muted))] transition text-[hsl(var(--member-strong))]"
+                >
+                  <FaTimes />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-5 overflow-y-auto max-h-[65vh]">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[hsl(var(--member-strong))]">
+                      Qual curso você gostaria de ver?
+                    </label>
+                    <input
+                      type="text"
+                      value={suggestionForm.course_title}
+                      onChange={(e) => setSuggestionForm((prev) => ({ ...prev, course_title: e.target.value }))}
+                      placeholder="Ex: Data Analytics para Vendas"
+                      className="input-field w-full text-[hsl(var(--member-strong))]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[hsl(var(--member-strong))]">
+                      Área principal
+                    </label>
+                    <input
+                      type="text"
+                      value={suggestionForm.area}
+                      onChange={(e) => setSuggestionForm((prev) => ({ ...prev, area: e.target.value }))}
+                      placeholder="Ex: Marketing, Dados, Gestão, Produto"
+                      className="input-field w-full text-[hsl(var(--member-strong))]"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[hsl(var(--member-strong))]">
+                      Especialidade ou tema específico
+                    </label>
+                    <input
+                      type="text"
+                      value={suggestionForm.specialization}
+                      onChange={(e) => setSuggestionForm((prev) => ({ ...prev, specialization: e.target.value }))}
+                      placeholder="Ex: Growth, BI, ESG, UX Research"
+                      className="input-field w-full text-[hsl(var(--member-strong))]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[hsl(var(--member-strong))]">
+                      Nível desejado
+                    </label>
+                    <select
+                      value={suggestionForm.experience_level}
+                      onChange={(e) => setSuggestionForm((prev) => ({ ...prev, experience_level: e.target.value }))}
+                      className="input-field w-full text-[hsl(var(--member-strong))]"
+                    >
+                      <option value="">Selecione (opcional)</option>
+                      <option value="iniciante">Iniciante</option>
+                      <option value="intermediario">Intermediário</option>
+                      <option value="avancado">Avançado</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-[hsl(var(--member-strong))]">
+                    O que você quer aprender a fazer?
+                  </label>
+                  <textarea
+                    value={suggestionForm.desired_outcome}
+                    onChange={(e) => setSuggestionForm((prev) => ({ ...prev, desired_outcome: e.target.value }))}
+                    placeholder="Ex: montar dashboards, liderar projetos, dominar IA generativa..."
+                    className="input-field w-full min-h-[90px] text-[hsl(var(--member-strong))]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-[hsl(var(--member-strong))]">
+                    Quais habilidades você ainda não tem?
+                  </label>
+                  <textarea
+                    value={suggestionForm.skills_missing}
+                    onChange={(e) => setSuggestionForm((prev) => ({ ...prev, skills_missing: e.target.value }))}
+                    placeholder="Ex: SQL, Power BI, comunicação com stakeholders..."
+                    className="input-field w-full min-h-[80px] text-[hsl(var(--member-strong))]"
+                  />
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[hsl(var(--member-strong))]">
+                      Vaga ou cargo que você quer concorrer
+                    </label>
+                    <input
+                      type="text"
+                      value={suggestionForm.job_role}
+                      onChange={(e) => setSuggestionForm((prev) => ({ ...prev, job_role: e.target.value }))}
+                      placeholder="Ex: Analista de Dados, Product Manager"
+                      className="input-field w-full text-[hsl(var(--member-strong))]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[hsl(var(--member-strong))]">
+                      Empresa (se aplicável)
+                    </label>
+                    <input
+                      type="text"
+                      value={suggestionForm.company}
+                      onChange={(e) => setSuggestionForm((prev) => ({ ...prev, company: e.target.value }))}
+                      placeholder="Ex: Nubank, iFood, Google"
+                      className="input-field w-full text-[hsl(var(--member-strong))]"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[hsl(var(--member-strong))]">
+                      Link da vaga (se tiver)
+                    </label>
+                    <input
+                      type="text"
+                      value={suggestionForm.job_link}
+                      onChange={(e) => setSuggestionForm((prev) => ({ ...prev, job_link: e.target.value }))}
+                      placeholder="Cole o link da vaga"
+                      className="input-field w-full text-[hsl(var(--member-strong))]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[hsl(var(--member-strong))]">
+                      Urgência
+                    </label>
+                    <select
+                      value={suggestionForm.urgency}
+                      onChange={(e) => setSuggestionForm((prev) => ({ ...prev, urgency: e.target.value }))}
+                      className="input-field w-full text-[hsl(var(--member-strong))]"
+                    >
+                      <option value="">Selecione (opcional)</option>
+                      <option value="alta">Alta (quero aprender logo)</option>
+                      <option value="media">Média</option>
+                      <option value="baixa">Baixa</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[hsl(var(--member-strong))]">
+                      Formato preferido
+                    </label>
+                    <input
+                      type="text"
+                      value={suggestionForm.preferred_format}
+                      onChange={(e) => setSuggestionForm((prev) => ({ ...prev, preferred_format: e.target.value }))}
+                      placeholder="Ex: aulas curtas, projeto prático, trilha guiada"
+                      className="input-field w-full text-[hsl(var(--member-strong))]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[hsl(var(--member-strong))]">
+                      Ferramentas/tecnologias que quer aprender
+                    </label>
+                    <input
+                      type="text"
+                      value={suggestionForm.tools_or_technologies}
+                      onChange={(e) => setSuggestionForm((prev) => ({ ...prev, tools_or_technologies: e.target.value }))}
+                      placeholder="Ex: Excel, Power BI, Notion, SQL"
+                      className="input-field w-full text-[hsl(var(--member-strong))]"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-[hsl(var(--member-strong))]">
+                    Conte mais detalhes (opcional)
+                  </label>
+                  <textarea
+                    value={suggestionForm.additional_context}
+                    onChange={(e) => setSuggestionForm((prev) => ({ ...prev, additional_context: e.target.value }))}
+                    placeholder="Ex: o que te bloqueia hoje, quais tarefas você precisa dominar..."
+                    className="input-field w-full min-h-[100px] text-[hsl(var(--member-strong))]"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 p-6 border-t border-[hsl(var(--border))]">
+                <button
+                  onClick={() => {
+                    setShowSuggestionModal(false);
+                    resetSuggestionForm();
+                  }}
+                  disabled={savingSuggestion}
+                  className="btn-outline"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSubmitSuggestion}
+                  disabled={savingSuggestion}
+                  className="btn-accent"
+                >
+                  {savingSuggestion ? 'Enviando...' : 'Enviar sugestão'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Modal de Objetivo */}
       <AnimatePresence>
@@ -817,21 +1118,17 @@ export default function StudentDashboard() {
                       );
                     })}
                   </div>
-                  <Link
-                    to="#"
-                    onClick={(e) => {
-                      e.preventDefault();
+                  <button
+                    type="button"
+                    onClick={() => {
                       setShowObjetivoModal(false);
-                      setTimeout(() => {
-                        const el = document.querySelector('.card:last-child');
-                        if (el) el.scrollIntoView({ behavior: 'smooth' });
-                      }, 300);
+                      setShowSuggestionModal(true);
                     }}
                     className="text-sm text-[hsl(var(--primary))] hover:underline mt-2 inline-flex items-center gap-1"
                   >
                     <FaPlus className="text-xs" />
                     Nao encontrou? Sugira um curso
-                  </Link>
+                  </button>
                 </div>
               </div>
 
