@@ -410,18 +410,16 @@ export default function StudentDashboard() {
     }
     setSavingSuggestion(true);
     try {
-      const payload = {
-        tipo: 'course_suggestion',
-        titulo: suggestionForm.course_title?.trim() || 'Sugestão de curso',
-        descricao: suggestionForm.desired_outcome?.trim() || 'Aluno enviou uma sugestão de curso.',
-        metadata: {
+      const { error } = await supabase.rpc('insert_admin_notification', {
+        _tipo: 'course_suggestion',
+        _titulo: suggestionForm.course_title?.trim() || 'Sugestão de curso',
+        _descricao: suggestionForm.desired_outcome?.trim() || 'Aluno enviou uma sugestão de curso.',
+        _metadata: {
           student_id: user.id,
           student_name: user.name,
           ...suggestionForm,
         },
-      };
-
-      const { error } = await supabase.from('admin_notifications').insert(payload);
+      });
       if (error) throw error;
       toast.success('Sugestão enviada! Obrigado por compartilhar.');
       setShowSuggestionModal(false);
