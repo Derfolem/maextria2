@@ -4,7 +4,7 @@ import { Course, Lesson, Progress } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
 import toast from 'react-hot-toast';
-import { FaCheckCircle, FaCircle, FaDownload, FaArrowLeft, FaCertificate, FaPlay, FaStar } from 'react-icons/fa';
+import { FaCheckCircle, FaCircle, FaDownload, FaArrowLeft, FaCertificate, FaPlay, FaStar, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { normalizeCourse } from '../../lib/normalizeCourse';
 import DOMPurify from 'dompurify';
 import StarRating from '../../components/StarRating';
@@ -61,6 +61,7 @@ export default function CoursePlayer() {
   const [quizResponses, setQuizResponses] = useState<Record<string, boolean>>({});
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [pendingRating, setPendingRating] = useState<{ lessonId: string | number; action: 'complete' | 'next' } | null>(null);
+  const [expandedModules, setExpandedModules] = useState<string[]>([]);
 
   useEffect(() => {
     loadCourse();
@@ -71,6 +72,21 @@ export default function CoursePlayer() {
       loadProgress();
     }
   }, [enrollmentId]);
+
+  useEffect(() => {
+    if (!course?.modules || course.modules.length === 0) return;
+    setExpandedModules((prev) => {
+      if (prev.length > 0) return prev;
+      return [String(course.modules?.[0]?.id)];
+    });
+  }, [course?.modules]);
+
+  const toggleModuleExpanded = (moduleId: string | number) => {
+    const key = String(moduleId);
+    setExpandedModules((prev) =>
+      prev.includes(key) ? prev.filter((id) => id !== key) : [...prev, key]
+    );
+  };
 
   useEffect(() => {
     if (!selectedLesson) {
@@ -938,46 +954,64 @@ export default function CoursePlayer() {
             <div className="space-y-6">
               {course.modules?.map((module) => (
                 <div key={module.id}>
-                  <p className="text-sm uppercase tracking-[0.3em] text-[hsl(var(--muted-foreground))] mb-3">
-                    {module.title}
-                  </p>
-                  <div className="space-y-2">
-                    {module.lessons?.map((lesson) => (
-                      <button
-                        key={lesson.id}
-                        onClick={() => goToLesson(lesson)}
-                        className={`w-full text-left p-3 rounded-[12px] transition flex items-center gap-3 border ${
-                          selectedLesson?.id === lesson.id
-                            ? 'border-[hsl(var(--primary))] bg-[hsl(var(--muted))]'
-                            : 'border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]'
-                        }`}
-                      >
-                        {isLessonCompleted(lesson.id) ? (
-                          <FaCheckCircle className="text-[hsl(var(--primary))] flex-shrink-0" />
-                        ) : (
-                          <FaCircle className="text-[hsl(var(--border))] flex-shrink-0" />
-                        )}
-                        <span className="flex-grow text-sm">{lesson.title}</span>
-                      </button>
-                    ))}
-                    {moduleQuizzes[String(module.id)] && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!isModuleLessonsDone(module.id)) {
-                            toast.error('Conclua todas as aulas do módulo para fazer o questionário.');
-                            return;
-                          }
-                          openQuiz(moduleQuizzes[String(module.id)]);
-                        }}
-                        className="w-full text-left p-3 rounded-[12px] border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]"
-                      >
-                        {quizResponses[String(moduleQuizzes[String(module.id)].id)]
-                          ? 'Questionário do módulo (concluído)'
-                          : 'Questionário do módulo'}
-                      </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleModuleExpanded(module.id)}
+                    className="w-full flex items-center justify-between gap-3 rounded-[12px] border border-[hsl(var(--border))] px-3 py-2 text-left transition hover:bg-[hsl(var(--muted))]"
+                  >
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--muted-foreground))]">
+                        {module.title}
+                      </p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                        {(module.lessons?.length || 0)} aula(s)
+                      </p>
+                    </div>
+                    {expandedModules.includes(String(module.id)) ? (
+                      <FaChevronUp className="text-[hsl(var(--muted-foreground))]" />
+                    ) : (
+                      <FaChevronDown className="text-[hsl(var(--muted-foreground))]" />
                     )}
-                  </div>
+                  </button>
+                  {expandedModules.includes(String(module.id)) && (
+                    <div className="space-y-2 mt-3">
+                      {module.lessons?.map((lesson) => (
+                        <button
+                          key={lesson.id}
+                          onClick={() => goToLesson(lesson)}
+                          className={`w-full text-left p-3 rounded-[12px] transition flex items-center gap-3 border ${
+                            selectedLesson?.id === lesson.id
+                              ? 'border-[hsl(var(--primary))] bg-[hsl(var(--muted))]'
+                              : 'border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]'
+                          }`}
+                        >
+                          {isLessonCompleted(lesson.id) ? (
+                            <FaCheckCircle className="text-[hsl(var(--primary))] flex-shrink-0" />
+                          ) : (
+                            <FaCircle className="text-[hsl(var(--border))] flex-shrink-0" />
+                          )}
+                          <span className="flex-grow text-sm">{lesson.title}</span>
+                        </button>
+                      ))}
+                      {moduleQuizzes[String(module.id)] && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!isModuleLessonsDone(module.id)) {
+                              toast.error('Conclua todas as aulas do módulo para fazer o questionário.');
+                              return;
+                            }
+                            openQuiz(moduleQuizzes[String(module.id)]);
+                          }}
+                          className="w-full text-left p-3 rounded-[12px] border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]"
+                        >
+                          {quizResponses[String(moduleQuizzes[String(module.id)].id)]
+                            ? 'Questionário do módulo (concluído)'
+                            : 'Questionário do módulo'}
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
               {finalQuiz && (
