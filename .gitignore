@@ -35,3 +35,4 @@ backend/database/*.db
 nohup.out
 backend/nohup.out
 frontend/nohup.out
+configure-stripe-live.sh
