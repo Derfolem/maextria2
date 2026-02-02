@@ -123,6 +123,52 @@ export default function AdminNotifications() {
                   </div>
                   <p className="font-semibold">{item.titulo}</p>
                   <p className="text-sm text-[hsl(var(--muted-foreground))]">{item.descricao}</p>
+                  {item.tipo === 'course_suggestion' && item.metadata && (
+                    <div className="mt-2 text-sm text-[hsl(var(--member-strong))] space-y-1">
+                      {item.metadata.student_name && (
+                        <p><strong>Aluno:</strong> {item.metadata.student_name}</p>
+                      )}
+                      {item.metadata.course_title && (
+                        <p><strong>Curso sugerido:</strong> {item.metadata.course_title}</p>
+                      )}
+                      {item.metadata.area && (
+                        <p><strong>Área:</strong> {item.metadata.area}</p>
+                      )}
+                      {item.metadata.specialization && (
+                        <p><strong>Especialidade:</strong> {item.metadata.specialization}</p>
+                      )}
+                      {item.metadata.desired_outcome && (
+                        <p><strong>O que quer aprender:</strong> {item.metadata.desired_outcome}</p>
+                      )}
+                      {item.metadata.skills_missing && (
+                        <p><strong>Habilidades faltantes:</strong> {item.metadata.skills_missing}</p>
+                      )}
+                      {item.metadata.job_role && (
+                        <p><strong>Vaga/cargo:</strong> {item.metadata.job_role}</p>
+                      )}
+                      {item.metadata.company && (
+                        <p><strong>Empresa:</strong> {item.metadata.company}</p>
+                      )}
+                      {item.metadata.job_link && (
+                        <p><strong>Link da vaga:</strong> {item.metadata.job_link}</p>
+                      )}
+                      {item.metadata.urgency && (
+                        <p><strong>Urgência:</strong> {item.metadata.urgency}</p>
+                      )}
+                      {item.metadata.experience_level && (
+                        <p><strong>Nível desejado:</strong> {item.metadata.experience_level}</p>
+                      )}
+                      {item.metadata.preferred_format && (
+                        <p><strong>Formato preferido:</strong> {item.metadata.preferred_format}</p>
+                      )}
+                      {item.metadata.tools_or_technologies && (
+                        <p><strong>Ferramentas/tecnologias:</strong> {item.metadata.tools_or_technologies}</p>
+                      )}
+                      {item.metadata.additional_context && (
+                        <p><strong>Detalhes extras:</strong> {item.metadata.additional_context}</p>
+                      )}
+                    </div>
+                  )}
                   {item.tipo === 'moderacao_conteudo' && item.metadata && (
                     <div className="mt-2 text-xs text-[hsl(var(--muted-foreground))] space-y-1">
                       <p>Motivos: {(item.metadata.motivos || []).join(', ') || 'nao informado'}</p>
