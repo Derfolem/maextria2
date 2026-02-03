@@ -4,7 +4,6 @@ import toast from 'react-hot-toast';
 import { FaSave, FaPercent, FaBullhorn, FaCode, FaSearch, FaChartLine } from 'react-icons/fa';
 
 export default function AdminSettings() {
-  const [profitShare, setProfitShare] = useState('');
   const [minScore, setMinScore] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -56,19 +55,16 @@ export default function AdminSettings() {
         .from('configuracoes_site')
         .select('chave, valor')
         .in('chave', [
-          'admin_profit_share',
           'nota_minima_prova',
           'ai_monthly_limit_usd',
           'maintenance_mode',
           'allow_new_signups',
         ]);
       if (error) throw error;
-      const adminShare = Number(data?.find((item: any) => item.chave === 'admin_profit_share')?.valor ?? 30);
       const notaMinima = Number(data?.find((item: any) => item.chave === 'nota_minima_prova')?.valor ?? 60);
       const defaultLimit = data?.find((item: any) => item.chave === 'ai_monthly_limit_usd')?.valor ?? '5';
       const maintenanceValue = data?.find((item: any) => item.chave === 'maintenance_mode')?.valor ?? '0';
       const signupValue = data?.find((item: any) => item.chave === 'allow_new_signups')?.valor ?? '1';
-      setProfitShare((100 - adminShare).toString());
       setMinScore(notaMinima.toString());
       setAiDefaultLimit(defaultLimit);
       setMaintenanceMode(maintenanceValue === '1');
@@ -314,12 +310,7 @@ export default function AdminSettings() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const value = parseFloat(profitShare);
     const minScoreValue = parseFloat(minScore);
-    if (isNaN(value) || value < 0 || value > 100) {
-      toast.error('Percentual deve estar entre 0 e 100');
-      return;
-    }
     if (isNaN(minScoreValue) || minScoreValue < 0 || minScoreValue > 100) {
       toast.error('Nota mínima deve estar entre 0 e 100');
       return;
@@ -327,16 +318,10 @@ export default function AdminSettings() {
 
     setSaving(true);
     try {
-      const adminShare = (100 - value).toString();
       const { error } = await supabase
         .from('configuracoes_site')
         .upsert(
           [
-            {
-              chave: 'admin_profit_share',
-              valor: adminShare,
-              descricao: 'Percentual da plataforma sobre vendas de certificados',
-            },
             {
               chave: 'nota_minima_prova',
               valor: minScoreValue.toString(),
@@ -378,32 +363,6 @@ export default function AdminSettings() {
         <form onSubmit={handleSave} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-              Percentual de Repasse aos Professores
-            </label>
-            <p className="text-sm text-[hsl(var(--muted-foreground))] mb-3">
-              Defina qual percentual da venda será repassado aos professores. O restante fica com a plataforma.
-            </p>
-            <div className="relative max-w-xs">
-              <FaPercent className="absolute right-3 top-3 text-[hsl(var(--muted-foreground))]" />
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                max="100"
-                value={profitShare}
-                onChange={(e) => setProfitShare(e.target.value)}
-                className="input-field pr-10"
-                placeholder="0.00"
-                required
-              />
-            </div>
-            <p className="text-sm text-[hsl(var(--muted-foreground))] mt-2">
-              Exemplo: Se definir 70%, o professor recebe 70% e a plataforma 30% de cada venda.
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
               Nota mínima para aprovação
             </label>
             <p className="text-sm text-[hsl(var(--muted-foreground))] mb-3">
@@ -422,15 +381,6 @@ export default function AdminSettings() {
                 placeholder="60"
                 required
               />
-            </div>
-          </div>
-
-          <div className="bg-[hsl(var(--muted))] border border-[hsl(var(--border))] rounded-lg p-4">
-            <h3 className="font-semibold text-[hsl(var(--foreground))] mb-2">Simulacao</h3>
-            <div className="space-y-1 text-sm text-[hsl(var(--muted-foreground))]">
-              <p>Para uma venda de R$ 100,00:</p>
-              <p>• Professor recebe: R$ {((parseFloat(profitShare) || 0) * 100 / 100).toFixed(2)}</p>
-              <p>• Plataforma recebe: R$ {((100 - (parseFloat(profitShare) || 0)) * 100 / 100).toFixed(2)}</p>
             </div>
           </div>
 
