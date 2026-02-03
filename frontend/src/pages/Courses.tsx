@@ -23,6 +23,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { normalizeCourse } from '../lib/normalizeCourse';
 import { SEO } from '../components/SEO';
 import StarRating from '../components/StarRating';
+import { trackSearch } from '../lib/analytics';
 
 type SortOption = 'popular' | 'recent' | 'az' | 'za';
 type ViewMode = 'grid' | 'list';
@@ -93,6 +94,7 @@ export default function Courses() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Trilhas
   const [trilhas, setTrilhas] = useState<Trilha[]>([]);
@@ -132,6 +134,15 @@ export default function Courses() {
     if (selectedTrilha) params.set('trilha', selectedTrilha);
     setSearchParams(params, { replace: true });
   }, [search, selectedCategory, selectedLevel, durationRange, sortBy, showTrilhas, selectedTrilha, setSearchParams]);
+
+  useEffect(() => {
+    if (!search.trim()) return;
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      trackSearch(search.trim());
+    }, 600);
+    return () => { if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current); };
+  }, [search]);
 
   const loadTrilhas = async () => {
     try {

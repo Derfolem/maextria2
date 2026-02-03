@@ -4,6 +4,7 @@ import { useAuthStore } from '../lib/store';
 import toast from 'react-hot-toast';
 import { FaEnvelope, FaLock, FaGoogle, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { getRememberMeDefault, supabase } from '../lib/supabase';
+import { trackLogin, setUserId, setUserProperties } from '../lib/analytics';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -22,6 +23,9 @@ export default function Login() {
       await login(email, password, rememberMe);
       toast.success('Login realizado com sucesso!');
       const user = useAuthStore.getState().user;
+      trackLogin('email');
+      setUserId(String(user?.id));
+      setUserProperties({ user_role: user?.role });
 
       if (user?.role === 'student') {
         navigate('/student/dashboard');

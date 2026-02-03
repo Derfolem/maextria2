@@ -28,9 +28,16 @@ User-agent: Baiduspider
 Allow: /
 Crawl-delay: 2
 
-# === BLOQUEAR BOTS MALICIOSOS ===
+# === FERRAMENTAS SEO PERMITIDAS ===
 User-agent: AhrefsBot
+Allow: /
+Crawl-delay: 2
+
 User-agent: SemrushBot
+Allow: /
+Crawl-delay: 2
+
+# === BLOQUEAR BOTS MALICIOSOS ===
 User-agent: DotBot
 User-agent: MJ12bot
 Disallow: /

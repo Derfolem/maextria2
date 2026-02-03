@@ -8,6 +8,7 @@ import { supabase } from '../../lib/supabase';
 import { parseCourseText } from '../../lib/courseTextParser'; // Import the parser
 import api from '../../lib/api'; // Import the custom API client
 import { Course as CourseType } from '../../types'; // Alias to avoid confusion with parsedCourse
+import { trackCourseCreated } from '../../lib/analytics';
 
 // Determine if local auth should be used (copied from store.ts for consistency)
 const USE_LOCAL_AUTH = import.meta.env.VITE_USE_LOCAL_AUTH === 'true';
@@ -212,6 +213,7 @@ export default function CourseCreatorGlass() {
       }
 
       toast.success(`Curso "${parsedCourse.title}" criado!`);
+      trackCourseCreated(String(newCourseId), finalCategoryId || 'uncategorized');
 
       // 2. Insert Modules and Lessons
       if (parsedCourse.modules && parsedCourse.modules.length > 0) {

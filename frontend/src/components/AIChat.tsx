@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../lib/store';
 import { Link, useLocation } from 'react-router-dom';
+import { trackAIInteraction } from '../lib/analytics';
 
 export default function AIChat() {
   const { user } = useAuthStore();
@@ -88,6 +89,7 @@ export default function AIChat() {
         ...prev,
         { role: 'assistant', content: reply, courses: responseCourses || undefined },
       ]);
+      trackAIInteraction('chat');
     } catch (error: any) {
       toast.error(error?.message || 'Nao foi possivel responder agora.');
       setMessages((prev) => [

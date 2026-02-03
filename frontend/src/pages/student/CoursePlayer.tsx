@@ -9,6 +9,7 @@ import { normalizeCourse } from '../../lib/normalizeCourse';
 import DOMPurify from 'dompurify';
 import StarRating from '../../components/StarRating';
 import LessonRatingModal from '../../components/LessonRatingModal';
+import { trackVideoStart, trackLessonComplete } from '../../lib/analytics';
 
 const YOUTUBE_REGEX = /(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{6,})/;
 const VIMEO_REGEX = /vimeo\.com\/(?:video\/)?(\d+)/;
@@ -356,6 +357,7 @@ export default function CoursePlayer() {
         ];
       });
       toast.success('Aula avaliada e concluída!');
+      trackLessonComplete(String(course?.id), String(lessonId), progressPercentage);
     } catch (error) {
       toast.error('Erro ao marcar aula como concluída');
     }
@@ -762,7 +764,7 @@ export default function CoursePlayer() {
                       ) : (
                         <button
                           type="button"
-                          onClick={() => setActiveVideoLessonId(selectedLesson.id)}
+                          onClick={() => { setActiveVideoLessonId(selectedLesson.id); trackVideoStart(String(selectedLesson.id), selectedLesson.title || ''); }}
                           className="group relative w-full h-full"
                           aria-label={`Reproduzir ${selectedLesson.title}`}
                         >
