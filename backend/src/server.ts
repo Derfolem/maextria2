@@ -85,6 +85,13 @@ app.use('/api/auth/forgot-password', passwordResetLimiter);
 app.use('/api/auth/reset-password', passwordResetLimiter);
 app.use('/api/ai/chat', aiChatLimiter);
 
+const bulkImportLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hora
+  max: 5,
+  message: 'Too many bulk import attempts, please try again later.'
+});
+app.use('/api/courses/bulk', bulkImportLimiter);
+
 // Parsers
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

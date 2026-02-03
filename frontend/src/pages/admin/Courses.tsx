@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import { Course } from '../../types';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
-import { FaTrash, FaEye, FaEyeSlash, FaSearch, FaArrowRight, FaEdit, FaClock, FaTimes, FaFilter } from 'react-icons/fa';
+import { FaTrash, FaEye, FaEyeSlash, FaSearch, FaArrowRight, FaEdit, FaClock, FaTimes, FaFilter, FaFileUpload } from 'react-icons/fa';
 import { normalizeCourse } from '../../lib/normalizeCourse';
+import BulkCourseImport from './BulkCourseImport';
 
 type FilterOption = 'recentes' | 'modificados' | 'publicados' | 'reprovados' | 'aguardando' | 'curadoria' | 'az';
 
@@ -15,6 +16,7 @@ export default function AdminCourses() {
   const [filter, setFilter] = useState<FilterOption>('recentes');
   const [feedbackOpen, setFeedbackOpen] = useState<string | number | null>(null);
   const [feedbackText, setFeedbackText] = useState('');
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
 
   useEffect(() => {
     loadCourses();
@@ -188,6 +190,16 @@ export default function AdminCourses() {
 
   return (
     <div className="max-w-7xl mx-auto px-[clamp(24px,5vw,80px)] py-[clamp(40px,6vh,80px)]">
+      {bulkImportOpen && (
+        <BulkCourseImport
+          onClose={() => setBulkImportOpen(false)}
+          onSuccess={() => {
+            setBulkImportOpen(false);
+            loadCourses();
+          }}
+        />
+      )}
+
       <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-10">
         <div>
           <p className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--primary))]">Curadoria</p>
@@ -196,6 +208,12 @@ export default function AdminCourses() {
             Revise, publique ou recuse cursos antes de liberar para o marketplace.
           </p>
         </div>
+        <button
+          onClick={() => setBulkImportOpen(true)}
+          className="btn-accent flex items-center gap-2 self-end"
+        >
+          <FaFileUpload /> Importar em massa
+        </button>
       </div>
 
       <div className="card mb-8">

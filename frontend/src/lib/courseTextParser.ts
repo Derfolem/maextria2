@@ -2,6 +2,34 @@
 import { Course, Module, Lesson } from '../types';
 import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs
 
+export function parseBulkCourseText(rawText: string, userId: string | number, userName: string): Course[] {
+  const blocks: string[] = [];
+  let currentBlock: string[] = [];
+
+  for (const line of rawText.split('\n')) {
+    if (line.trim() === '===') {
+      if (currentBlock.length > 0) {
+        blocks.push(currentBlock.join('\n'));
+        currentBlock = [];
+      }
+    } else {
+      currentBlock.push(line);
+    }
+  }
+  if (currentBlock.length > 0) {
+    blocks.push(currentBlock.join('\n'));
+  }
+
+  const courses: Course[] = [];
+  for (const block of blocks) {
+    const course = parseCourseText(block.trim(), userId, userName);
+    if (course) {
+      courses.push(course);
+    }
+  }
+  return courses;
+}
+
 export function parseCourseText(rawText: string, currentUserId: string | number, currentUserName: string): Course | null {
   const lines = rawText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
 

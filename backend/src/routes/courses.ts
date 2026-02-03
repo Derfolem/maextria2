@@ -347,6 +347,131 @@ router.patch('/:courseId/publish', authenticate, authorize('admin'), (req: Reque
   }
 });
 
+// Bulk import courses (admin only) — single transaction
+router.post('/bulk', authenticate, authorize('admin'), (req: Request, res: Response) => {
+  try {
+    const { courses, teacher_id } = req.body;
+
+    if (!Array.isArray(courses) || courses.length === 0) {
+      res.status(400).json({ error: 'Um array de cursos é necessário' });
+      return;
+    }
+
+    if (courses.length > 50) {
+      res.status(400).json({ error: 'Limite máximo de 50 cursos por importação' });
+      return;
+    }
+
+    const errors: { index: number; title: string; error: string }[] = [];
+    for (let i = 0; i < courses.length; i++) {
+      if (!courses[i].title) {
+        errors.push({ index: i, title: `Curso ${i + 1}`, error: 'Título é obrigatório' });
+      }
+      if (!courses[i].modules || courses[i].modules.length === 0) {
+        errors.push({ index: i, title: courses[i].title || `Curso ${i + 1}`, error: 'Pelo menos um módulo é necessário' });
+      }
+    }
+
+    if (errors.length > 0) {
+      res.status(400).json({ error: 'Validação falhou', errors });
+      return;
+    }
+
+    const now = Date.now();
+    const results: { title: string; course_id: string; modules: number; lessons: number }[] = [];
+
+    const importAll = db.transaction(() => {
+      for (const course of courses) {
+        const courseId = uuidv4();
+
+        db.prepare(`
+          INSERT INTO courses (
+            id, title, description, category_id, teacher_id, cover_image,
+            duration_hours, difficulty, certificate_price, is_published,
+            created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+        `).run(
+          courseId,
+          course.title,
+          course.description || null,
+          course.category_id || null,
+          teacher_id || req.user!.userId,
+          course.cover_image || null,
+          course.duration_hours || null,
+          course.difficulty || course.level || 'beginner',
+          course.certificate_price || course.price || 0,
+          now,
+          now
+        );
+
+        let moduleCount = 0;
+        let lessonCount = 0;
+
+        if (course.modules) {
+          for (const module of course.modules) {
+            const moduleId = uuidv4();
+
+            db.prepare(`
+              INSERT INTO modules (id, course_id, title, description, order_index, created_at)
+              VALUES (?, ?, ?, ?, ?, ?)
+            `).run(
+              moduleId,
+              courseId,
+              module.title,
+              module.description || null,
+              module.order_index ?? moduleCount,
+              now
+            );
+
+            moduleCount++;
+
+            if (module.lessons) {
+              let lessonIdx = 0;
+              for (const lesson of module.lessons) {
+                const lessonId = uuidv4();
+
+                db.prepare(`
+                  INSERT INTO lessons (id, module_id, title, content, video_url, duration_minutes, order_index, created_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                `).run(
+                  lessonId,
+                  moduleId,
+                  lesson.title,
+                  lesson.content || null,
+                  lesson.video_url || null,
+                  lesson.duration_minutes || lesson.duration || null,
+                  lesson.order_index ?? lessonIdx,
+                  now
+                );
+
+                lessonIdx++;
+                lessonCount++;
+              }
+            }
+          }
+        }
+
+        results.push({
+          title: course.title,
+          course_id: courseId,
+          modules: moduleCount,
+          lessons: lessonCount,
+        });
+      }
+    });
+
+    importAll();
+
+    res.status(201).json({
+      message: `${results.length} curso(s) importado(s) com sucesso`,
+      results,
+    });
+  } catch (error) {
+    console.error('Bulk import error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Delete course
 router.delete('/:courseId', authenticate, authorize('teacher', 'admin'), (req: Request, res: Response) => {
   try {
