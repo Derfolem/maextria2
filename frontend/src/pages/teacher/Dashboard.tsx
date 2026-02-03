@@ -40,9 +40,11 @@ export default function TeacherDashboard() {
     valor_venda: number;
     percentual: number;
     valor_comissao: number;
-    status: string;
+    status: 'OPEN' | 'PAID' | 'REVERSED' | 'pendente' | 'pago' | 'cancelado';
     data: string;
+    source: 'ledger' | 'legacy';
   }>>([]);
+  const [commissionFilter, setCommissionFilter] = useState<'all' | 'ledger' | 'legacy'>('all');
 
   useEffect(() => {
     loadDashboard();
@@ -50,7 +52,7 @@ export default function TeacherDashboard() {
       loadBankData();
       loadComissoesPendentes();
     }
-  }, [user?.id, user?.role]);
+  }, [user?.id, user?.role, commissionFilter]);
 
   const loadBankData = async () => {
     if (!user?.id) return;
@@ -82,23 +84,27 @@ export default function TeacherDashboard() {
   const loadComissoesPendentes = async () => {
     if (!user?.id) return;
     try {
-      // Carregar total pendente
-      const { data: pendentesData, error: pendentesError } = await supabase
-        .from('comissoes_professores')
-        .select('valor_comissao')
-        .eq('professor_id', user.id)
-        .eq('status', 'pendente');
-
-      if (pendentesError) throw pendentesError;
-
-      const total = pendentesData?.length || 0;
-      const valor = pendentesData?.reduce((sum, row) => sum + Number(row.valor_comissao || 0), 0) || 0;
-      setComissoesPendentes({ total, valor });
-
-      // Carregar comissões recentes (todas, não só pendentes)
-      const { data: recentesData, error: recentesError } = await supabase
-        .from('comissoes_professores')
-        .select(`
+      const [{ data: ledgerData, error: ledgerError }, { data: legacyData, error: legacyError }] = await Promise.all([
+        supabase
+          .from('commission_ledger')
+          .select(
+            `
+          id,
+          total_commission,
+          base_pct,
+          affiliate_bonus_pct,
+          status,
+          created_at,
+          cursos(titulo),
+          transacoes_pagamento(valor)
+        `
+          )
+          .eq('professor_id', user.id)
+          .order('created_at', { ascending: false })
+        .limit(120),
+        supabase
+          .from('comissoes_professores')
+          .select(`
           id,
           valor_venda,
           percentual_professor,
@@ -107,22 +113,79 @@ export default function TeacherDashboard() {
           criado_em,
           cursos!comissoes_professores_curso_id_fkey(titulo)
         `)
-        .eq('professor_id', user.id)
-        .order('criado_em', { ascending: false })
-        .limit(6);
+          .eq('professor_id', user.id)
+          .order('criado_em', { ascending: false })
+          .limit(120),
+      ]);
 
-      if (recentesError) throw recentesError;
+      if (ledgerError) throw ledgerError;
+      if (legacyError) throw legacyError;
 
-      const mapped = (recentesData || []).map((row: any) => ({
-        id: row.id,
-        curso_titulo: row.cursos?.titulo || 'Curso',
-        valor_venda: Number(row.valor_venda || 0),
-        percentual: Number(row.percentual_professor || 0),
-        valor_comissao: Number(row.valor_comissao || 0),
-        status: row.status,
-        data: row.criado_em,
-      }));
-      setComissoesRecentes(mapped);
+      const ledgerRows = (ledgerData || []) as Array<{
+        id: string;
+        total_commission: number;
+        base_pct: number;
+        affiliate_bonus_pct: number;
+        status: 'OPEN' | 'PAID' | 'REVERSED';
+        created_at: string;
+        cursos?: { titulo?: string } | null;
+        transacoes_pagamento?: { valor?: number } | null;
+      }>;
+
+      const legacyRows = (legacyData || []) as Array<{
+        id: string;
+        valor_venda: number;
+        percentual_professor: number;
+        valor_comissao: number;
+        status: 'pendente' | 'pago' | 'cancelado';
+        criado_em: string;
+        cursos?: { titulo?: string } | null;
+      }>;
+
+      const pendentesLedger = ledgerRows.filter((row) => row.status === 'OPEN');
+      const pendentesLegacy = legacyRows.filter((row) => row.status === 'pendente');
+      const total =
+        (commissionFilter === 'all' || commissionFilter === 'ledger' ? pendentesLedger.length : 0) +
+        (commissionFilter === 'all' || commissionFilter === 'legacy' ? pendentesLegacy.length : 0);
+      const valor =
+        (commissionFilter === 'all' || commissionFilter === 'ledger'
+          ? pendentesLedger.reduce((sum, row) => sum + Number(row.total_commission || 0), 0)
+          : 0) +
+        (commissionFilter === 'all' || commissionFilter === 'legacy'
+          ? pendentesLegacy.reduce((sum, row) => sum + Number(row.valor_comissao || 0), 0)
+          : 0);
+      setComissoesPendentes({ total, valor });
+
+      const merged = [
+        ...ledgerRows.map((row) => ({
+          id: row.id,
+          curso_titulo: row.cursos?.titulo || 'Curso',
+          valor_venda: Number(row.transacoes_pagamento?.valor || 0),
+          percentual: Number(row.base_pct || 0) + Number(row.affiliate_bonus_pct || 0),
+          valor_comissao: Number(row.total_commission || 0),
+          status: row.status,
+          data: row.created_at,
+          source: 'ledger' as const,
+        })),
+        ...legacyRows.map((row) => ({
+          id: row.id,
+          curso_titulo: row.cursos?.titulo || 'Curso',
+          valor_venda: Number(row.valor_venda || 0),
+          percentual: Number(row.percentual_professor || 0),
+          valor_comissao: Number(row.valor_comissao || 0),
+          status: row.status,
+          data: row.criado_em,
+          source: 'legacy' as const,
+        })),
+      ]
+        .filter((row) => {
+          if (commissionFilter === 'all') return true;
+          return commissionFilter === row.source;
+        })
+        .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())
+        .slice(0, 6);
+
+      setComissoesRecentes(merged);
     } catch (error) {
       console.error('Erro ao carregar comissões:', error);
     }
@@ -501,6 +564,26 @@ export default function TeacherDashboard() {
               Ultimos registros
             </span>
           </div>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {[
+              { key: 'all', label: 'Todas' },
+              { key: 'legacy', label: 'Comissao padrao' },
+              { key: 'ledger', label: 'Comissao nova' },
+            ].map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                onClick={() => setCommissionFilter(option.key as 'all' | 'ledger' | 'legacy')}
+                className={`px-3 py-1 rounded-full text-xs uppercase tracking-[0.25em] border ${
+                  commissionFilter === option.key
+                    ? 'bg-[hsl(var(--primary))] text-white border-transparent'
+                    : 'border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
           {comissoesRecentes.length === 0 ? (
             <p className="text-sm text-[hsl(var(--muted-foreground))]">Nenhuma comissao registrada ainda.</p>
           ) : (
@@ -515,11 +598,17 @@ export default function TeacherDashboard() {
                       </p>
                     </div>
                     <span className={`text-xs px-2 py-1 rounded-full ${
-                      item.status === 'pago'
+                      item.status === 'PAID' || item.status === 'pago'
                         ? 'bg-green-100 text-green-700'
-                        : 'bg-yellow-100 text-yellow-700'
+                        : item.status === 'REVERSED' || item.status === 'cancelado'
+                          ? 'bg-red-100 text-red-700'
+                          : 'bg-yellow-100 text-yellow-700'
                     }`}>
-                      {item.status === 'pago' ? 'Pago' : 'Pendente'}
+                      {item.status === 'PAID' || item.status === 'pago'
+                        ? 'Pago'
+                        : item.status === 'REVERSED' || item.status === 'cancelado'
+                          ? 'Estornado'
+                          : 'Pendente'}
                     </span>
                   </div>
                   <div className="mt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm">
@@ -530,6 +619,9 @@ export default function TeacherDashboard() {
                       R$ {item.valor_comissao.toFixed(2)}
                     </span>
                   </div>
+                  <p className="mt-2 text-[10px] uppercase tracking-[0.3em] text-[hsl(var(--muted-foreground))]">
+                    {item.source === 'ledger' ? 'Comissao nova' : 'Comissao padrao'}
+                  </p>
                 </div>
               ))}
             </div>
