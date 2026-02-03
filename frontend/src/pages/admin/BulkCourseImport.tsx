@@ -5,6 +5,7 @@ import { parseBulkCourseText } from '../../lib/courseTextParser';
 import { Course } from '../../types';
 import api from '../../lib/api';
 import { supabase } from '../../lib/supabase';
+import { useAuthStore } from '../../lib/store';
 
 const USE_LOCAL_AUTH = import.meta.env.VITE_USE_LOCAL_AUTH === 'true';
 
@@ -22,6 +23,7 @@ interface Teacher {
 }
 
 export default function BulkCourseImport({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+  const { user } = useAuthStore();
   const [rawText, setRawText] = useState('');
   const [parsedCourses, setParsedCourses] = useState<Course[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -97,7 +99,7 @@ export default function BulkCourseImport({ onClose, onSuccess }: { onClose: () =
           descricao: course.description,
           preco_certificado: course.price,
           nivel: course.level || 'beginner',
-          professor_id: selectedTeacherId || null,
+          professor_id: selectedTeacherId || user?.id || null,
           carga_horaria_horas: course.duration_hours || null,
           is_published: false,
         }));

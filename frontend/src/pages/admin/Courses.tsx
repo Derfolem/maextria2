@@ -2,14 +2,17 @@ import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Course } from '../../types';
 import { supabase } from '../../lib/supabase';
+import { useAuthStore } from '../../lib/store';
 import toast from 'react-hot-toast';
 import { FaTrash, FaEye, FaEyeSlash, FaSearch, FaArrowRight, FaEdit, FaClock, FaTimes, FaFilter, FaFileUpload } from 'react-icons/fa';
 import { normalizeCourse } from '../../lib/normalizeCourse';
 import BulkCourseImport from './BulkCourseImport';
+import { trackContentPublished } from '../../lib/analytics';
 
 type FilterOption = 'recentes' | 'modificados' | 'publicados' | 'reprovados' | 'aguardando' | 'curadoria' | 'az';
 
 export default function AdminCourses() {
+  const { user } = useAuthStore();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -127,6 +130,7 @@ export default function AdminCourses() {
         .eq('id', String(courseId));
       if (error) throw error;
       toast.success('Curso aprovado e publicado!');
+      trackContentPublished('course', String(courseId));
       loadCourses();
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao aprovar curso');
@@ -299,7 +303,7 @@ export default function AdminCourses() {
                   <FaEye />
                   Visualizar
                 </Link>
-                {course.em_curadoria ? (
+                {(course.em_curadoria || (String(course.teacher_id) === String(user?.id) && !course.is_published)) ? (
                   <Link
                     to={`/teacher/course/${course.id}/edit`}
                     className="btn-outline flex items-center gap-2"
@@ -345,6 +349,14 @@ export default function AdminCourses() {
                       Reprovar
                     </button>
                   </>
+                ) : String(course.teacher_id) === String(user?.id) ? (
+                  <button
+                    onClick={() => togglePublish(course.id, false)}
+                    className="btn-accent flex items-center gap-2"
+                  >
+                    <FaArrowRight />
+                    Publicar
+                  </button>
                 ) : (
                   <span className="text-sm text-[hsl(var(--muted-foreground))] px-3 py-2">
                     Aguardando envio
