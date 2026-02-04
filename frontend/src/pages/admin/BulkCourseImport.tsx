@@ -178,11 +178,11 @@ export default function BulkCourseImport({ onClose, onSuccess }: { onClose: () =
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative w-full max-w-3xl mx-4 max-h-[90vh] overflow-y-auto bg-white rounded-xl shadow-2xl">
+      <div className="relative w-full max-w-3xl mx-4 max-h-[90vh] overflow-y-auto bg-[hsl(var(--card))] text-[hsl(var(--card-foreground))] rounded-xl shadow-2xl">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between rounded-t-xl z-10">
+        <div className="sticky top-0 bg-[hsl(var(--card))] border-b border-[hsl(var(--border))] px-6 py-4 flex items-center justify-between rounded-t-xl z-10">
           <div>
-            <h2 className="text-xl font-semibold">Importação em massa</h2>
+            <h2 className="text-xl font-semibold text-[hsl(var(--foreground))]">Importação em massa</h2>
             <p className="text-sm text-[hsl(var(--muted-foreground))]">
               Separe cursos com <code className="bg-[hsl(var(--muted))] px-1.5 py-0.5 rounded text-xs">===</code> numa linha própria
             </p>
@@ -211,7 +211,7 @@ Conteúdo da primeira aula...
 Título do Curso: Segundo Curso
 Descrição do Curso: Outro curso aqui
 ...`}
-            className="w-full h-48 p-3 border border-[hsl(var(--border))] rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] text-sm font-mono"
+            className="w-full h-48 p-3 border border-[hsl(var(--border))] rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] text-sm font-mono bg-[hsl(var(--background))] text-[hsl(var(--foreground))] placeholder-[hsl(var(--muted-foreground))]"
           />
 
           {/* Teacher select */}
@@ -263,7 +263,7 @@ Descrição do Curso: Outro curso aqui
               </div>
               <div className="space-y-2">
                 {parsedCourses.map((course, i) => (
-                  <div key={i} className="border border-[hsl(var(--border))] rounded-lg p-3">
+                  <div key={i} className="border border-[hsl(var(--border))] bg-[hsl(var(--muted))] rounded-lg p-3">
                     <div className="flex items-center justify-between">
                       <span className="font-medium text-sm">{course.title || '(sem título)'}</span>
                       <span className="text-xs text-[hsl(var(--muted-foreground))]">
@@ -292,14 +292,14 @@ Descrição do Curso: Outro curso aqui
           {/* Resultado após importação */}
           {results && (
             <div>
-              <p className="text-sm font-semibold text-green-700 mb-3 flex items-center gap-2">
+              <p className="text-sm font-semibold text-[hsl(var(--primary))] mb-3 flex items-center gap-2">
                 <FaCheck /> Importação concluída — {results.length} curso(s) criado(s)
               </p>
               <div className="space-y-2">
                 {results.map((r, i) => (
-                  <div key={i} className="border border-green-200 bg-green-50 rounded-lg p-3 flex items-center justify-between">
-                    <span className="text-sm font-medium">{r.title}</span>
-                    <span className="text-xs text-green-600">
+                  <div key={i} className="border border-[hsl(var(--border))] bg-[hsl(var(--muted))] rounded-lg p-3 flex items-center justify-between">
+                    <span className="text-sm font-medium text-[hsl(var(--foreground))]">{r.title}</span>
+                    <span className="text-xs text-[hsl(var(--primary))]">
                       {r.modules} módulo(s) • {r.lessons} aula(s)
                     </span>
                   </div>
