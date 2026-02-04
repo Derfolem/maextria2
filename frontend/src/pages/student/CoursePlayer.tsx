@@ -937,6 +937,17 @@ export default function CoursePlayer() {
                   </p>
                 </div>
                 <div className="flex flex-col items-start gap-2">
+                  <p
+                    className="text-base font-extrabold uppercase tracking-[0.06em] text-[hsl(var(--accent))] rounded-xl px-4 py-3 max-w-[280px] animate-pulse"
+                    style={{
+                      background: 'linear-gradient(135deg, hsl(var(--accent) / 0.18), hsl(var(--accent) / 0.06))',
+                      border: '2px solid hsl(var(--accent))',
+                      boxShadow: '0 0 14px hsl(var(--accent) / 0.7), 0 0 32px hsl(var(--accent) / 0.35), 0 0 60px hsl(var(--accent) / 0.15)',
+                      textShadow: '0 0 8px hsl(var(--accent) / 0.8)',
+                    }}
+                  >
+                    Só o certificado pode comprovar que você realmente adquiriu esta nova habilidade.
+                  </p>
                   <button onClick={getCertificate} className="btn-accent flex items-center gap-2">
                     <FaCertificate />
                     Obter certificado
