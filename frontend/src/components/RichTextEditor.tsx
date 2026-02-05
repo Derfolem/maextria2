@@ -24,6 +24,7 @@ import {
   FiChevronDown,
   FiMoreHorizontal,
   FiMessageSquare,
+  FiInfo,
 } from 'react-icons/fi';
 
 
@@ -61,6 +62,7 @@ export default function RichTextEditor({
   const [fontFamily, setFontFamily] = useState(FONT_FAMILIES[0]);
   const [fontSize, setFontSize] = useState(FONT_SIZES[1].value);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [showLabels, setShowLabels] = useState(false);
   const [bubbleVisible, setBubbleVisible] = useState(false);
   const [bubbleStyle, setBubbleStyle] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
 
@@ -167,13 +169,14 @@ export default function RichTextEditor({
 
   const groupClass = 'flex items-center gap-1.5 px-2';
   const dividerClass = 'mx-2 h-7 w-px bg-[hsl(var(--border))]/60';
+  const labelProps = (label: string) => ({ title: label, 'aria-label': label });
 
   return (
     <div className={`rounded-[16px] border border-[hsl(var(--border))] bg-[hsl(var(--card))] ${className || ''}`}>
       <div className="border-b border-[hsl(var(--border))]/70 bg-[hsl(var(--graphite))] px-3 py-2">
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
           <div className={groupClass}>
-            <FiType className="text-[hsl(var(--muted-foreground))]" />
+            <FiType className="text-[hsl(var(--muted-foreground))]" {...labelProps('Fonte')} />
             <select
               value={fontFamily}
               onChange={(event) => {
@@ -210,28 +213,28 @@ export default function RichTextEditor({
           <div className={dividerClass} />
 
           <div className={groupClass}>
-            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('bold')} className={buttonClass(isActive('bold'))}>
+            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('bold')} className={buttonClass(isActive('bold'))} {...labelProps('Negrito')}>
               <FiBold />
             </button>
-            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('italic')} className={buttonClass(isActive('italic'))}>
+            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('italic')} className={buttonClass(isActive('italic'))} {...labelProps('Itálico')}>
               <FiItalic />
             </button>
-            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('underline')} className={buttonClass(isActive('underline'))}>
+            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('underline')} className={buttonClass(isActive('underline'))} {...labelProps('Sublinhado')}>
               <FiUnderline />
             </button>
-            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('strikeThrough')} className={buttonClass(isActive('strikeThrough'))}>
+            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('strikeThrough')} className={buttonClass(isActive('strikeThrough'))} {...labelProps('Tachado')}>
               <FiSlash />
             </button>
-            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('formatBlock', '<h1>')} className={buttonClass(activeBlock() === 'h1')}>
+            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('formatBlock', '<h1>')} className={buttonClass(activeBlock() === 'h1')} {...labelProps('Título H1')}>
               H1
             </button>
-            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('formatBlock', '<h2>')} className={buttonClass(activeBlock() === 'h2')}>
+            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('formatBlock', '<h2>')} className={buttonClass(activeBlock() === 'h2')} {...labelProps('Título H2')}>
               H2
             </button>
-            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('formatBlock', '<h3>')} className={buttonClass(activeBlock() === 'h3')}>
+            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('formatBlock', '<h3>')} className={buttonClass(activeBlock() === 'h3')} {...labelProps('Título H3')}>
               H3
             </button>
-            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('formatBlock', '<p>')} className={buttonClass(activeBlock() === 'p')}>
+            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('formatBlock', '<p>')} className={buttonClass(activeBlock() === 'p')} {...labelProps('Parágrafo')}>
               P
             </button>
           </div>
@@ -239,22 +242,22 @@ export default function RichTextEditor({
           <div className={dividerClass} />
 
           <div className={groupClass}>
-            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('insertUnorderedList')} className={buttonClass(isActive('insertUnorderedList'))}>
+            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('insertUnorderedList')} className={buttonClass(isActive('insertUnorderedList'))} {...labelProps('Lista com marcadores')}>
               <FiListBulleted />
             </button>
-            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('insertOrderedList')} className={buttonClass(isActive('insertOrderedList'))}>
+            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('insertOrderedList')} className={buttonClass(isActive('insertOrderedList'))} {...labelProps('Lista numerada')}>
               <FiList />
             </button>
-            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('justifyLeft')} className={buttonClass(isActive('justifyLeft'))}>
+            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('justifyLeft')} className={buttonClass(isActive('justifyLeft'))} {...labelProps('Alinhar à esquerda')}>
               <FiAlignLeft />
             </button>
-            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('justifyCenter')} className={buttonClass(isActive('justifyCenter'))}>
+            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('justifyCenter')} className={buttonClass(isActive('justifyCenter'))} {...labelProps('Centralizar')}>
               <FiAlignCenter />
             </button>
-            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('justifyRight')} className={buttonClass(isActive('justifyRight'))}>
+            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('justifyRight')} className={buttonClass(isActive('justifyRight'))} {...labelProps('Alinhar à direita')}>
               <FiAlignRight />
             </button>
-            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('justifyFull')} className={buttonClass(isActive('justifyFull'))}>
+            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('justifyFull')} className={buttonClass(isActive('justifyFull'))} {...labelProps('Justificar')}>
               <FiAlignJustify />
             </button>
           </div>
@@ -266,15 +269,15 @@ export default function RichTextEditor({
               type="color"
               onChange={(event) => exec('foreColor', event.target.value)}
               className="h-8 w-9 rounded-lg border border-[hsl(var(--border))]/60 bg-transparent"
-              title="Cor do texto"
+              {...labelProps('Cor do texto')}
             />
-            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('hiliteColor', '#2dd4bf')} className={buttonClass()}>
+            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('hiliteColor', '#2dd4bf')} className={buttonClass()} {...labelProps('Cor de fundo')}>
               <FiDroplet />
             </button>
-            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('formatBlock', '<blockquote>')} className={buttonClass(activeBlock() === 'blockquote')}>
+            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('formatBlock', '<blockquote>')} className={buttonClass(activeBlock() === 'blockquote')} {...labelProps('Citação')}>
               <FiMessageSquare />
             </button>
-            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('formatBlock', '<pre>')} className={buttonClass(activeBlock() === 'pre')}>
+            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('formatBlock', '<pre>')} className={buttonClass(activeBlock() === 'pre')} {...labelProps('Código')}>
               <FiCode />
             </button>
           </div>
@@ -282,13 +285,13 @@ export default function RichTextEditor({
           <div className={dividerClass} />
 
           <div className={`${groupClass} hidden lg:flex`}>
-            <button type="button" onMouseDown={handleMouseDown} onClick={insertImage} className={buttonClass()}>
+            <button type="button" onMouseDown={handleMouseDown} onClick={insertImage} className={buttonClass()} {...labelProps('Inserir imagem')}>
               <FiImage />
             </button>
-            <button type="button" onMouseDown={handleMouseDown} onClick={insertTable} className={buttonClass()}>
+            <button type="button" onMouseDown={handleMouseDown} onClick={insertTable} className={buttonClass()} {...labelProps('Inserir tabela')}>
               <FiGrid />
             </button>
-            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('insertHorizontalRule')} className={buttonClass()}>
+            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('insertHorizontalRule')} className={buttonClass()} {...labelProps('Linha horizontal')}>
               <FiMinus />
             </button>
           </div>
@@ -296,13 +299,13 @@ export default function RichTextEditor({
           <div className={dividerClass} />
 
           <div className={groupClass}>
-            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('removeFormat')} className={buttonClass()}>
+            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('removeFormat')} className={buttonClass()} {...labelProps('Limpar formatação')}>
               <FiDelete />
             </button>
-            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('undo')} className={buttonClass()}>
+            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('undo')} className={buttonClass()} {...labelProps('Desfazer')}>
               <FiRotateCcw />
             </button>
-            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('redo')} className={buttonClass()}>
+            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('redo')} className={buttonClass()} {...labelProps('Refazer')}>
               <FiRotateCw />
             </button>
           </div>
@@ -313,8 +316,18 @@ export default function RichTextEditor({
               onMouseDown={handleMouseDown}
               onClick={() => setMoreOpen((prev) => !prev)}
               className={buttonClass(moreOpen)}
+              {...labelProps('Mais ferramentas')}
             >
               <FiMoreHorizontal />
+            </button>
+            <button
+              type="button"
+              onMouseDown={handleMouseDown}
+              onClick={() => setShowLabels((prev) => !prev)}
+              className={buttonClass(showLabels)}
+              {...labelProps('Mostrar rótulos')}
+            >
+              <FiInfo />
             </button>
           </div>
         </div>
@@ -336,30 +349,55 @@ export default function RichTextEditor({
             <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('formatBlock', '<h3>')} className={buttonClass(activeBlock() === 'h3')}>
               <FiHash />
             </button>
-            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('formatBlock', '<blockquote>')} className={buttonClass(activeBlock() === 'blockquote')}>
+            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('formatBlock', '<blockquote>')} className={buttonClass(activeBlock() === 'blockquote')} {...labelProps('Citação')}>
               <FiMessageSquare />
             </button>
-            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('formatBlock', '<pre>')} className={buttonClass(activeBlock() === 'pre')}>
+            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('formatBlock', '<pre>')} className={buttonClass(activeBlock() === 'pre')} {...labelProps('Código')}>
               <FiCode />
             </button>
             <input
               type="color"
               onChange={(event) => exec('foreColor', event.target.value)}
               className="h-8 w-9 rounded-lg border border-[hsl(var(--border))]/60 bg-transparent"
-              title="Cor do texto"
+              {...labelProps('Cor do texto')}
             />
-            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('hiliteColor', '#2dd4bf')} className={buttonClass()}>
+            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('hiliteColor', '#2dd4bf')} className={buttonClass()} {...labelProps('Cor de fundo')}>
               <FiDroplet />
             </button>
-            <button type="button" onMouseDown={handleMouseDown} onClick={insertImage} className={buttonClass()}>
+            <button type="button" onMouseDown={handleMouseDown} onClick={insertImage} className={buttonClass()} {...labelProps('Inserir imagem')}>
               <FiImage />
             </button>
-            <button type="button" onMouseDown={handleMouseDown} onClick={insertTable} className={buttonClass()}>
+            <button type="button" onMouseDown={handleMouseDown} onClick={insertTable} className={buttonClass()} {...labelProps('Inserir tabela')}>
               <FiGrid />
             </button>
-            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('insertHorizontalRule')} className={buttonClass()}>
+            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('insertHorizontalRule')} className={buttonClass()} {...labelProps('Linha horizontal')}>
               <FiMinus />
             </button>
+          </div>
+        )}
+
+        {showLabels && (
+          <div className="mt-3 flex flex-wrap gap-2 border-t border-[hsl(var(--border))]/70 pt-3 text-xs text-[hsl(var(--muted-foreground))] lg:hidden">
+            <span>Negrito</span>
+            <span>Itálico</span>
+            <span>Sublinhado</span>
+            <span>Tachado</span>
+            <span>H1</span>
+            <span>H2</span>
+            <span>H3</span>
+            <span>Parágrafo</span>
+            <span>Lista</span>
+            <span>Numeração</span>
+            <span>Alinhamentos</span>
+            <span>Cores</span>
+            <span>Citação</span>
+            <span>Código</span>
+            <span>Imagem</span>
+            <span>Tabela</span>
+            <span>Linha</span>
+            <span>Limpar</span>
+            <span>Desfazer</span>
+            <span>Refazer</span>
           </div>
         )}
       </div>
@@ -371,11 +409,11 @@ export default function RichTextEditor({
           style={{ top: bubbleStyle.top, left: bubbleStyle.left }}
         >
           <div className="flex items-center gap-1">
-            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('bold')} className={buttonClass(isActive('bold'))}><FiBold /></button>
-            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('italic')} className={buttonClass(isActive('italic'))}><FiItalic /></button>
-            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('underline')} className={buttonClass(isActive('underline'))}><FiUnderline /></button>
-            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('insertUnorderedList')} className={buttonClass(isActive('insertUnorderedList'))}><FiListBulleted /></button>
-            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('insertOrderedList')} className={buttonClass(isActive('insertOrderedList'))}><FiList /></button>
+            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('bold')} className={buttonClass(isActive('bold'))} {...labelProps('Negrito')}><FiBold /></button>
+            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('italic')} className={buttonClass(isActive('italic'))} {...labelProps('Itálico')}><FiItalic /></button>
+            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('underline')} className={buttonClass(isActive('underline'))} {...labelProps('Sublinhado')}><FiUnderline /></button>
+            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('insertUnorderedList')} className={buttonClass(isActive('insertUnorderedList'))} {...labelProps('Lista com marcadores')}><FiListBulleted /></button>
+            <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('insertOrderedList')} className={buttonClass(isActive('insertOrderedList'))} {...labelProps('Lista numerada')}><FiList /></button>
           </div>
         </div>
       )}
