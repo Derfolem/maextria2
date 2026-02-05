@@ -109,6 +109,7 @@ export default function Courses() {
   const [selectedLevel, setSelectedLevel] = useState<string>(searchParams.get('level') || '');
   const [durationRange, setDurationRange] = useState<string>(searchParams.get('duration') || '');
   const [sortBy, setSortBy] = useState<SortOption>((searchParams.get('sort') as SortOption) || 'popular');
+  const [visibleCount, setVisibleCount] = useState(6);
 
   // Secoes colapsaveis
   const [expandedSections, setExpandedSections] = useState({
@@ -144,6 +145,10 @@ export default function Courses() {
     }, 600);
     return () => { if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current); };
   }, [search]);
+
+  useEffect(() => {
+    setVisibleCount(6);
+  }, [search, selectedCategory, selectedLevel, durationRange, sortBy, showTrilhas]);
 
   const loadTrilhas = async () => {
     try {
@@ -911,7 +916,7 @@ export default function Courses() {
                   animate={{ opacity: 1 }}
                   className="grid md:grid-cols-2 xl:grid-cols-3 gap-6"
                 >
-                  {filteredCourses.map((course, i) => (
+                  {filteredCourses.slice(0, visibleCount).map((course, i) => (
                     <motion.div
                       key={course.id}
                       initial={{ opacity: 0, y: 20 }}
@@ -974,7 +979,7 @@ export default function Courses() {
                   animate={{ opacity: 1 }}
                   className="space-y-4"
                 >
-                  {filteredCourses.map((course, i) => (
+                  {filteredCourses.slice(0, visibleCount).map((course, i) => (
                     <motion.div
                       key={course.id}
                       initial={{ opacity: 0, x: -20 }}
@@ -1032,6 +1037,18 @@ export default function Courses() {
                     </motion.div>
                   ))}
                 </motion.div>
+              )}
+
+              {visibleCount < filteredCourses.length && (
+                <div className="flex justify-center mt-8">
+                  <button
+                    type="button"
+                    onClick={() => setVisibleCount((prev) => prev + 6)}
+                    className="btn-outline px-6 py-2 text-sm flex items-center gap-2 hover:bg-[hsl(var(--muted))] transition"
+                  >
+                    <FaChevronDown className="text-xs" /> Carregar mais
+                  </button>
+                </div>
               )}
             </div>
           </div>
