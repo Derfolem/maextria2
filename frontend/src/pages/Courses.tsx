@@ -24,6 +24,7 @@ import { normalizeCourse } from '../lib/normalizeCourse';
 import { SEO } from '../components/SEO';
 import StarRating from '../components/StarRating';
 import { trackSearch } from '../lib/analytics';
+import { stripHtml } from '../lib/text';
 
 type SortOption = 'popular' | 'recent' | 'az' | 'za';
 type ViewMode = 'grid' | 'list';
@@ -271,7 +272,7 @@ export default function Courses() {
       if (!tokens.length) return 0;
       const fields = [
         course.title,
-        course.description,
+        stripHtml(course.description),
         course.teacher_name || '',
         course.category || '',
       ];
@@ -951,7 +952,7 @@ export default function Courses() {
                             {course.title}
                           </h3>
                           <p className="text-sm text-[hsl(var(--muted-foreground))] line-clamp-2 mb-4">
-                            {course.description}
+                            {stripHtml(course.description)}
                           </p>
                           <div className="flex items-center justify-between text-sm text-[hsl(var(--muted-foreground))]">
                             <StarRating value={course.rating || 4.3} readonly size="sm" showValue />
@@ -1012,7 +1013,7 @@ export default function Courses() {
                             </div>
                           </div>
                           <p className="text-sm text-[hsl(var(--muted-foreground))] line-clamp-2 mt-2">
-                            {course.description}
+                            {stripHtml(course.description)}
                           </p>
                           <div className="flex items-center gap-4 mt-3 text-sm text-[hsl(var(--muted-foreground))]">
                             <StarRating value={course.rating || 4.3} readonly size="sm" showValue />

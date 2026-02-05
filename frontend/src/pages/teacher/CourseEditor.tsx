@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { FaPlus, FaTrash, FaSave, FaRobot } from 'react-icons/fa';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
+import RichTextEditor from '../../components/RichTextEditor';
 
 export default function CourseEditor() {
   const { id } = useParams();
@@ -790,6 +791,13 @@ const loadCourse = async () => {
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
+            onClick={() => navigate('/teacher/course/new-glass')}
+            className="btn-outline"
+          >
+            Usar extrator
+          </button>
+          <button
+            type="button"
             onClick={handleAiArea}
             className="btn-outline flex items-center space-x-2"
             disabled={aiAccessLoading}
@@ -908,11 +916,10 @@ const loadCourse = async () => {
               <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-2">
                 Descrição *
               </label>
-              <textarea
+              <RichTextEditor
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="input-field"
-                rows={4}
+                onChange={setDescription}
+                minHeight={160}
                 placeholder="Descreva seu curso..."
               />
             </div>
@@ -966,12 +973,11 @@ const loadCourse = async () => {
                             className="input-field font-semibold mb-2"
                             placeholder="Título do módulo"
                           />
-                          <textarea
+                          <RichTextEditor
                             value={module.description || ''}
-                            onChange={(e) => updateModuleState(module.id, { description: e.target.value })}
-                            onBlur={(e) => updateModule(module.id, { description: e.target.value })}
-                            className="input-field"
-                            rows={2}
+                            onChange={(value) => updateModuleState(module.id, { description: value })}
+                            onBlur={(value) => updateModule(module.id, { description: value })}
+                            minHeight={120}
                             placeholder="Descrição do módulo"
                           />
                         </div>
@@ -1136,13 +1142,13 @@ const loadCourse = async () => {
                             </div>
 
                         
-                            <textarea
+                            <RichTextEditor
                               value={lesson.content || ''}
-                              onChange={(e) => updateLessonState(lesson.id, { content: e.target.value })}
-                              onBlur={(e) => updateLesson(lesson.id, { content: e.target.value })}
-                              className="input-field mb-2"
-                              rows={3}
+                              onChange={(value) => updateLessonState(lesson.id, { content: value })}
+                              onBlur={(value) => updateLesson(lesson.id, { content: value })}
+                              minHeight={180}
                               placeholder="Conteúdo da aula (texto, HTML)"
+                              className="mb-2"
                             />
 
                             <div className="mt-3">

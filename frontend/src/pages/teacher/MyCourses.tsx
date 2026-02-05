@@ -7,6 +7,7 @@ import { normalizeCourse } from '../../lib/normalizeCourse';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
 import TrilhaModal from '../../components/TrilhaModal';
+import { stripHtml } from '../../lib/text';
 
 type FilterOption = 'recentes' | 'modificados' | 'publicados' | 'reprovados' | 'curadoria' | 'trilhas' | 'az';
 
@@ -477,7 +478,7 @@ export default function TeacherMyCourses() {
                       </span>
                     ))}
                   </div>
-                  <p className="text-[hsl(var(--muted-foreground))] mb-3">{course.description}</p>
+                  <p className="text-[hsl(var(--muted-foreground))] mb-3">{stripHtml(course.description)}</p>
                   <div className="flex items-center space-x-4 text-sm text-[hsl(var(--muted-foreground))]">
                     <span>•</span>
                     {(course.duration_hours !== undefined && course.duration_hours !== null) && (

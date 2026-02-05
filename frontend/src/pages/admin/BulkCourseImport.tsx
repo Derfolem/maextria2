@@ -6,6 +6,7 @@ import { Course } from '../../types';
 import api from '../../lib/api';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
+import { stripHtml } from '../../lib/text';
 
 const USE_LOCAL_AUTH = import.meta.env.VITE_USE_LOCAL_AUTH === 'true';
 
@@ -271,7 +272,9 @@ Descrição do Curso: Outro curso aqui
                       </span>
                     </div>
                     {course.description && (
-                      <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5 truncate">{course.description}</p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5 truncate">
+                        {stripHtml(course.description)}
+                      </p>
                     )}
                     {course.modules?.map((mod, mi) => (
                       <div key={mi} className="mt-2 ml-4">

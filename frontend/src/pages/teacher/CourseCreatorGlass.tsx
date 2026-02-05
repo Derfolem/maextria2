@@ -9,6 +9,7 @@ import { parseCourseText } from '../../lib/courseTextParser'; // Import the pars
 import api from '../../lib/api'; // Import the custom API client
 import { Course as CourseType } from '../../types'; // Alias to avoid confusion with parsedCourse
 import { trackCourseCreated } from '../../lib/analytics';
+import RichTextEditor from '../../components/RichTextEditor';
 
 // Determine if local auth should be used (copied from store.ts for consistency)
 const USE_LOCAL_AUTH = import.meta.env.VITE_USE_LOCAL_AUTH === 'true';
@@ -370,8 +371,20 @@ export default function CourseCreatorGlass() {
   return (
     <div className="max-w-7xl mx-auto px-[clamp(24px,5vw,80px)] py-[clamp(40px,6vh,80px)]">
       <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
-        <h1 className="text-3xl font-bold text-[hsl(var(--foreground))]">Criar Novo Curso (Glass)</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-[hsl(var(--foreground))]">Criar Novo Curso (Glass)</h1>
+          <span className="text-xs uppercase tracking-[0.35em] px-3 py-1 rounded-full border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]">
+            Sem extrator
+          </span>
+        </div>
         <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => navigate('/teacher/course/new')}
+            className="btn-outline"
+          >
+            Criar
+          </button>
           <button
             type="button"
             onClick={handleParseText}
@@ -407,8 +420,13 @@ export default function CourseCreatorGlass() {
               <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-1">
                 Descrição do Curso *
               </label>
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)}
-                        className="input-glass w-full h-24 resize-y" placeholder="Descreva seu curso em detalhes..." />
+              <RichTextEditor
+                value={description}
+                onChange={setDescription}
+                minHeight={140}
+                placeholder="Descreva seu curso em detalhes..."
+                className="bg-transparent"
+              />
             </div>
 
             <div>

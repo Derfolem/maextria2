@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { FaArrowRight, FaBookmark, FaPlayCircle, FaBalanceScale, FaBolt, FaChalkboardTeacher } from 'react-icons/fa';
 import { Course } from '../../types';
 import StarRating from '../../components/StarRating';
+import { stripHtml } from '../../lib/text';
 
 type HomeBelowFoldProps = {
   loadingTopCourses: boolean;
@@ -327,7 +328,7 @@ export default function HomeBelowFold({
                       </div>
                       <h3 className="text-xl font-semibold">{course.title}</h3>
                       <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                        {course.description || 'Conteúdo orientado a pratica com desafios e acompanhamento.'}
+                        {stripHtml(course.description) || 'Conteúdo orientado a pratica com desafios e acompanhamento.'}
                       </p>
                     </div>
                   </Link>

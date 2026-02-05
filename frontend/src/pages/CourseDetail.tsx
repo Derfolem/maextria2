@@ -9,6 +9,8 @@ import { normalizeCourse } from '../lib/normalizeCourse';
 import { SEO, createCourseSchema, createBreadcrumbSchema } from '../components/SEO';
 import { trackCourseView, trackEnrollment } from '../lib/analytics';
 import { Breadcrumb } from '../components/Breadcrumb';
+import DOMPurify from 'dompurify';
+import { stripHtml } from '../lib/text';
 
 export default function CourseDetail() {
   const { id } = useParams();
@@ -150,7 +152,7 @@ export default function CourseDetail() {
       "@context": "https://schema.org",
       "@type": "Course",
       "name": course.title,
-      "description": course.description,
+      "description": stripHtml(course.description),
       "provider": {
         "@type": "Organization",
         "name": "MAEXTRIA",
@@ -182,7 +184,7 @@ export default function CourseDetail() {
     document.title = `${course.title} | MAEXTRIA`;
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) {
-      metaDesc.setAttribute('content', (course.description || '').substring(0, 160));
+      metaDesc.setAttribute('content', stripHtml(course.description || '').substring(0, 160));
     }
 
     return () => {
@@ -218,7 +220,7 @@ export default function CourseDetail() {
   // Preparar dados para SEO
   const courseUrl = `https://www.maextria.com.br/course/${course.id}`;
   const courseImage = course.thumbnail || 'https://www.maextria.com.br/maextria-logo.png';
-  const courseDescription = course.description || `Aprenda ${course.title} com certificado reconhecido. Acesso vitalício e suporte especializado.`;
+  const courseDescription = stripHtml(course.description) || `Aprenda ${course.title} com certificado reconhecido. Acesso vitalício e suporte especializado.`;
 
   // Schema.org para o curso
   const courseSchema = createCourseSchema({
@@ -326,7 +328,10 @@ export default function CourseDetail() {
               )}
             </div>
             <h1 className="headline-font text-4xl md:text-5xl">{course.title}</h1>
-            <p className="text-[hsl(var(--muted-foreground))] text-lg">{course.description}</p>
+            <div
+              className="text-[hsl(var(--muted-foreground))] text-lg"
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(course.description || '') }}
+            />
             <div className="flex flex-wrap items-center gap-6 text-sm text-[hsl(var(--muted-foreground))]">
               <div className="flex items-center gap-2">
                 <FaUser className="text-[hsl(var(--primary))]" />
@@ -349,7 +354,10 @@ export default function CourseDetail() {
                   <div key={module.id} className="card">
                     <h3 className="text-xl font-semibold mb-2">{module.title}</h3>
                     {module.description && (
-                      <p className="text-[hsl(var(--muted-foreground))] mb-3">{module.description}</p>
+                      <div
+                        className="text-[hsl(var(--muted-foreground))] mb-3"
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(module.description) }}
+                      />
                     )}
                     {module.lessons && module.lessons.length > 0 && (
                       <div className="ml-4 mt-2 space-y-2">

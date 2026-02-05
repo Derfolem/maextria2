@@ -8,6 +8,7 @@ import { FaTrash, FaEye, FaEyeSlash, FaSearch, FaArrowRight, FaEdit, FaClock, Fa
 import { normalizeCourse } from '../../lib/normalizeCourse';
 import BulkCourseImport from './BulkCourseImport';
 import { trackContentPublished } from '../../lib/analytics';
+import { stripHtml } from '../../lib/text';
 
 type FilterOption = 'recentes' | 'modificados' | 'publicados' | 'reprovados' | 'aguardando' | 'curadoria' | 'az';
 
@@ -142,7 +143,7 @@ export default function AdminCourses() {
     let result = courses.filter(
       (course) =>
         course.title.toLowerCase().includes(search.toLowerCase()) ||
-        course.description.toLowerCase().includes(search.toLowerCase()) ||
+        stripHtml(course.description).toLowerCase().includes(search.toLowerCase()) ||
         course.teacher_name?.toLowerCase().includes(search.toLowerCase())
     );
 
@@ -280,7 +281,7 @@ export default function AdminCourses() {
                     </span>
                   )}
                 </div>
-                <p className="text-[hsl(var(--muted-foreground))] mb-3">{course.description}</p>
+                <p className="text-[hsl(var(--muted-foreground))] mb-3">{stripHtml(course.description)}</p>
                 <div className="flex flex-wrap items-center gap-3 text-sm text-[hsl(var(--muted-foreground))]">
                   <span>Professor: {course.teacher_name || 'N/A'}</span>
                   <span>•</span>
