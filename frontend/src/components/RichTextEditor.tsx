@@ -40,7 +40,7 @@ export default function RichTextEditor({
   const [fontSize, setFontSize] = useState(FONT_SIZES[1].value);
 
   const isEmpty = useMemo(() => {
-    const normalized = (value || '').replace(/<br\\s*\\/?>(\\s*)/g, '').replace(/&nbsp;/g, '').trim();
+    const normalized = (value || '').replace(/<br\s*\/?>(\s*)/g, '').replace(/&nbsp;/g, '').trim();
     return normalized.length === 0;
   }, [value]);
 
