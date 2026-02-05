@@ -3,7 +3,7 @@ import {
   FiBold,
   FiItalic,
   FiUnderline,
-  FiStrikethrough,
+  FiSlash,
   FiList,
   FiList as FiListBulleted,
   FiAlignLeft,
@@ -23,8 +23,8 @@ import {
   FiMinus,
   FiChevronDown,
   FiMoreHorizontal,
+  FiMessageSquare,
 } from 'react-icons/fi';
-import { HiOutlineQuoteLeft } from 'react-icons/hi2';
 
 
 type Props = {
@@ -220,7 +220,7 @@ export default function RichTextEditor({
               <FiUnderline />
             </button>
             <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('strikeThrough')} className={buttonClass(isActive('strikeThrough'))}>
-              <FiStrikethrough />
+              <FiSlash />
             </button>
             <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('formatBlock', '<h1>')} className={buttonClass(activeBlock() === 'h1')}>
               H1
@@ -272,7 +272,7 @@ export default function RichTextEditor({
               <FiDroplet />
             </button>
             <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('formatBlock', '<blockquote>')} className={buttonClass(activeBlock() === 'blockquote')}>
-              <HiOutlineQuoteLeft />
+              <FiMessageSquare />
             </button>
             <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('formatBlock', '<pre>')} className={buttonClass(activeBlock() === 'pre')}>
               <FiCode />
@@ -337,7 +337,7 @@ export default function RichTextEditor({
               <FiHash />
             </button>
             <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('formatBlock', '<blockquote>')} className={buttonClass(activeBlock() === 'blockquote')}>
-              <HiOutlineQuoteLeft />
+              <FiMessageSquare />
             </button>
             <button type="button" onMouseDown={handleMouseDown} onClick={() => exec('formatBlock', '<pre>')} className={buttonClass(activeBlock() === 'pre')}>
               <FiCode />
