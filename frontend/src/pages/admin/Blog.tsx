@@ -70,12 +70,16 @@ export default function AdminBlog() {
     setLoading(true);
     const { data, error } = await adminClient
       .from('blog_posts')
-      .select('id, titulo, slug, resumo, conteudo_html, autor, imagem_capa_url, publicado, publicado_em, atualizado_em, tipo')
+      .select('*')
       .order('criado_em', { ascending: false });
     if (error) {
       toast.error('Erro ao carregar posts.');
     } else {
-      setPosts(data || []);
+      const normalized = (data || []).map((post: any) => ({
+        ...post,
+        tipo: (post?.tipo || 'blog') as 'blog' | 'atalho',
+      }));
+      setPosts(normalized);
     }
     setLoading(false);
   };

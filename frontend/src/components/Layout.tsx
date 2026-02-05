@@ -421,6 +421,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <Link to="/blog" className="nav-link">
                 Blog
               </Link>
+              <Link to="/atalho" className="nav-link">
+                Pegue o atalho
+              </Link>
               <Link to="/verificar-certificado" className="nav-link">
                 Verificar certificado
               </Link>
@@ -529,6 +532,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </Link>
             <Link to="/blog" className="nav-link md:hidden" onClick={() => setMobileOpen(false)}>
               Blog
+            </Link>
+            <Link to="/atalho" className="nav-link md:hidden" onClick={() => setMobileOpen(false)}>
+              Pegue o atalho
             </Link>
             <Link to="/verificar-certificado" className="nav-link md:hidden" onClick={() => setMobileOpen(false)}>
               Verificar certificado
