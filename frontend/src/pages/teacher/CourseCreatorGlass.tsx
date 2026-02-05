@@ -373,9 +373,6 @@ export default function CourseCreatorGlass() {
       <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
         <div className="flex items-center gap-3">
           <h1 className="text-3xl font-bold text-[hsl(var(--foreground))]">Criar Novo Curso (Glass)</h1>
-          <span className="text-xs uppercase tracking-[0.35em] px-3 py-1 rounded-full border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]">
-            Sem extrator
-          </span>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <button
