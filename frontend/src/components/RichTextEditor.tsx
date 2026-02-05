@@ -180,7 +180,7 @@ export default function RichTextEditor({
                 setFontFamily(event.target.value);
                 exec('fontName', event.target.value);
               }}
-              className="bg-transparent text-xs text-[hsl(var(--foreground))] border border-[hsl(var(--border))]/60 rounded-lg px-2 py-1"
+              className="bg-[hsl(var(--card))] text-xs text-[hsl(var(--foreground))] border border-[hsl(var(--border))] rounded-lg px-2 py-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
             >
               {FONT_FAMILIES.map((font) => (
                 <option key={font} value={font}>
@@ -195,7 +195,7 @@ export default function RichTextEditor({
                   setFontSize(event.target.value);
                   exec('fontSize', event.target.value);
                 }}
-                className="bg-transparent text-xs text-[hsl(var(--foreground))] border border-[hsl(var(--border))]/60 rounded-lg px-2 py-1 pr-6"
+                className="bg-[hsl(var(--card))] text-xs text-[hsl(var(--foreground))] border border-[hsl(var(--border))] rounded-lg px-2 py-1 pr-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
               >
                 {FONT_SIZES.map((size) => (
                   <option key={size.value} value={size.value}>
