@@ -206,6 +206,7 @@ export default function Blog() {
       const { data, error } = await supabase
         .from('blog_posts')
         .select('id, titulo, slug, resumo, autor, imagem_capa_url, publicado_em')
+        .or('tipo.is.null,tipo.eq.blog')
         .eq('publicado', true)
         .order('publicado_em', { ascending: false });
       if (!error) {

@@ -15,6 +15,7 @@ type BlogPost = {
   publicado: boolean;
   publicado_em: string | null;
   atualizado_em: string | null;
+  tipo: 'blog' | 'atalho';
 };
 
 const emptyPost: BlogPost = {
@@ -28,6 +29,7 @@ const emptyPost: BlogPost = {
   publicado: false,
   publicado_em: null,
   atualizado_em: null,
+  tipo: 'blog',
 };
 
 const slugify = (value: string) =>
@@ -44,6 +46,7 @@ export default function AdminBlog() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
+  const [activeTipo, setActiveTipo] = useState<'blog' | 'atalho'>('blog');
   const token = useAuthStore((state) => state.token);
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -67,7 +70,7 @@ export default function AdminBlog() {
     setLoading(true);
     const { data, error } = await adminClient
       .from('blog_posts')
-      .select('id, titulo, slug, resumo, conteudo_html, autor, imagem_capa_url, publicado, publicado_em, atualizado_em')
+      .select('id, titulo, slug, resumo, conteudo_html, autor, imagem_capa_url, publicado, publicado_em, atualizado_em, tipo')
       .order('criado_em', { ascending: false });
     if (error) {
       toast.error('Erro ao carregar posts.');
@@ -112,12 +115,16 @@ export default function AdminBlog() {
   };
 
   const normalizedSearch = useMemo(() => normalize(search), [search]);
+  const postsByTipo = useMemo(
+    () => posts.filter((post) => (post.tipo || 'blog') === activeTipo),
+    [posts, activeTipo]
+  );
 
   const filteredPosts = useMemo(() => {
-    if (!normalizedSearch) return posts;
+    if (!normalizedSearch) return postsByTipo;
     const tokens = normalizedSearch.split(' ').filter(Boolean);
 
-    return posts
+    return postsByTipo
       .map((post) => {
         const dateLabel = post.publicado_em
           ? new Date(post.publicado_em).toLocaleDateString('pt-BR')
@@ -154,6 +161,7 @@ export default function AdminBlog() {
   }, [normalizedSearch, posts]);
 
   const handleEdit = (post: BlogPost) => {
+    setActiveTipo(post.tipo || 'blog');
     setCurrent({
       ...post,
       resumo: post.resumo || '',
@@ -162,7 +170,7 @@ export default function AdminBlog() {
   };
 
   const handleNew = () => {
-    setCurrent({ ...emptyPost });
+    setCurrent({ ...emptyPost, tipo: activeTipo });
   };
 
   const handleChange = (field: keyof BlogPost, value: string | boolean) => {
@@ -193,6 +201,7 @@ export default function AdminBlog() {
         autor: current.autor.trim() || 'Equipe Maextria',
         imagem_capa_url: current.imagem_capa_url?.trim() || null,
         publicado: current.publicado,
+        tipo: current.tipo || activeTipo,
         publicado_em: current.publicado
           ? current.publicado_em || new Date().toISOString()
           : null,
@@ -229,9 +238,9 @@ export default function AdminBlog() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
         <div>
           <p className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--primary))]">Administracao</p>
-          <h1 className="headline-font text-4xl md:text-5xl">Blog</h1>
+          <h1 className="headline-font text-4xl md:text-5xl">Blog e Atalhos</h1>
           <p className="text-sm text-[hsl(var(--muted-foreground))] mt-2">
-            Crie e edite publicacoes do blog MAEXTRIA.
+            Crie e edite publicacoes do blog e dos atalhos MAEXTRIA.
           </p>
         </div>
         <button type="button" onClick={handleNew} className="btn-accent">
@@ -243,12 +252,31 @@ export default function AdminBlog() {
         <div className="card p-4 sm:p-6">
           <div className="flex flex-col gap-3 mb-4">
             <h2 className="text-lg font-semibold">Publicacoes</h2>
+            <div className="inline-flex items-center gap-2 rounded-full border border-[hsl(var(--border))] p-1 text-sm">
+              {(['blog', 'atalho'] as const).map((tipo) => (
+                <button
+                  key={tipo}
+                  type="button"
+                  onClick={() => {
+                    setActiveTipo(tipo);
+                    setSearch('');
+                  }}
+                  className={`px-4 py-1.5 rounded-full transition ${
+                    activeTipo === tipo
+                      ? 'bg-[hsl(var(--primary))] text-white shadow-[0_0_12px_rgba(56,189,248,0.35)]'
+                      : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'
+                  }`}
+                >
+                  {tipo === 'blog' ? 'Blog' : 'Atalhos'}
+                </button>
+              ))}
+            </div>
             <input
               type="search"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               className="input-field"
-              placeholder="Buscar por titulo"
+              placeholder={`Buscar em ${activeTipo === 'blog' ? 'Blog' : 'Atalhos'}`}
             />
             <p className="text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))]">
               {filteredPosts.length} resultado{filteredPosts.length === 1 ? '' : 's'}
@@ -256,7 +284,7 @@ export default function AdminBlog() {
           </div>
           {loading ? (
             <p className="text-sm text-[hsl(var(--muted-foreground))]">Carregando...</p>
-          ) : posts.length === 0 ? (
+          ) : postsByTipo.length === 0 ? (
             <p className="text-sm text-[hsl(var(--muted-foreground))]">Nenhum post ainda.</p>
           ) : filteredPosts.length === 0 ? (
             <p className="text-sm text-[hsl(var(--muted-foreground))]">Nenhum resultado para a busca.</p>
@@ -269,7 +297,12 @@ export default function AdminBlog() {
                   onClick={() => handleEdit(post)}
                   className="w-full text-left px-3 py-2 sm:px-4 sm:py-2.5 border border-[hsl(var(--border))] rounded-[10px] hover:border-[hsl(var(--primary))] transition"
                 >
-                  <p className="font-semibold truncate">{post.titulo}</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-semibold truncate">{post.titulo}</p>
+                    <span className="text-[10px] uppercase tracking-[0.25em] text-[hsl(var(--muted-foreground))]">
+                      {post.tipo === 'atalho' ? 'Atalho' : 'Blog'}
+                    </span>
+                  </div>
                 </button>
               ))}
             </div>
@@ -325,6 +358,18 @@ export default function AdminBlog() {
                 className="input-field"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Tipo de publicacao</label>
+            <select
+              value={current.tipo}
+              onChange={(e) => handleChange('tipo', e.target.value)}
+              className="input-field"
+            >
+              <option value="blog">Blog</option>
+              <option value="atalho">Atalho</option>
+            </select>
           </div>
 
           <div>

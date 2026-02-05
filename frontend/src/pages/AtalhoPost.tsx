@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import { createArticleSchema } from '../components/AdvancedSchemas';
 import { Breadcrumb } from '../components/Breadcrumb';
 
-type BlogPost = {
+type AtalhoPost = {
   id: string;
   titulo: string;
   slug: string;
@@ -17,9 +17,9 @@ type BlogPost = {
   atualizado_em: string | null;
 };
 
-export default function BlogPost() {
+export default function AtalhoPost() {
   const { slug } = useParams();
-  const [post, setPost] = useState<BlogPost | null>(null);
+  const [post, setPost] = useState<AtalhoPost | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,7 +30,7 @@ export default function BlogPost() {
         .from('blog_posts')
         .select('id, titulo, slug, resumo, conteudo_html, autor, imagem_capa_url, publicado_em, atualizado_em')
         .eq('slug', slug)
-        .or('tipo.is.null,tipo.eq.blog')
+        .eq('tipo', 'atalho')
         .eq('publicado', true)
         .maybeSingle();
       if (!error) {
@@ -41,9 +41,10 @@ export default function BlogPost() {
     load();
   }, [slug]);
 
-  const sanitized = useMemo(() => (
-    post?.conteudo_html ? DOMPurify.sanitize(post.conteudo_html) : ''
-  ), [post?.conteudo_html]);
+  const sanitized = useMemo(
+    () => (post?.conteudo_html ? DOMPurify.sanitize(post.conteudo_html) : ''),
+    [post?.conteudo_html]
+  );
 
   const readingTime = useMemo(() => {
     if (!post?.conteudo_html) return null;
@@ -69,11 +70,10 @@ export default function BlogPost() {
   return (
     <div className="min-h-[calc(100vh-8rem)] bg-[hsl(var(--background))] py-12 px-[clamp(24px,5vw,80px)]">
       <div className="max-w-6xl mx-auto">
-        {/* Breadcrumb visual */}
         <Breadcrumb
           items={[
-            { label: 'Blog', href: '/blog' },
-            { label: post?.titulo || 'Artigo' },
+            { label: 'Atalho', href: '/atalho' },
+            { label: post?.titulo || 'Case' },
           ]}
           className="mb-6"
         />
@@ -89,7 +89,7 @@ export default function BlogPost() {
           </div>
         ) : !post ? (
           <div className="card p-8 mt-6 text-[hsl(var(--muted-foreground))]">
-            Artigo nao encontrado.
+            Case nao encontrado.
           </div>
         ) : (
           <article className="card relative mt-6 overflow-hidden">
@@ -138,9 +138,9 @@ export default function BlogPost() {
                 <aside className="space-y-4 lg:sticky lg:top-24 self-start">
                   <div className="card p-5 bg-[hsl(var(--muted))]">
                     <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--primary))]">Proximo passo</p>
-                    <h3 className="text-lg font-semibold mt-2">Cursos + Certificados</h3>
+                    <h3 className="text-lg font-semibold mt-2">Transforme em ação</h3>
                     <p className="text-sm text-[hsl(var(--muted-foreground))] mt-2">
-                      Aprenda com foco, valide com certificado e leve prova real para o mercado.
+                      Escolha um curso e aplique o que esse case ensinou na sua rotina profissional.
                     </p>
                     <Link to="/courses" className="btn-accent mt-4 w-full text-center">
                       Ver cursos
@@ -151,7 +151,7 @@ export default function BlogPost() {
                       Dica rapida
                     </p>
                     <p className="text-sm text-[hsl(var(--muted-foreground))] mt-2">
-                      Use o certificado como prova no curriculo, no LinkedIn e nas entrevistas. A clareza acelera convites.
+                      Salve 3 insights e escolha o primeiro para testar ainda esta semana.
                     </p>
                   </div>
                 </aside>
