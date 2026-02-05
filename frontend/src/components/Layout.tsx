@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../lib/store';
-import { FaBook, FaBars, FaTimes, FaInstagram, FaLinkedinIn, FaYoutube, FaBell } from 'react-icons/fa';
+import { FaBook, FaBars, FaTimes, FaInstagram, FaLinkedinIn, FaYoutube, FaBell, FaFacebookF } from 'react-icons/fa';
 import { supabase } from '../lib/supabase';
 import DOMPurify from 'dompurify';
 
@@ -653,8 +653,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-6 text-sm text-[hsl(var(--footer-foreground))]">
             <p>&copy; 2024 MAEXTRIA. Todos os direitos reservados.</p>
             <div className="flex items-center gap-6 text-xl">
+              <a
+                href="https://www.facebook.com/Maextriacursoscertificados/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-[hsl(var(--secondary))] transition"
+                aria-label="Facebook MAEXTRIA"
+              >
+                <FaFacebookF />
+              </a>
+              <a
+                href="https://www.instagram.com/maextria_cursos_certificados"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-[hsl(var(--secondary))] transition"
+                aria-label="Instagram MAEXTRIA"
+              >
+                <FaInstagram />
+              </a>
               <FaLinkedinIn />
-              <FaInstagram />
               <FaYoutube />
             </div>
           </div>

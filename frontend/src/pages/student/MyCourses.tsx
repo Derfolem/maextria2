@@ -22,6 +22,7 @@ export default function MyCourses() {
   const [trilhas, setTrilhas] = useState<TrilhaComProgresso[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'in-progress' | 'completed' | 'trilhas'>('all');
+  const [certBannerOpen, setCertBannerOpen] = useState(false);
   const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
 
@@ -250,6 +251,47 @@ export default function MyCourses() {
             Trilhas ({trilhas.length})
           </button>
         )}
+      </div>
+
+      <div className="mb-8">
+        <button
+          type="button"
+          onClick={() => setCertBannerOpen((prev) => !prev)}
+          className="w-full text-left rounded-[18px] border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5 transition hover:border-[hsl(var(--secondary))]/60"
+        >
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--primary))]">
+                Certificação de cursos conforme Lei 9.394/96 e Decreto 5.154/04
+              </p>
+            </div>
+            <span className="text-sm text-[hsl(var(--secondary))] font-semibold">
+              {certBannerOpen ? 'Fechar' : 'Ler mais'}
+            </span>
+          </div>
+          {certBannerOpen && (
+            <div className="mt-4 space-y-3 text-sm text-[hsl(var(--muted-foreground))] leading-relaxed">
+              <p>
+                Nossos cursos são 100% on-line, de caráter livre, voltados para o aperfeiçoamento profissional e oferecidos em nível básico.
+              </p>
+              <p>
+                Não se tratam de cursos de graduação, extensão universitária ou pós-graduação.
+              </p>
+              <p>
+                O título do curso não equivale a uma formação profissional regulamentada, e sua certificação não autoriza o exercício de atividades que dependam de registro em conselhos ou órgãos fiscalizadores.
+              </p>
+              <p>
+                Os cursos não possuem reconhecimento ou validação junto a órgãos como MEC, CONTRAN, DENATRAN, CIRETRAN, DETRAN, CETRAN, CONTRANDIFE, COFFITO, CRO, CRM, CFP, CREA, entre outros.
+              </p>
+              <p>
+                A emissão do certificado está condicionada à aprovação na avaliação final e ao cumprimento de todos os requisitos previstos nos Termos de Uso da plataforma Elevo, incluindo a carga horária mínima de estudos.
+              </p>
+              <p>
+                Nossos certificados seguem as diretrizes do Ministério da Educação e são válidos em todo o território nacional, com ampla aceitação no mercado. Eles estão em conformidade com a Lei nº 9.394/96 e o Decreto Presidencial nº 5.154/04, podendo ser utilizados para diversos fins.
+              </p>
+            </div>
+          )}
+        </button>
       </div>
 
       {/* Visualizacao de Trilhas */}
