@@ -134,8 +134,8 @@ export default function RichTextEditor({
     const rows = Number(prompt('Quantas linhas? (ex: 3)', '3'));
     const cols = Number(prompt('Quantas colunas? (ex: 3)', '3'));
     if (!rows || !cols) return;
-    const table = `<table style="width:100%; border-collapse: collapse;" border="1">${Array.from({ length: rows })
-      .map(() => `<tr>${Array.from({ length: cols }).map(() => '<td style=\"padding:6px;\">&nbsp;</td>').join('')}</tr>`)
+    const table = `<table style="width:100%; border-collapse: collapse; border:1px solid #94a3b8; color: inherit;">${Array.from({ length: rows })
+      .map(() => `<tr>${Array.from({ length: cols }).map(() => '<td style=\"padding:6px; border:1px solid #94a3b8;\">&nbsp;</td>').join('')}</tr>`)
       .join('')}</table><p><br></p>`;
     exec('insertHTML', table);
   };
