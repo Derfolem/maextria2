@@ -36,6 +36,8 @@ export default function AtalhoPost() {
   const [shareUrl, setShareUrl] = useState('');
   const [reactedEmojis, setReactedEmojis] = useState<string[]>([]);
   const [hasRead, setHasRead] = useState(false);
+  const [showReactions, setShowReactions] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
   const reactionOptions = ['👍', '👏', '🔥', '💡', '✅', '🎯', '🚀', '💙'];
 
@@ -136,6 +138,8 @@ export default function AtalhoPost() {
       const reactedKey = `maextria_reacted_${post.id}`;
       const stored = window.localStorage.getItem(reactedKey);
       if (stored) setReactedEmojis(stored.split(',').filter(Boolean));
+      const savedKey = `maextria_saved_${post.id}`;
+      setIsSaved(window.localStorage.getItem(savedKey) === '1');
     }
   }, [post?.id]);
 
@@ -216,6 +220,15 @@ export default function AtalhoPost() {
     }
   };
 
+  const handleSavePost = () => {
+    if (!post?.id || typeof window === 'undefined') return;
+    const key = `maextria_saved_${post.id}`;
+    const next = !isSaved;
+    window.localStorage.setItem(key, next ? '1' : '0');
+    setIsSaved(next);
+    setCommentStatus(next ? 'Salvo nos favoritos do navegador.' : 'Removido dos favoritos.');
+  };
+
   const embedCode = shareUrl
     ? `<iframe src="${shareUrl}" style="width:100%;height:600px;border:0;" loading="lazy"></iframe>`
     : '';
@@ -291,29 +304,48 @@ export default function AtalhoPost() {
                   <section className="pt-6 border-t border-[hsl(var(--border))] space-y-6">
                     <div>
                       <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--primary))]">Reacoes</p>
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {reactionOptions.map((emoji) => {
-                          const isActive = reactedEmojis.includes(emoji);
-                          return (
-                            <button
+                      <div className="mt-4 flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setShowReactions((prev) => !prev)}
+                          className="btn-outline flex items-center gap-2"
+                          aria-expanded={showReactions}
+                        >
+                          👍 <span>Reagir</span>
+                        </button>
+                        <div className="flex flex-wrap gap-2">
+                          {reactionOptions.map((emoji) => (
+                            <span
                               key={emoji}
-                              type="button"
-                              onClick={() => handleReact(emoji)}
-                              className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition ${
-                                isActive
-                                  ? 'border-[hsl(var(--primary))] text-[hsl(var(--primary))] bg-[hsl(var(--primary))]/10'
-                                  : 'border-[hsl(var(--border))] text-[hsl(var(--foreground))] hover:border-[hsl(var(--primary))]'
-                              }`}
-                              aria-label={`Reagir com ${emoji}`}
+                              className="rounded-full border border-[hsl(var(--border))] px-3 py-1 text-xs text-[hsl(var(--muted-foreground))]"
                             >
-                              <span className="text-base">{emoji}</span>
-                              <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                                {reactions[emoji] || 0}
-                              </span>
-                            </button>
-                          );
-                        })}
+                              {emoji} {reactions[emoji] || 0}
+                            </span>
+                          ))}
+                        </div>
                       </div>
+                      {showReactions && (
+                        <div className="mt-3 flex flex-wrap gap-2 rounded-[14px] border border-[hsl(var(--border))] bg-[hsl(var(--muted))] p-3">
+                          {reactionOptions.map((emoji) => {
+                            const isActive = reactedEmojis.includes(emoji);
+                            return (
+                              <button
+                                key={emoji}
+                                type="button"
+                                onClick={() => handleReact(emoji)}
+                                className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition ${
+                                  isActive
+                                    ? 'border-[hsl(var(--primary))] text-[hsl(var(--primary))] bg-[hsl(var(--primary))]/10'
+                                    : 'border-[hsl(var(--border))] text-[hsl(var(--foreground))] hover:border-[hsl(var(--primary))]'
+                                }`}
+                                aria-label={`Reagir com ${emoji}`}
+                              >
+                                <span className="text-base">{emoji}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
 
                     <div>
@@ -432,6 +464,13 @@ export default function AtalhoPost() {
                         onClick={() => handleCopy(embedCode, 'Embed')}
                       >
                         Copiar embed
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-outline w-full"
+                        onClick={handleSavePost}
+                      >
+                        {isSaved ? '★ Salvo' : '☆ Salvar'}
                       </button>
                     </div>
                   </div>
