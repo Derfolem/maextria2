@@ -35,6 +35,7 @@ export default function BlogPost() {
   const [reactions, setReactions] = useState<Record<string, number>>({});
   const [shareUrl, setShareUrl] = useState('');
   const [reactedEmojis, setReactedEmojis] = useState<string[]>([]);
+  const [hasRead, setHasRead] = useState(false);
 
   const reactionOptions = ['👍', '👏', '🔥', '💡', '✅', '🎯', '🚀', '💙'];
 
@@ -46,6 +47,20 @@ export default function BlogPost() {
     const value = window.crypto?.randomUUID ? window.crypto.randomUUID() : `anon_${Date.now()}`;
     window.localStorage.setItem(key, value);
     return value;
+  };
+
+  const trackEvent = async (eventType: string, channel?: string) => {
+    if (!post?.id) return;
+    const anonId = getAnonId();
+    await supabase.from('blog_events').insert({
+      post_id: post.id,
+      event_type: eventType,
+      channel: channel || null,
+      anon_id: anonId,
+      referrer: typeof document !== 'undefined' ? document.referrer : null,
+      path: typeof window !== 'undefined' ? window.location.pathname : null,
+      user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+    });
   };
 
   useEffect(() => {
@@ -123,6 +138,32 @@ export default function BlogPost() {
     }
   }, [post?.id]);
 
+  useEffect(() => {
+    if (!post?.id) return;
+    trackEvent('page_view');
+    const readTimer = window.setTimeout(() => {
+      if (!hasRead) {
+        setHasRead(true);
+        trackEvent('read');
+      }
+    }, 45000);
+
+    const onScroll = () => {
+      if (hasRead) return;
+      const scrollTop = window.scrollY;
+      const height = document.documentElement.scrollHeight - window.innerHeight;
+      if (height > 0 && scrollTop / height > 0.7) {
+        setHasRead(true);
+        trackEvent('read');
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.clearTimeout(readTimer);
+      window.removeEventListener('scroll', onScroll);
+    };
+  }, [post?.id, hasRead]);
+
   const handleSubmitComment = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!post?.id) return;
@@ -137,6 +178,7 @@ export default function BlogPost() {
       setCommentStatus('Nao foi possivel enviar. Tente novamente.');
       return;
     }
+    await trackEvent('comment_submitted');
     setCommentStatus('Comentario enviado para curadoria.');
     setCommentName('');
     setCommentBody('');
@@ -153,6 +195,7 @@ export default function BlogPost() {
     });
     if (!error) {
       setReactions((prev) => ({ ...prev, [emoji]: (prev[emoji] || 0) + 1 }));
+      await trackEvent('reaction', emoji);
       const updated = [...reactedEmojis, emoji];
       setReactedEmojis(updated);
       if (typeof window !== 'undefined') {
@@ -165,6 +208,7 @@ export default function BlogPost() {
     if (typeof navigator === 'undefined') return;
     try {
       await navigator.clipboard.writeText(value);
+      await trackEvent('share', label === 'Link' ? 'copy_link' : 'copy_embed');
       setCommentStatus(`${label} copiado.`);
     } catch {
       setCommentStatus('Nao foi possivel copiar.');
@@ -327,7 +371,11 @@ export default function BlogPost() {
                     <p className="text-sm text-[hsl(var(--muted-foreground))] mt-2">
                       Aprenda com foco, valide com certificado e leve prova real para o mercado.
                     </p>
-                    <Link to="/courses" className="btn-accent mt-4 w-full text-center">
+                    <Link
+                      to="/courses"
+                      className="btn-accent mt-4 w-full text-center"
+                      onClick={() => trackEvent('cta_click', 'courses')}
+                    >
                       Ver cursos
                     </Link>
                   </div>
@@ -349,6 +397,7 @@ export default function BlogPost() {
                         href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
                         target="_blank"
                         rel="noreferrer"
+                        onClick={() => trackEvent('share', 'facebook')}
                       >
                         Facebook
                       </a>
@@ -357,6 +406,7 @@ export default function BlogPost() {
                         href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}
                         target="_blank"
                         rel="noreferrer"
+                        onClick={() => trackEvent('share', 'linkedin')}
                       >
                         LinkedIn
                       </a>
@@ -365,6 +415,7 @@ export default function BlogPost() {
                         href={`https://api.whatsapp.com/send?text=${encodeURIComponent(shareUrl)}`}
                         target="_blank"
                         rel="noreferrer"
+                        onClick={() => trackEvent('share', 'whatsapp')}
                       >
                         WhatsApp
                       </a>

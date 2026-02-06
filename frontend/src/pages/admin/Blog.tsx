@@ -60,6 +60,16 @@ export default function AdminBlog() {
   const [pendingComments, setPendingComments] = useState<BlogComment[]>([]);
   const [currentComments, setCurrentComments] = useState<BlogComment[]>([]);
   const [currentReactions, setCurrentReactions] = useState<Record<string, number>>({});
+  const [marketingMetrics, setMarketingMetrics] = useState({
+    views: 0,
+    reads: 0,
+    clicks: 0,
+    shares: 0,
+    comments: 0,
+    reactions: 0,
+  });
+  const [topClicked, setTopClicked] = useState<Array<{ id: string; titulo: string; total: number }>>([]);
+  const [shareChannels, setShareChannels] = useState<Array<{ channel: string; total: number }>>([]);
   const token = useAuthStore((state) => state.token);
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -105,6 +115,7 @@ export default function AdminBlog() {
     }
     setLoading(false);
     await loadPendingComments();
+    await loadMarketingMetrics();
   };
 
   const loadPendingComments = async () => {
@@ -133,6 +144,57 @@ export default function AdminBlog() {
       counts[item.emoji] = (counts[item.emoji] || 0) + 1;
     });
     setCurrentReactions(counts);
+  };
+
+  const loadMarketingMetrics = async () => {
+    const { data: eventsData } = await adminClient
+      .from('blog_events')
+      .select('post_id, event_type, channel');
+    const { data: commentsData } = await adminClient
+      .from('blog_comments')
+      .select('id, status');
+    const { data: reactionsData } = await adminClient
+      .from('blog_reactions')
+      .select('id');
+
+    const events = eventsData || [];
+    const views = events.filter((event: any) => event.event_type === 'page_view').length;
+    const reads = events.filter((event: any) => event.event_type === 'read').length;
+    const clicks = events.filter((event: any) => event.event_type === 'cta_click').length;
+    const shares = events.filter((event: any) => event.event_type === 'share').length;
+    const comments = (commentsData || []).filter((comment: any) => comment.status === 'aprovado').length;
+    const reactions = (reactionsData || []).length;
+
+    setMarketingMetrics({ views, reads, clicks, shares, comments, reactions });
+
+    const clickCounts = new Map<string, number>();
+    events
+      .filter((event: any) => event.event_type === 'cta_click')
+      .forEach((event: any) => {
+        if (!event.post_id) return;
+        clickCounts.set(event.post_id, (clickCounts.get(event.post_id) || 0) + 1);
+      });
+    const top = Array.from(clickCounts.entries())
+      .map(([id, total]) => ({
+        id,
+        total,
+        titulo: posts.find((post) => post.id === id)?.titulo || 'Post removido',
+      }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
+    setTopClicked(top);
+
+    const channelCounts = new Map<string, number>();
+    events
+      .filter((event: any) => event.event_type === 'share')
+      .forEach((event: any) => {
+        const key = event.channel || 'outros';
+        channelCounts.set(key, (channelCounts.get(key) || 0) + 1);
+      });
+    const channelList = Array.from(channelCounts.entries())
+      .map(([channel, total]) => ({ channel, total }))
+      .sort((a, b) => b.total - a.total);
+    setShareChannels(channelList);
   };
 
   const hasCurrent = Boolean(current.id);
@@ -622,6 +684,80 @@ export default function AdminBlog() {
               </div>
             ))
           )}
+        </div>
+      </div>
+
+      <div className="mt-10 card p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">Metricas de marketing</h2>
+            <p className="text-sm text-[hsl(var(--muted-foreground))]">
+              Visitas, leituras, cliques, comentarios, reacoes e compartilhamentos.
+            </p>
+          </div>
+          <button type="button" className="btn-outline text-xs" onClick={loadMarketingMetrics}>
+            Atualizar
+          </button>
+        </div>
+
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[
+            { label: 'Visitas', value: marketingMetrics.views },
+            { label: 'Leituras', value: marketingMetrics.reads },
+            { label: 'Cliques', value: marketingMetrics.clicks },
+            { label: 'Comentarios', value: marketingMetrics.comments },
+            { label: 'Reacoes', value: marketingMetrics.reactions },
+            { label: 'Compartilhamentos', value: marketingMetrics.shares },
+          ].map((item) => (
+            <div key={item.label} className="rounded-[14px] border border-[hsl(var(--border))] p-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))]">{item.label}</p>
+              <p className="text-2xl font-semibold mt-2">{item.value}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
+          <div>
+            <h3 className="text-base font-semibold">Posts mais clicaveis</h3>
+            <div className="mt-3 space-y-2">
+              {topClicked.length === 0 ? (
+                <p className="text-sm text-[hsl(var(--muted-foreground))]">Sem cliques registrados.</p>
+              ) : (
+                topClicked.map((item) => (
+                  <div
+                    key={item.id}
+                    className="rounded-[12px] border border-[hsl(var(--border))] p-3 flex items-center justify-between gap-3"
+                  >
+                    <p className="text-sm font-semibold truncate">{item.titulo}</p>
+                    <span className="text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))]">
+                      {item.total} cliques
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-base font-semibold">Canais de compartilhamento</h3>
+            <div className="mt-3 space-y-2">
+              {shareChannels.length === 0 ? (
+                <p className="text-sm text-[hsl(var(--muted-foreground))]">Sem compartilhamentos ainda.</p>
+              ) : (
+                shareChannels.map((item) => (
+                  <div
+                    key={item.channel}
+                    className="rounded-[12px] border border-[hsl(var(--border))] p-3 flex items-center justify-between gap-3"
+                  >
+                    <p className="text-sm font-semibold capitalize">{item.channel.replace('_', ' ')}</p>
+                    <span className="text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))]">
+                      {item.total}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
