@@ -241,7 +241,11 @@ export default function StudentDashboard() {
           .select('id, criado_em, blog_posts (id, titulo, slug, resumo, autor, imagem_capa_url, tipo, publicado_em)')
           .eq('usuario_id', userId)
           .order('criado_em', { ascending: false });
-        setSavedPosts(savedData || []);
+        const normalizedSaved = (savedData || []).map((row: any) => ({
+          ...row,
+          blog_posts: Array.isArray(row.blog_posts) ? row.blog_posts[0] ?? null : row.blog_posts,
+        }));
+        setSavedPosts(normalizedSaved);
 
         // Carregar trilhas em andamento
         const { data: matriculasTrilha, error: trilhasError } = await supabase
