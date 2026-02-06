@@ -17,10 +17,36 @@ type BlogPost = {
   atualizado_em: string | null;
 };
 
+type BlogComment = {
+  id: string;
+  nome: string;
+  comentario: string;
+  publicado_em: string | null;
+};
+
 export default function BlogPost() {
   const { slug } = useParams();
   const [post, setPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
+  const [comments, setComments] = useState<BlogComment[]>([]);
+  const [commentName, setCommentName] = useState('');
+  const [commentBody, setCommentBody] = useState('');
+  const [commentStatus, setCommentStatus] = useState('');
+  const [reactions, setReactions] = useState<Record<string, number>>({});
+  const [shareUrl, setShareUrl] = useState('');
+  const [reactedEmojis, setReactedEmojis] = useState<string[]>([]);
+
+  const reactionOptions = ['👍', '👏', '🔥', '💡', '✅', '🎯', '🚀', '💙'];
+
+  const getAnonId = () => {
+    if (typeof window === 'undefined') return '';
+    const key = 'maextria_anon_id';
+    const stored = window.localStorage.getItem(key);
+    if (stored) return stored;
+    const value = window.crypto?.randomUUID ? window.crypto.randomUUID() : `anon_${Date.now()}`;
+    window.localStorage.setItem(key, value);
+    return value;
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -65,6 +91,89 @@ export default function BlogPost() {
       description: post.resumo || '',
     });
   }, [post]);
+
+  useEffect(() => {
+    if (!post?.id) return;
+    const loadExtras = async () => {
+      const { data: commentData } = await supabase
+        .from('blog_comments')
+        .select('id, nome, comentario, publicado_em')
+        .eq('post_id', post.id)
+        .eq('status', 'aprovado')
+        .order('publicado_em', { ascending: false });
+      setComments(commentData || []);
+
+      const { data: reactionData } = await supabase
+        .from('blog_reactions')
+        .select('emoji')
+        .eq('post_id', post.id);
+      const counts: Record<string, number> = {};
+      (reactionData || []).forEach((item: any) => {
+        counts[item.emoji] = (counts[item.emoji] || 0) + 1;
+      });
+      setReactions(counts);
+    };
+    loadExtras();
+
+    if (typeof window !== 'undefined') {
+      setShareUrl(window.location.href);
+      const reactedKey = `maextria_reacted_${post.id}`;
+      const stored = window.localStorage.getItem(reactedKey);
+      if (stored) setReactedEmojis(stored.split(',').filter(Boolean));
+    }
+  }, [post?.id]);
+
+  const handleSubmitComment = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!post?.id) return;
+    setCommentStatus('');
+    const payload = {
+      post_id: post.id,
+      nome: commentName.trim(),
+      comentario: commentBody.trim(),
+    };
+    const { error } = await supabase.from('blog_comments').insert(payload);
+    if (error) {
+      setCommentStatus('Nao foi possivel enviar. Tente novamente.');
+      return;
+    }
+    setCommentStatus('Comentario enviado para curadoria.');
+    setCommentName('');
+    setCommentBody('');
+  };
+
+  const handleReact = async (emoji: string) => {
+    if (!post?.id) return;
+    if (reactedEmojis.includes(emoji)) return;
+    const anonId = getAnonId();
+    const { error } = await supabase.from('blog_reactions').insert({
+      post_id: post.id,
+      emoji,
+      anon_id: anonId,
+    });
+    if (!error) {
+      setReactions((prev) => ({ ...prev, [emoji]: (prev[emoji] || 0) + 1 }));
+      const updated = [...reactedEmojis, emoji];
+      setReactedEmojis(updated);
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(`maextria_reacted_${post.id}`, updated.join(','));
+      }
+    }
+  };
+
+  const handleCopy = async (value: string, label: string) => {
+    if (typeof navigator === 'undefined') return;
+    try {
+      await navigator.clipboard.writeText(value);
+      setCommentStatus(`${label} copiado.`);
+    } catch {
+      setCommentStatus('Nao foi possivel copiar.');
+    }
+  };
+
+  const embedCode = shareUrl
+    ? `<iframe src="${shareUrl}" style="width:100%;height:600px;border:0;" loading="lazy"></iframe>`
+    : '';
 
   return (
     <div className="min-h-[calc(100vh-8rem)] bg-[hsl(var(--background))] py-12 px-[clamp(24px,5vw,80px)]">
@@ -134,6 +243,82 @@ export default function BlogPost() {
                     className="prose prose-lg prose-neutral max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-figcaption:text-sm prose-figcaption:text-[hsl(var(--muted-foreground))] prose-img:rounded-[20px]"
                     dangerouslySetInnerHTML={{ __html: sanitized }}
                   />
+
+                  <section className="pt-6 border-t border-[hsl(var(--border))] space-y-6">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--primary))]">Reacoes</p>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {reactionOptions.map((emoji) => {
+                          const isActive = reactedEmojis.includes(emoji);
+                          return (
+                            <button
+                              key={emoji}
+                              type="button"
+                              onClick={() => handleReact(emoji)}
+                              className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition ${
+                                isActive
+                                  ? 'border-[hsl(var(--primary))] text-[hsl(var(--primary))] bg-[hsl(var(--primary))]/10'
+                                  : 'border-[hsl(var(--border))] text-[hsl(var(--foreground))] hover:border-[hsl(var(--primary))]'
+                              }`}
+                              aria-label={`Reagir com ${emoji}`}
+                            >
+                              <span className="text-base">{emoji}</span>
+                              <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                                {reactions[emoji] || 0}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--primary))]">Comentarios</p>
+                      <form onSubmit={handleSubmitComment} className="mt-4 grid gap-3">
+                        <input
+                          className="input-field"
+                          placeholder="Seu nome"
+                          value={commentName}
+                          onChange={(event) => setCommentName(event.target.value)}
+                          required
+                        />
+                        <textarea
+                          className="input-field min-h-[120px]"
+                          placeholder="Seu comentario"
+                          value={commentBody}
+                          onChange={(event) => setCommentBody(event.target.value)}
+                          required
+                        />
+                        <button type="submit" className="btn-accent w-full sm:w-auto">
+                          Enviar comentario
+                        </button>
+                        {commentStatus && (
+                          <p className="text-sm text-[hsl(var(--muted-foreground))]">{commentStatus}</p>
+                        )}
+                      </form>
+                      <div className="mt-6 space-y-4">
+                        {comments.length === 0 ? (
+                          <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                            Nenhum comentario publicado ainda.
+                          </p>
+                        ) : (
+                          comments.map((comment) => (
+                            <div key={comment.id} className="rounded-[16px] border border-[hsl(var(--border))] p-4">
+                              <p className="text-sm font-semibold">{comment.nome}</p>
+                              <p className="text-sm text-[hsl(var(--muted-foreground))] mt-2">
+                                {comment.comentario}
+                              </p>
+                              {comment.publicado_em && (
+                                <p className="text-xs text-[hsl(var(--muted-foreground))] mt-3">
+                                  {new Date(comment.publicado_em).toLocaleDateString('pt-BR')}
+                                </p>
+                              )}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </section>
                 </div>
                 <aside className="space-y-4 lg:sticky lg:top-24 self-start">
                   <div className="card p-5 bg-[hsl(var(--muted))]">
@@ -153,6 +338,51 @@ export default function BlogPost() {
                     <p className="text-sm text-[hsl(var(--muted-foreground))] mt-2">
                       Use o certificado como prova no curriculo, no LinkedIn e nas entrevistas. A clareza acelera convites.
                     </p>
+                  </div>
+                  <div className="card p-5">
+                    <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--muted-foreground))]">
+                      Compartilhar
+                    </p>
+                    <div className="mt-3 grid gap-2">
+                      <a
+                        className="btn-outline w-full text-center"
+                        href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Facebook
+                      </a>
+                      <a
+                        className="btn-outline w-full text-center"
+                        href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        LinkedIn
+                      </a>
+                      <a
+                        className="btn-outline w-full text-center"
+                        href={`https://api.whatsapp.com/send?text=${encodeURIComponent(shareUrl)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        WhatsApp
+                      </a>
+                      <button
+                        type="button"
+                        className="btn-outline w-full"
+                        onClick={() => handleCopy(shareUrl, 'Link')}
+                      >
+                        Copiar link
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-outline w-full"
+                        onClick={() => handleCopy(embedCode, 'Embed')}
+                      >
+                        Copiar embed
+                      </button>
+                    </div>
                   </div>
                 </aside>
               </div>

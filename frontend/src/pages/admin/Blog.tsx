@@ -18,6 +18,16 @@ type BlogPost = {
   tipo: 'blog' | 'atalho';
 };
 
+type BlogComment = {
+  id: string;
+  post_id: string;
+  nome: string;
+  comentario: string;
+  status: string;
+  criado_em: string | null;
+  publicado_em: string | null;
+};
+
 const emptyPost: BlogPost = {
   id: '',
   titulo: '',
@@ -47,6 +57,9 @@ export default function AdminBlog() {
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
   const [activeTipo, setActiveTipo] = useState<'blog' | 'atalho'>('blog');
+  const [pendingComments, setPendingComments] = useState<BlogComment[]>([]);
+  const [currentComments, setCurrentComments] = useState<BlogComment[]>([]);
+  const [currentReactions, setCurrentReactions] = useState<Record<string, number>>({});
   const token = useAuthStore((state) => state.token);
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -66,6 +79,15 @@ export default function AdminBlog() {
     loadPosts();
   }, []);
 
+  useEffect(() => {
+    if (current.id) {
+      loadCurrentExtras(current.id);
+    } else {
+      setCurrentComments([]);
+      setCurrentReactions({});
+    }
+  }, [current.id]);
+
   const loadPosts = async () => {
     setLoading(true);
     const { data, error } = await adminClient
@@ -82,6 +104,35 @@ export default function AdminBlog() {
       setPosts(normalized);
     }
     setLoading(false);
+    await loadPendingComments();
+  };
+
+  const loadPendingComments = async () => {
+    const { data } = await adminClient
+      .from('blog_comments')
+      .select('id, post_id, nome, comentario, status, criado_em, publicado_em')
+      .eq('status', 'pendente')
+      .order('criado_em', { ascending: false });
+    setPendingComments(data || []);
+  };
+
+  const loadCurrentExtras = async (postId: string) => {
+    const { data: commentsData } = await adminClient
+      .from('blog_comments')
+      .select('id, post_id, nome, comentario, status, criado_em, publicado_em')
+      .eq('post_id', postId)
+      .order('criado_em', { ascending: false });
+    setCurrentComments(commentsData || []);
+
+    const { data: reactionData } = await adminClient
+      .from('blog_reactions')
+      .select('emoji')
+      .eq('post_id', postId);
+    const counts: Record<string, number> = {};
+    (reactionData || []).forEach((item: any) => {
+      counts[item.emoji] = (counts[item.emoji] || 0) + 1;
+    });
+    setCurrentReactions(counts);
   };
 
   const hasCurrent = Boolean(current.id);
@@ -235,6 +286,44 @@ export default function AdminBlog() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleApproveComment = async (commentId: string) => {
+    const { error } = await adminClient
+      .from('blog_comments')
+      .update({ status: 'aprovado', publicado_em: new Date().toISOString() })
+      .eq('id', commentId);
+    if (error) {
+      toast.error('Erro ao aprovar comentario.');
+      return;
+    }
+    await loadPendingComments();
+    if (current.id) await loadCurrentExtras(current.id);
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    const { error } = await adminClient
+      .from('blog_comments')
+      .delete()
+      .eq('id', commentId);
+    if (error) {
+      toast.error('Erro ao excluir comentario.');
+      return;
+    }
+    await loadPendingComments();
+    if (current.id) await loadCurrentExtras(current.id);
+  };
+
+  const handleClearReactions = async (postId: string) => {
+    const { error } = await adminClient
+      .from('blog_reactions')
+      .delete()
+      .eq('post_id', postId);
+    if (error) {
+      toast.error('Erro ao excluir reacoes.');
+      return;
+    }
+    await loadCurrentExtras(postId);
   };
 
   return (
@@ -407,6 +496,132 @@ export default function AdminBlog() {
           >
             {saving ? 'Salvando...' : 'Salvar post'}
           </button>
+
+          {current.id && (
+            <div className="pt-6 border-t border-[hsl(var(--border))] space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-semibold">Reacoes do post</h3>
+                <button
+                  type="button"
+                  className="btn-outline text-xs"
+                  onClick={() => handleClearReactions(current.id)}
+                >
+                  Excluir reacoes
+                </button>
+              </div>
+              {Object.keys(currentReactions).length === 0 ? (
+                <p className="text-sm text-[hsl(var(--muted-foreground))]">Sem reacoes ainda.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(currentReactions).map(([emoji, count]) => (
+                    <span
+                      key={emoji}
+                      className="rounded-full border border-[hsl(var(--border))] px-3 py-1 text-sm"
+                    >
+                      {emoji} {count}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="pt-4 border-t border-[hsl(var(--border))] space-y-3">
+                <h3 className="text-base font-semibold">Comentarios do post</h3>
+                {currentComments.length === 0 ? (
+                  <p className="text-sm text-[hsl(var(--muted-foreground))]">Sem comentarios.</p>
+                ) : (
+                  <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
+                    {currentComments.map((comment) => (
+                      <div
+                        key={comment.id}
+                        className="rounded-[12px] border border-[hsl(var(--border))] p-3"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold">{comment.nome}</p>
+                            <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                              {comment.status === 'aprovado' ? 'Publicado' : 'Pendente'}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {comment.status !== 'aprovado' && (
+                              <button
+                                type="button"
+                                className="btn-outline text-xs"
+                                onClick={() => handleApproveComment(comment.id)}
+                              >
+                                Aprovar
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              className="btn-outline text-xs"
+                              onClick={() => handleDeleteComment(comment.id)}
+                            >
+                              Excluir
+                            </button>
+                          </div>
+                        </div>
+                        <p className="text-sm text-[hsl(var(--muted-foreground))] mt-2">
+                          {comment.comentario}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-10 card p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">Curadoria de comentarios</h2>
+            <p className="text-sm text-[hsl(var(--muted-foreground))]">
+              Comentarios pendentes aguardando aprovacao.
+            </p>
+          </div>
+          <button type="button" className="btn-outline text-xs" onClick={loadPendingComments}>
+            Atualizar
+          </button>
+        </div>
+        <div className="mt-4 space-y-3">
+          {pendingComments.length === 0 ? (
+            <p className="text-sm text-[hsl(var(--muted-foreground))]">Nenhum comentario pendente.</p>
+          ) : (
+            pendingComments.map((comment) => (
+              <div
+                key={comment.id}
+                className="rounded-[12px] border border-[hsl(var(--border))] p-4"
+              >
+                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold">{comment.nome}</p>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                      Post: {posts.find((post) => post.id === comment.post_id)?.titulo || 'Post removido'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      className="btn-outline text-xs"
+                      onClick={() => handleApproveComment(comment.id)}
+                    >
+                      Aprovar
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-outline text-xs"
+                      onClick={() => handleDeleteComment(comment.id)}
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                </div>
+                <p className="text-sm text-[hsl(var(--muted-foreground))] mt-3">{comment.comentario}</p>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>
