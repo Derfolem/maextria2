@@ -191,8 +191,25 @@ export default function BlogPost() {
 
   const handleReact = async (emoji: string) => {
     if (!post?.id) return;
-    if (reactedEmojis.includes(emoji)) return;
     const anonId = getAnonId();
+    const reacted = reactedEmojis.includes(emoji);
+    if (reacted) {
+      const { error } = await supabase
+        .from('blog_reactions')
+        .delete()
+        .eq('post_id', post.id)
+        .eq('emoji', emoji)
+        .eq('anon_id', anonId);
+      if (!error) {
+        setReactions((prev) => ({ ...prev, [emoji]: Math.max(0, (prev[emoji] || 1) - 1) }));
+        const updated = reactedEmojis.filter((item) => item !== emoji);
+        setReactedEmojis(updated);
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem(`maextria_reacted_${post.id}`, updated.join(','));
+        }
+      }
+      return;
+    }
     const { error } = await supabase.from('blog_reactions').insert({
       post_id: post.id,
       emoji,
@@ -342,7 +359,7 @@ export default function BlogPost() {
                           {isSaved ? '★' : '☆'}
                         </button>
                         {actionStatus && (
-                          <span className="text-xs text-[hsl(var(--muted-foreground))]">{actionStatus}</span>
+                          <span className="text-xs text-[hsl(var(--primary))]">{actionStatus}</span>
                         )}
                       </div>
                       {showReactions && (
