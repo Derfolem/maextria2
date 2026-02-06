@@ -29,6 +29,21 @@ interface CertificadoPorMes {
   meta: number;
 }
 
+type SavedPost = {
+  id: string;
+  criado_em: string;
+  blog_posts: {
+    id: string;
+    titulo: string;
+    slug: string;
+    resumo: string | null;
+    autor: string;
+    imagem_capa_url: string | null;
+    tipo: string | null;
+    publicado_em: string | null;
+  } | null;
+};
+
 export default function StudentDashboard() {
   const user = useAuthStore((state) => state.user);
   const [stats, setStats] = useState<DashboardStats>({});
@@ -70,6 +85,7 @@ export default function StudentDashboard() {
 
   // Grafico de certificacoes
   const [chartData, setChartData] = useState<CertificadoPorMes[]>([]);
+  const [savedPosts, setSavedPosts] = useState<SavedPost[]>([]);
 
   useEffect(() => {
     loadDashboard();
@@ -218,6 +234,14 @@ export default function StudentDashboard() {
           // Montar dados do grafico baseado no objetivo
           buildChartData(objetivoData, normalizedCerts, enrollmentsWithProgress);
         }
+
+        // Carregar posts salvos (Ler depois)
+        const { data: savedData } = await supabase
+          .from('blog_saved_posts')
+          .select('id, criado_em, blog_posts (id, titulo, slug, resumo, autor, imagem_capa_url, tipo, publicado_em)')
+          .eq('usuario_id', userId)
+          .order('criado_em', { ascending: false });
+        setSavedPosts(savedData || []);
 
         // Carregar trilhas em andamento
         const { data: matriculasTrilha, error: trilhasError } = await supabase
@@ -521,6 +545,57 @@ export default function StudentDashboard() {
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="card mb-12">
+        <div className="flex items-center justify-between gap-4 mb-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--primary))]">Ler depois</p>
+            <h2 className="text-lg sm:text-xl font-semibold">Seus posts salvos</h2>
+          </div>
+          <Link to="/blog" className="btn-outline text-xs sm:text-sm">
+            Ver blog
+          </Link>
+        </div>
+        {savedPosts.length === 0 ? (
+          <p className="text-sm text-[hsl(var(--muted-foreground))]">
+            Nenhum post salvo ainda. Use o ícone ☆ nas publicações.
+          </p>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2">
+            {savedPosts.slice(0, 4).map((item) => {
+              const post = item.blog_posts;
+              if (!post) return null;
+              const path = post.tipo === 'atalho' ? `/atalho/${post.slug}` : `/blog/${post.slug}`;
+              return (
+                <Link key={item.id} to={path} className="group rounded-[16px] border border-[hsl(var(--border))] overflow-hidden">
+                  <div className="grid sm:grid-cols-[140px_1fr]">
+                    <div className="h-full min-h-[120px] bg-[hsl(var(--muted))]">
+                      {post.imagem_capa_url ? (
+                        <img
+                          src={post.imagem_capa_url}
+                          alt={post.titulo}
+                          className="h-full w-full object-cover transition group-hover:scale-[1.02]"
+                        />
+                      ) : (
+                        <div className="h-full w-full bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.16),_transparent_60%)]" />
+                      )}
+                    </div>
+                    <div className="p-4 space-y-2">
+                      <p className="text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))]">
+                        {post.tipo === 'atalho' ? 'Atalho' : 'Blog'}
+                      </p>
+                      <p className="font-semibold">{post.titulo}</p>
+                      {post.resumo && (
+                        <p className="text-sm text-[hsl(var(--muted-foreground))] line-clamp-2">{post.resumo}</p>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Objetivo Profissional */}

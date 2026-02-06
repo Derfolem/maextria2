@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import DOMPurify from 'dompurify';
 import { supabase } from '../lib/supabase';
 import { createArticleSchema } from '../components/AdvancedSchemas';
 import { Breadcrumb } from '../components/Breadcrumb';
+import { useAuthStore } from '../lib/store';
 
 type AtalhoPost = {
   id: string;
@@ -40,7 +41,9 @@ export default function AtalhoPost() {
   const [isSaved, setIsSaved] = useState(false);
   const [actionStatus, setActionStatus] = useState('');
 
-  const reactionOptions = ['👍', '👏', '🔥', '💡', '✅', '🎯', '🚀', '💙'];
+  const reactionOptions = ['👍', '🚀', '💡', '💙'];
+  const { isAuthenticated, user } = useAuthStore();
+  const navigate = useNavigate();
 
   const getAnonId = () => {
     if (typeof window === 'undefined') return '';
@@ -139,10 +142,22 @@ export default function AtalhoPost() {
       const reactedKey = `maextria_reacted_${post.id}`;
       const stored = window.localStorage.getItem(reactedKey);
       if (stored) setReactedEmojis(stored.split(',').filter(Boolean));
-      const savedKey = `maextria_saved_${post.id}`;
-      setIsSaved(window.localStorage.getItem(savedKey) === '1');
     }
   }, [post?.id]);
+
+  useEffect(() => {
+    const loadSavedStatus = async () => {
+      if (!post?.id || !isAuthenticated || !user?.id) return;
+      const { data } = await supabase
+        .from('blog_saved_posts')
+        .select('id')
+        .eq('usuario_id', user.id)
+        .eq('post_id', post.id)
+        .maybeSingle();
+      setIsSaved(Boolean(data?.id));
+    };
+    loadSavedStatus();
+  }, [post?.id, isAuthenticated, user?.id]);
 
   useEffect(() => {
     if (!post?.id) return;
@@ -239,12 +254,43 @@ export default function AtalhoPost() {
   };
 
   const handleSavePost = () => {
-    if (!post?.id || typeof window === 'undefined') return;
-    const key = `maextria_saved_${post.id}`;
-    const next = !isSaved;
-    window.localStorage.setItem(key, next ? '1' : '0');
-    setIsSaved(next);
-    setActionStatus(next ? 'Salvo nos favoritos do navegador.' : 'Removido dos favoritos.');
+    if (!post?.id) return;
+    if (!isAuthenticated || !user?.id) {
+      if (typeof window !== 'undefined') {
+        const key = 'maextria_pending_saves';
+        const current = window.localStorage.getItem(key);
+        const list = current ? JSON.parse(current) : [];
+        if (!list.includes(post.id)) {
+          list.push(post.id);
+          window.localStorage.setItem(key, JSON.stringify(list));
+        }
+      }
+      setActionStatus('Entre ou cadastre-se para salvar. Vamos guardar seu clique.');
+      navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+      return;
+    }
+    const toggle = async () => {
+      if (isSaved) {
+        const { error } = await supabase
+          .from('blog_saved_posts')
+          .delete()
+          .eq('usuario_id', user.id)
+          .eq('post_id', post.id);
+        if (!error) {
+          setIsSaved(false);
+          setActionStatus('Removido da lista Ler Depois.');
+        }
+        return;
+      }
+      const { error } = await supabase
+        .from('blog_saved_posts')
+        .upsert({ usuario_id: user.id, post_id: post.id }, { onConflict: 'usuario_id,post_id' });
+      if (!error) {
+        setIsSaved(true);
+        setActionStatus('Salvo na lista Ler Depois.');
+      }
+    };
+    void toggle();
   };
 
   const embedCode = shareUrl

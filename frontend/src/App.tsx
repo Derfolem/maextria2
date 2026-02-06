@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './lib/store';
 import Layout from './components/Layout';
 import { lazy } from 'react';
+import { supabase } from './lib/supabase';
 
 // Helper para lazy load com retry automático após deploy
 function lazyWithRetry(importFn: () => Promise<any>) {
@@ -101,6 +102,8 @@ function ProtectedRoute({ children, roles }: { children: React.ReactNode; roles?
 
 function App() {
   const loadUser = useAuthStore((state) => state.loadUser);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const user = useAuthStore((state) => state.user);
 
   
   // Listener para erros de chunk não capturados
@@ -130,6 +133,27 @@ function App() {
     // Limpar flag de reload após carregamento bem-sucedido
     sessionStorage.removeItem('chunk-reload');
   }, [loadUser]);
+
+  useEffect(() => {
+    const syncPendingSaves = async () => {
+      if (!isAuthenticated || !user?.id) return;
+      if (typeof window === 'undefined') return;
+      const key = 'maextria_pending_saves';
+      const raw = window.localStorage.getItem(key);
+      if (!raw) return;
+      const list = JSON.parse(raw);
+      if (!Array.isArray(list) || list.length === 0) {
+        window.localStorage.removeItem(key);
+        return;
+      }
+      await supabase.from('blog_saved_posts').upsert(
+        list.map((postId: string) => ({ usuario_id: user.id, post_id: postId })),
+        { onConflict: 'usuario_id,post_id' }
+      );
+      window.localStorage.removeItem(key);
+    };
+    syncPendingSaves();
+  }, [isAuthenticated, user?.id]);
 
   return (
     <Layout>
