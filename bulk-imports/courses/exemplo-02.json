@@ -1,0 +1,41 @@
+{
+  "title": "Excel Básico para Iniciantes",
+  "description": "Domine as funcionalidades essenciais do Excel para uso profissional no dia a dia.",
+  "difficulty": "beginner",
+  "duration_hours": 15,
+  "certificate_price": 39.90,
+  "modules": [
+    {
+      "title": "Módulo 1: Interface e Navegação",
+      "description": "Conhecendo a interface do Excel",
+      "lessons": [
+        {
+          "title": "Conhecendo o Excel",
+          "content": "<h2>Bem-vindo ao Excel</h2><p>O Excel é a ferramenta de planilhas mais usada no mundo.</p><p><strong>Onde o Excel é usado:</strong></p><ul><li>Controle financeiro</li><li>Análise de dados</li><li>Relatórios gerenciais</li><li>Organização de informações</li></ul>",
+          "duration_minutes": 10
+        },
+        {
+          "title": "Células, Linhas e Colunas",
+          "content": "<h2>Estrutura da Planilha</h2><p>Entenda os elementos básicos:</p><ul><li><strong>Células:</strong> intersecção de linha e coluna (ex: A1, B5)</li><li><strong>Linhas:</strong> numeradas de 1 a 1.048.576</li><li><strong>Colunas:</strong> letras de A a XFD</li></ul><h3>Selecionando Células</h3><p>• Clique simples: seleciona uma célula<br>• Arraste: seleciona múltiplas células<br>• Ctrl+A: seleciona tudo</p>",
+          "duration_minutes": 12
+        }
+      ]
+    },
+    {
+      "title": "Módulo 2: Fórmulas Básicas",
+      "description": "Aprenda as fórmulas mais utilizadas",
+      "lessons": [
+        {
+          "title": "Soma, Média e Contagem",
+          "content": "<h2>Fórmulas Essenciais</h2><h3>SOMA</h3><p>Adiciona valores:</p><code>=SOMA(A1:A10)</code><h3>MÉDIA</h3><p>Calcula a média:</p><code>=MÉDIA(B1:B10)</code><h3>CONT.NÚM</h3><p>Conta células com números:</p><code>=CONT.NÚM(C1:C10)</code>",
+          "duration_minutes": 20
+        },
+        {
+          "title": "SE e Condicionais",
+          "content": "<h2>Função SE</h2><p>Tome decisões baseadas em condições:</p><pre><code>=SE(A1>10; \"Aprovado\"; \"Reprovado\")</code></pre><h3>Exemplo Prático</h3><p>Calcular desconto:</p><pre><code>=SE(B2>1000; B2*0.9; B2)</code></pre><p>Se valor maior que 1000, aplica 10% de desconto.</p>",
+          "duration_minutes": 25
+        }
+      ]
+    }
+  ]
+}

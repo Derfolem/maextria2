@@ -1,0 +1,62 @@
+{
+  "title": "Introdução ao JavaScript Moderno",
+  "description": "Aprenda JavaScript do zero com as melhores práticas e recursos modernos da linguagem. Curso completo para iniciantes que desejam dominar a programação web.",
+  "difficulty": "beginner",
+  "duration_hours": 25,
+  "certificate_price": 49.90,
+  "modules": [
+    {
+      "title": "Módulo 1: Fundamentos",
+      "description": "Conceitos básicos e estrutura da linguagem JavaScript",
+      "lessons": [
+        {
+          "title": "Bem-vindo ao Curso",
+          "content": "<h2>Bem-vindo!</h2><p>Neste curso você aprenderá JavaScript do zero.</p><p><strong>O que você vai aprender:</strong></p><ul><li>Sintaxe básica</li><li>Variáveis e tipos</li><li>Funções e objetos</li><li>DOM e eventos</li></ul>",
+          "duration_minutes": 10
+        },
+        {
+          "title": "Configurando o Ambiente",
+          "content": "<h2>Ambiente de Desenvolvimento</h2><p>Vamos configurar as ferramentas necessárias:</p><h3>Ferramentas</h3><ul><li>Visual Studio Code</li><li>Node.js</li><li>Navegador (Chrome ou Firefox)</li></ul><p>Após instalar, teste executando: <code>node --version</code></p>",
+          "duration_minutes": 15
+        },
+        {
+          "title": "Variáveis e Tipos de Dados",
+          "content": "<h2>Variáveis em JavaScript</h2><p>JavaScript possui três formas de declarar variáveis:</p><pre><code>let nome = 'João';\nconst idade = 25;\nvar cidade = 'São Paulo'; // evite usar\n</code></pre><h3>Tipos de Dados</h3><ul><li><strong>String:</strong> textos</li><li><strong>Number:</strong> números</li><li><strong>Boolean:</strong> true/false</li><li><strong>Object:</strong> objetos</li><li><strong>Array:</strong> listas</li></ul>",
+          "duration_minutes": 20
+        }
+      ]
+    },
+    {
+      "title": "Módulo 2: Controle de Fluxo",
+      "description": "Estruturas condicionais e laços de repetição",
+      "lessons": [
+        {
+          "title": "If, Else e Switch",
+          "content": "<h2>Estruturas Condicionais</h2><p>Tome decisões no seu código:</p><pre><code>if (idade >= 18) {\n  console.log('Maior de idade');\n} else {\n  console.log('Menor de idade');\n}\n</code></pre><h3>Switch Case</h3><p>Para múltiplas condições:</p><pre><code>switch (dia) {\n  case 'segunda':\n    console.log('Início da semana');\n    break;\n  case 'sexta':\n    console.log('Sextou!');\n    break;\n}\n</code></pre>",
+          "duration_minutes": 25
+        },
+        {
+          "title": "Loops: For, While e ForEach",
+          "content": "<h2>Estruturas de Repetição</h2><p>Executando código múltiplas vezes:</p><h3>For Loop</h3><pre><code>for (let i = 0; i < 5; i++) {\n  console.log(i);\n}\n</code></pre><h3>While</h3><pre><code>let contador = 0;\nwhile (contador < 5) {\n  console.log(contador);\n  contador++;\n}\n</code></pre><h3>ForEach</h3><pre><code>const frutas = ['maçã', 'banana', 'laranja'];\nfrutas.forEach(fruta => {\n  console.log(fruta);\n});\n</code></pre>",
+          "duration_minutes": 30
+        }
+      ]
+    },
+    {
+      "title": "Módulo 3: Funções",
+      "description": "Criando e utilizando funções em JavaScript",
+      "lessons": [
+        {
+          "title": "Declaração de Funções",
+          "content": "<h2>Funções em JavaScript</h2><p>Funções são blocos de código reutilizáveis:</p><pre><code>function saudacao(nome) {\n  return `Olá, ${nome}!`;\n}\n\nconsole.log(saudacao('Maria'));\n</code></pre><h3>Arrow Functions</h3><p>Sintaxe moderna:</p><pre><code>const soma = (a, b) => a + b;\nconsole.log(soma(5, 3)); // 8\n</code></pre>",
+          "duration_minutes": 20
+        },
+        {
+          "title": "Escopo e Closures",
+          "content": "<h2>Entendendo Escopo</h2><p>Variáveis têm diferentes níveis de acesso:</p><pre><code>let global = 'Eu sou global';\n\nfunction teste() {\n  let local = 'Eu sou local';\n  console.log(global); // OK\n  console.log(local);  // OK\n}\n\nconsole.log(local); // ERRO!\n</code></pre><h3>Closures</h3><p>Funções que lembram do contexto onde foram criadas:</p><pre><code>function contador() {\n  let count = 0;\n  return function() {\n    count++;\n    return count;\n  };\n}\n\nconst minhaContagem = contador();\nconsole.log(minhaContagem()); // 1\nconsole.log(minhaContagem()); // 2\n</code></pre>",
+          "duration_minutes": 25
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+# Ignorar todos os arquivos JSON (exceto package.json)
+*.json
+!package*.json
+
+# Manter apenas os exemplos
+!courses/exemplo-*.json
+
+# Logs
+*.log
