@@ -24,14 +24,20 @@ Cole cada JSON gerado em um arquivo na pasta `courses/`:
 - `curso-02.json`
 - etc.
 
-### 3️⃣ Combinar Todos os Cursos
-Execute o script de combinação:
+### 3️⃣ Limpar JSONs (IMPORTANTE!)
+O ChatGPT pode retornar JSON envolto em markdown. Limpe primeiro:
 ```bash
 cd /home/fredomi/maextria/bulk-imports
+node clean-json.js
+```
+
+### 4️⃣ Combinar Todos os Cursos
+Execute o script de combinação:
+```bash
 node combine.js
 ```
 
-### 4️⃣ Importar no Sistema
+### 5️⃣ Importar no Sistema
 Use o arquivo `combined.json` gerado para fazer a importação via API:
 ```bash
 curl -X POST http://localhost:3000/api/courses/bulk \
