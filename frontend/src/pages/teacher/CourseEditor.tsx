@@ -992,13 +992,13 @@ const loadCourse = async () => {
                       className="border border-[hsl(var(--border))] rounded-lg p-4 bg-[hsl(var(--muted))]"
                     >
                       <div className="flex justify-between items-start mb-4">
-                        <div className="flex-grow mr-4">
+                        <div className="flex-grow mr-4 min-w-0">
                           <input
                             type="text"
                             value={module.title}
                             onChange={(e) => updateModuleState(module.id, { title: e.target.value })}
                             onBlur={(e) => updateModule(module.id, { title: e.target.value })}
-                            className="input-field font-semibold mb-2"
+                            className="input-field font-semibold mb-2 w-full"
                             placeholder="Título do módulo"
                           />
                           <RichTextEditor
@@ -1006,6 +1006,7 @@ const loadCourse = async () => {
                             onChange={(value) => updateModuleState(module.id, { description: value })}
                             onBlur={(value) => updateModule(module.id, { description: value })}
                             minHeight={120}
+                            className="w-full"
                             placeholder="Descrição do módulo"
                           />
                         </div>

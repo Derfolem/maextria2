@@ -299,7 +299,7 @@ export default function AdminCourses() {
               <div className="flex flex-wrap gap-2">
                 <Link
                   to={`/preview/course/${course.id}`}
-                  className="btn-outline flex items-center gap-2"
+                  className="btn-outline inline-flex items-center gap-2 whitespace-nowrap"
                 >
                   <FaEye />
                   Visualizar
@@ -307,7 +307,7 @@ export default function AdminCourses() {
                 {(course.em_curadoria || (String(course.teacher_id) === String(user?.id) && !course.is_published)) ? (
                   <Link
                     to={`/teacher/course/${course.id}/edit`}
-                    className="btn-outline flex items-center gap-2"
+                    className="btn-outline inline-flex items-center gap-2 whitespace-nowrap"
                   >
                     <FaEdit />
                     Editar
@@ -315,7 +315,7 @@ export default function AdminCourses() {
                 ) : (
                   <button
                     disabled
-                    className="btn-outline flex items-center gap-2 opacity-50 cursor-not-allowed"
+                    className="btn-outline inline-flex items-center gap-2 whitespace-nowrap opacity-50 cursor-not-allowed"
                     title="Curso não está em curadoria"
                   >
                     <FaEdit />
@@ -325,7 +325,7 @@ export default function AdminCourses() {
                 {course.is_published ? (
                   <button
                     onClick={() => togglePublish(course.id, course.is_published)}
-                    className="btn-outline flex items-center gap-2 border-orange-400 text-orange-500 hover:bg-orange-500 hover:text-white"
+                    className="btn-outline inline-flex items-center gap-2 whitespace-nowrap border-orange-400 text-orange-500 hover:bg-orange-500 hover:text-white"
                   >
                     <FaEyeSlash />
                     Recolher
@@ -334,7 +334,7 @@ export default function AdminCourses() {
                   <>
                     <button
                       onClick={() => aprovarCurso(course.id)}
-                      className="btn-accent flex items-center gap-2"
+                      className="btn-accent inline-flex items-center gap-2 whitespace-nowrap"
                     >
                       <FaArrowRight />
                       Aprovar
@@ -344,7 +344,7 @@ export default function AdminCourses() {
                         setFeedbackOpen(feedbackOpen === course.id ? null : course.id);
                         setFeedbackText('');
                       }}
-                      className="btn-outline flex items-center gap-2 border-red-400 text-red-500 hover:bg-red-500 hover:text-white"
+                      className="btn-outline inline-flex items-center gap-2 whitespace-nowrap border-red-400 text-red-500 hover:bg-red-500 hover:text-white"
                     >
                       <FaTimes />
                       Reprovar
@@ -353,7 +353,7 @@ export default function AdminCourses() {
                 ) : String(course.teacher_id) === String(user?.id) ? (
                   <button
                     onClick={() => togglePublish(course.id, false)}
-                    className="btn-accent flex items-center gap-2"
+                    className="btn-accent inline-flex items-center gap-2 whitespace-nowrap"
                   >
                     <FaArrowRight />
                     Publicar
@@ -365,7 +365,7 @@ export default function AdminCourses() {
                 )}
                 <button
                   onClick={() => deleteCourse(course.id)}
-                  className="btn-outline flex items-center gap-2 border-red-400 text-red-500 hover:bg-red-500 hover:text-white"
+                  className="btn-outline inline-flex items-center gap-2 whitespace-nowrap border-red-400 text-red-500 hover:bg-red-500 hover:text-white"
                 >
                   <FaTrash />
                   Excluir
