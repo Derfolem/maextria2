@@ -37,7 +37,7 @@ serve(async (req) => {
 
     const { data: curso, error: cursoError } = await supabaseAdmin
       .from("cursos")
-      .select("titulo, preco_certificado")
+      .select("titulo, preco_certificado, desconto_percentual")
       .eq("id", cursoId)
       .single();
 
@@ -45,7 +45,9 @@ serve(async (req) => {
       throw new Error("Course not found");
     }
 
-    const precoCertificado = curso.preco_certificado || 39.00;
+    const precoBase = curso.preco_certificado || 39.00;
+    const descontoPercentual = Math.max(0, Math.min(100, Number(curso.desconto_percentual || 0)));
+    const precoCertificado = Math.max(0, precoBase * (1 - descontoPercentual / 100));
     const precoEmCentavos = Math.round(precoCertificado * 100);
 
     console.log("Certificate price:", precoCertificado, "BRL (", precoEmCentavos, "cents)");
@@ -80,6 +82,7 @@ serve(async (req) => {
         curso_id: cursoId,
         usuario_id: user.id,
         preco: precoCertificado.toString(),
+        desconto_percentual: descontoPercentual.toString(),
         referral_id: referralId || '',
       },
     });

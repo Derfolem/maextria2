@@ -92,6 +92,9 @@ export default function PagamentoCertificado() {
   const [processing, setProcessing] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [stripeVerified, setStripeVerified] = useState(false);
+  const basePrice = Number(curso?.preco_certificado || 0);
+  const discountPercent = Math.max(0, Math.min(100, Number(curso?.desconto_percentual || 0)));
+  const finalPrice = Math.max(0, basePrice * (1 - discountPercent / 100));
 
   useEffect(() => {
     if (!user) {
@@ -204,7 +207,7 @@ export default function PagamentoCertificado() {
       }
 
       setClientSecret(data.clientSecret);
-      trackBeginCheckout(cursoId, curso?.titulo || '', curso?.preco_certificado || 0);
+      trackBeginCheckout(cursoId, curso?.titulo || '', discountPercent > 0 ? finalPrice : basePrice);
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao iniciar pagamento.');
     } finally {
@@ -306,9 +309,17 @@ export default function PagamentoCertificado() {
             <div className="flex items-center justify-between">
               <span className="text-lg font-semibold">Valor:</span>
               <span className="text-2xl font-semibold text-[hsl(var(--primary))]">
-                R$ {curso?.preco_certificado?.toFixed(2) || '39,00'}
+                R$ {(discountPercent > 0 ? finalPrice : curso ? basePrice : 39).toFixed(2)}
               </span>
             </div>
+            {discountPercent > 0 && (
+              <div className="flex items-center justify-between text-sm text-[hsl(var(--muted-foreground))]">
+                <span>Desconto aplicado:</span>
+                <span>
+                  De R$ {basePrice.toFixed(2)} por R$ {finalPrice.toFixed(2)} ({discountPercent}%)
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2 text-sm text-[hsl(var(--muted-foreground))]">

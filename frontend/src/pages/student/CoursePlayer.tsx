@@ -954,7 +954,16 @@ export default function CoursePlayer() {
                   </button>
                   {course && (
                     <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                      {course.price === 0 ? 'Certificado gratuito' : `Valor do certificado: R$ ${course.price.toFixed(2)}`}
+                      {(() => {
+                        const basePrice = Number(course.price || 0);
+                        const discount = Math.max(0, Math.min(100, Number(course.discount_percent || 0)));
+                        const finalPrice = Math.max(0, basePrice * (1 - discount / 100));
+                        if (basePrice === 0) return 'Certificado gratuito';
+                        if (discount > 0) {
+                          return `De R$ ${basePrice.toFixed(2)} por R$ ${finalPrice.toFixed(2)} (desconto ${discount}%)`;
+                        }
+                        return `Valor do certificado: R$ ${basePrice.toFixed(2)}`;
+                      })()}
                     </span>
                   )}
                 </div>

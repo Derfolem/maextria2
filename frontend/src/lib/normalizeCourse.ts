@@ -9,6 +9,7 @@ export function normalizeCourse(raw: RawCourse): Course {
     title: raw.title ?? raw.titulo ?? '',
     description: raw.description ?? raw.descricao ?? '',
     price: Number(raw.certificate_price ?? raw.preco_certificado ?? raw.price ?? 0),
+    discount_percent: raw.discount_percent ?? raw.desconto_percentual ?? 0,
     teacher_id: raw.teacher_id,
     teacher_name: raw.teacher_name ?? raw.professor_nome ?? raw.teacher?.name ?? raw.professor?.nome_completo,
     category:

@@ -16,6 +16,7 @@ export interface Course {
   title: string;
   description: string;
   price: number;
+  discount_percent?: number;
   teacher_id: string | number;
   teacher_name?: string;
   category?: string;

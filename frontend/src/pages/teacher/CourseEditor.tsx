@@ -15,6 +15,7 @@ export default function CourseEditor() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
+  const [discountPercent, setDiscountPercent] = useState('0');
   const [category, setCategory] = useState('');
   const [level, setLevel] = useState('');
   const [cargaHoraria, setCargaHoraria] = useState('');
@@ -300,6 +301,11 @@ const loadCourse = async () => {
       setTitle(courseData.titulo || '');
       setDescription(courseData.descricao || '');
       setPrice(courseData.preco_certificado ? String(courseData.preco_certificado) : '');
+      setDiscountPercent(
+        courseData.desconto_percentual !== undefined && courseData.desconto_percentual !== null
+          ? String(courseData.desconto_percentual)
+          : '0'
+      );
       setCategory(courseData.categoria || '');
       setLevel(courseData.nivel || '');
       setCargaHoraria(courseData.carga_horaria_horas ? String(courseData.carga_horaria_horas) : '');
@@ -386,6 +392,11 @@ const loadCourse = async () => {
       toast.error('Preencha todos os campos obrigatórios');
       return;
     }
+    const descontoValor = discountPercent === '' ? 0 : Number(discountPercent);
+    if (Number.isNaN(descontoValor) || descontoValor < 0 || descontoValor > 100) {
+      toast.error('O desconto deve estar entre 0 e 100');
+      return;
+    }
     if (!user?.id) {
       toast.error('Usuário não autenticado.');
       return;
@@ -397,6 +408,7 @@ const loadCourse = async () => {
         titulo: title,
         descricao: description,
         preco_certificado: parseFloat(price),
+        desconto_percentual: descontoValor,
         categoria: category.trim() || null,
         nivel: level || null,
         carga_horaria_horas: cargaHoraria ? parseInt(cargaHoraria) : null,
@@ -847,6 +859,22 @@ const loadCourse = async () => {
                 onChange={(e) => setPrice(e.target.value)}
                 className="input-field"
                 placeholder="0.00"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-2">
+                Desconto (%)
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="1"
+                value={discountPercent}
+                onChange={(e) => setDiscountPercent(e.target.value)}
+                className="input-field"
+                placeholder="0"
               />
             </div>
 
