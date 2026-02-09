@@ -21,6 +21,7 @@ export default function AdminCourses() {
   const [feedbackOpen, setFeedbackOpen] = useState<string | number | null>(null);
   const [feedbackText, setFeedbackText] = useState('');
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     loadCourses();
@@ -281,7 +282,34 @@ export default function AdminCourses() {
                     </span>
                   )}
                 </div>
-                <p className="text-[hsl(var(--muted-foreground))] mb-3">{stripHtml(course.description)}</p>
+                {(() => {
+                  const plainDescription = stripHtml(course.description || '');
+                  const isExpanded = expandedDescriptions[String(course.id)];
+                  const previewLimit = 220;
+                  const isLong = plainDescription.length > previewLimit;
+                  const previewText = isLong ? `${plainDescription.slice(0, previewLimit)}...` : plainDescription;
+                  return (
+                    <div className="mb-3">
+                      <p className="text-[hsl(var(--muted-foreground))]">
+                        {isExpanded ? plainDescription : previewText}
+                      </p>
+                      {isLong && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setExpandedDescriptions((prev) => ({
+                              ...prev,
+                              [String(course.id)]: !isExpanded,
+                            }))
+                          }
+                          className="text-sm font-semibold text-[hsl(var(--primary))] hover:underline mt-1"
+                        >
+                          {isExpanded ? '... ler menos' : '... ver mais'}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()}
                 <div className="flex flex-wrap items-center gap-3 text-sm text-[hsl(var(--muted-foreground))]">
                   <span>Professor: {course.teacher_name || 'N/A'}</span>
                   <span>•</span>
