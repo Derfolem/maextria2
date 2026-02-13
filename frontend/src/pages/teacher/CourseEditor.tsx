@@ -8,6 +8,7 @@ import { useAuthStore } from '../../lib/store';
 import RichTextEditor from '../../components/RichTextEditor';
 
 export default function CourseEditor() {
+  type DiscountColumn = 'discount_percent' | 'desconto_percentual' | null;
   const { id } = useParams();
   const navigate = useNavigate();
   const isEditing = Boolean(id);
@@ -27,6 +28,7 @@ export default function CourseEditor() {
   const [questionDrafts, setQuestionDrafts] = useState<Record<string, any>>({});
   const [modules, setModules] = useState<Module[]>([]);
   const [loading, setLoading] = useState(false);
+  const [discountColumn, setDiscountColumn] = useState<DiscountColumn>(null);
   const [aiAccess, setAiAccess] = useState<{ expires_at: string | null } | null>(null);
   const [aiAccessLoading, setAiAccessLoading] = useState(false);
   const user = useAuthStore((state) => state.user);
@@ -52,6 +54,11 @@ export default function CourseEditor() {
     }
     loadAiAccess();
   }, [user?.id, isAdmin]);
+
+  useEffect(() => {
+    if (isEditing) return;
+    detectDiscountColumn();
+  }, [isEditing]);
 
   const loadAiAccess = async () => {
     if (!user?.id) return;
@@ -94,15 +101,27 @@ export default function CourseEditor() {
 
   const emptyLessonImages = () => ['', '', ''];
 
-  const isMissingColumnError = (error: any, columnName: string) => {
-    const message = String(error?.message || '').toLowerCase();
-    const details = String(error?.details || '').toLowerCase();
-    const hint = String(error?.hint || '').toLowerCase();
-    const needle = `'${columnName.toLowerCase()}'`;
-    return (
-      message.includes('schema cache') &&
-      (message.includes(needle) || details.includes(needle) || hint.includes(needle))
-    );
+  const detectDiscountColumn = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('cursos')
+        .select('*')
+        .limit(1);
+      if (error) return;
+
+      const sample = Array.isArray(data) ? data[0] : null;
+      if (!sample) return;
+
+      if (Object.prototype.hasOwnProperty.call(sample, 'discount_percent')) {
+        setDiscountColumn('discount_percent');
+        return;
+      }
+      if (Object.prototype.hasOwnProperty.call(sample, 'desconto_percentual')) {
+        setDiscountColumn('desconto_percentual');
+      }
+    } catch (error) {
+      // keep null and proceed without discount column to avoid 400 errors
+    }
   };
 
   const slugify = (value: string) =>
@@ -319,6 +338,13 @@ const loadCourse = async () => {
             ? String(courseData.desconto_percentual)
           : '0'
       );
+      if (Object.prototype.hasOwnProperty.call(courseData, 'discount_percent')) {
+        setDiscountColumn('discount_percent');
+      } else if (Object.prototype.hasOwnProperty.call(courseData, 'desconto_percentual')) {
+        setDiscountColumn('desconto_percentual');
+      } else {
+        setDiscountColumn(null);
+      }
       setCategory(courseData.categoria || '');
       setLevel(courseData.nivel || '');
       setCargaHoraria(courseData.carga_horaria_horas ? String(courseData.carga_horaria_horas) : '');
@@ -432,26 +458,17 @@ const loadCourse = async () => {
       }
 
       if (isEditing) {
-        const payloadWithDiscountPercent = { ...payloadBase, discount_percent: descontoValor };
-        let { error } = await supabase
+        const updatePayload = { ...payloadBase };
+        if (discountColumn === 'discount_percent') {
+          updatePayload.discount_percent = descontoValor;
+        } else if (discountColumn === 'desconto_percentual') {
+          updatePayload.desconto_percentual = descontoValor;
+        }
+
+        const { error } = await supabase
           .from('cursos')
-          .update(payloadWithDiscountPercent)
+          .update(updatePayload)
           .eq('id', id);
-
-        if (error && isMissingColumnError(error, 'discount_percent')) {
-          const payloadWithDescontoPercentual = { ...payloadBase, desconto_percentual: descontoValor };
-          ({ error } = await supabase
-            .from('cursos')
-            .update(payloadWithDescontoPercentual)
-            .eq('id', id));
-        }
-
-        if (error && isMissingColumnError(error, 'desconto_percentual')) {
-          ({ error } = await supabase
-            .from('cursos')
-            .update(payloadBase)
-            .eq('id', id));
-        }
 
         if (error) throw error;
         toast.success('Curso atualizado com sucesso!');
@@ -463,35 +480,23 @@ const loadCourse = async () => {
         }
         return;
       } else {
-        const insertBase = {
+        const insertBase: Record<string, any> = {
           ...payloadBase,
           ativo: false,
           professor_id: user.id,
         };
-        const insertWithDiscountPercent = { ...insertBase, discount_percent: descontoValor };
+        const insertPayload: Record<string, any> = { ...insertBase };
+        if (discountColumn === 'discount_percent') {
+          insertPayload.discount_percent = descontoValor;
+        } else if (discountColumn === 'desconto_percentual') {
+          insertPayload.desconto_percentual = descontoValor;
+        }
 
-        let { data, error } = await supabase
+        const { data, error } = await supabase
           .from('cursos')
-          .insert(insertWithDiscountPercent)
+          .insert(insertPayload)
           .select('id')
           .single();
-
-        if (error && isMissingColumnError(error, 'discount_percent')) {
-          const insertWithDescontoPercentual = { ...insertBase, desconto_percentual: descontoValor };
-          ({ data, error } = await supabase
-            .from('cursos')
-            .insert(insertWithDescontoPercentual)
-            .select('id')
-            .single());
-        }
-
-        if (error && isMissingColumnError(error, 'desconto_percentual')) {
-          ({ data, error } = await supabase
-            .from('cursos')
-            .insert(insertBase)
-            .select('id')
-            .single());
-        }
 
         if (error) throw error;
         if (!data?.id) throw new Error('Curso criado, mas sem ID retornado');
