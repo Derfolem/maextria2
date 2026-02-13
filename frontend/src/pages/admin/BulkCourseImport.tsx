@@ -46,13 +46,22 @@ export default function BulkCourseImport({ onClose, onSuccess }: { onClose: () =
       toast.error('O campo de texto está vazio');
       return;
     }
-    const courses = parseBulkCourseText(rawText, '', '');
-    if (courses.length === 0) {
-      toast.error('Nenhum curso válido encontrado. Verifique o formato.');
-      return;
+    try {
+      // Pass currentUserId and currentUserName to the parser (SAME AS CourseCreatorGlass)
+      const courses = parseBulkCourseText(rawText, user?.id || '', user?.name || '');
+      if (courses.length === 0) {
+        toast.error('Nenhum curso válido encontrado. Verifique o formato.');
+        setParsedCourses([]);
+        return;
+      }
+      setParsedCourses(courses);
+      setResults(null);
+      toast.success(`${courses.length} curso(s) extraído(s) com sucesso!`);
+    } catch (error) {
+      console.error('Error parsing text:', error);
+      toast.error('Erro ao processar o texto. Verifique o console e o formato.');
+      setParsedCourses([]);
     }
-    setParsedCourses(courses);
-    setResults(null);
   };
 
   const handleImport = async () => {
@@ -118,7 +127,7 @@ export default function BulkCourseImport({ onClose, onSuccess }: { onClose: () =
             modulePayloads.push({
               curso_id: createdCourses[ci].id,
               titulo_modulo: mod.title,
-              conteudo_texto_html: mod.description || null,
+              conteudo_texto_html: mod.description,  // SAME AS CourseCreatorGlass (no || null)
               ordem: mod.order_index,
             });
             moduleSourceMap.push({ courseIdx: ci, moduleIdx: mi });
@@ -141,8 +150,8 @@ export default function BulkCourseImport({ onClose, onSuccess }: { onClose: () =
             lessonPayloads.push({
               modulo_id: mod.id,
               titulo: lesson.title,
-              conteudo_html: lesson.content || null,
-              video_url: lesson.video_url || null,
+              conteudo_html: lesson.content,  // SAME AS CourseCreatorGlass (no || null)
+              video_url: lesson.video_url,    // SAME AS CourseCreatorGlass (no || null)
               ordem: lesson.order_index,
             });
           });
