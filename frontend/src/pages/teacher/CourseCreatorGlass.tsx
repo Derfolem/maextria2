@@ -243,7 +243,11 @@ export default function CourseCreatorGlass() {
         createdModules.forEach((mod, mi) => {
           const { courseIdx, moduleIdx } = moduleSourceMap[mi];
           const lessons = parsedCourses[courseIdx].modules?.[moduleIdx]?.lessons || [];
+
+          console.log(`Módulo ${mi}: ${lessons.length} aulas encontradas`);
+
           lessons.forEach(lesson => {
+            console.log(`Aula: ${lesson.title}, Content: ${lesson.content?.substring(0, 50)}...`);
             lessonPayloads.push({
               modulo_id: mod.id,
               titulo: lesson.title,
@@ -254,9 +258,17 @@ export default function CourseCreatorGlass() {
           });
         });
 
+        console.log(`Total de aulas para inserir: ${lessonPayloads.length}`);
+
         if (lessonPayloads.length > 0) {
           const { error } = await supabase.from('aulas').insert(lessonPayloads);
-          if (error) throw error;
+          if (error) {
+            console.error('Erro ao inserir aulas:', error);
+            throw error;
+          }
+          console.log(`✅ ${lessonPayloads.length} aulas inseridas com sucesso!`);
+        } else {
+          console.warn('⚠️ Nenhuma aula para inserir!');
         }
 
         toast.success(`${parsedCourses.length} curso(s) criado(s) com sucesso!`);
