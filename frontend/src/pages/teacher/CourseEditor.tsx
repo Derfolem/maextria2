@@ -446,6 +446,13 @@ const loadCourse = async () => {
             .eq('id', id));
         }
 
+        if (error && isMissingColumnError(error, 'desconto_percentual')) {
+          ({ error } = await supabase
+            .from('cursos')
+            .update(payloadBase)
+            .eq('id', id));
+        }
+
         if (error) throw error;
         toast.success('Curso atualizado com sucesso!');
         // Redirecionar baseado no role do usuário
@@ -474,6 +481,14 @@ const loadCourse = async () => {
           ({ data, error } = await supabase
             .from('cursos')
             .insert(insertWithDescontoPercentual)
+            .select('id')
+            .single());
+        }
+
+        if (error && isMissingColumnError(error, 'desconto_percentual')) {
+          ({ data, error } = await supabase
+            .from('cursos')
+            .insert(insertBase)
             .select('id')
             .single());
         }
