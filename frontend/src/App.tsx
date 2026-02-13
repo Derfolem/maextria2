@@ -427,6 +427,14 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/admin/course/new-glass"
+            element={
+              <ProtectedRoute roles={['admin']}>
+                <CourseCreatorGlass />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Rota 404 - deve ser a ultima */}
           <Route path="*" element={<NotFound />} />

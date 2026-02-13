@@ -214,12 +214,20 @@ export default function AdminCourses() {
             Revise, publique ou recuse cursos antes de liberar para o marketplace.
           </p>
         </div>
-        <button
-          onClick={() => setBulkImportOpen(true)}
-          className="btn-accent flex items-center gap-2 self-end"
-        >
-          <FaFileUpload /> Importar em massa
-        </button>
+        <div className="flex flex-col sm:flex-row gap-3 self-end">
+          <Link
+            to="/admin/course/new-glass"
+            className="btn-primary flex items-center gap-2 justify-center"
+          >
+            <FaEdit /> Criar com Extrator
+          </Link>
+          <button
+            onClick={() => setBulkImportOpen(true)}
+            className="btn-accent flex items-center gap-2"
+          >
+            <FaFileUpload /> Importar em massa
+          </button>
+        </div>
       </div>
 
       <div className="card mb-8">
