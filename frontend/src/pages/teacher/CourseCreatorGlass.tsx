@@ -191,7 +191,7 @@ export default function CourseCreatorGlass() {
           })),
         };
 
-        const response = await api.post('/courses/bulk', payload);
+        await api.post('/courses/bulk', payload);
         toast.success(`${parsedCourses.length} curso(s) criado(s) com sucesso!`);
         navigate('/teacher/my-courses');
       } else {
