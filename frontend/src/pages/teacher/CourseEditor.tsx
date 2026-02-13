@@ -94,6 +94,17 @@ export default function CourseEditor() {
 
   const emptyLessonImages = () => ['', '', ''];
 
+  const isMissingColumnError = (error: any, columnName: string) => {
+    const message = String(error?.message || '').toLowerCase();
+    const details = String(error?.details || '').toLowerCase();
+    const hint = String(error?.hint || '').toLowerCase();
+    const needle = `'${columnName.toLowerCase()}'`;
+    return (
+      message.includes('schema cache') &&
+      (message.includes(needle) || details.includes(needle) || hint.includes(needle))
+    );
+  };
+
   const slugify = (value: string) =>
     value
       .toLowerCase()
@@ -302,8 +313,10 @@ const loadCourse = async () => {
       setDescription(courseData.descricao || '');
       setPrice(courseData.preco_certificado ? String(courseData.preco_certificado) : '');
       setDiscountPercent(
-        courseData.desconto_percentual !== undefined && courseData.desconto_percentual !== null
-          ? String(courseData.desconto_percentual)
+        courseData.discount_percent !== undefined && courseData.discount_percent !== null
+          ? String(courseData.discount_percent)
+          : courseData.desconto_percentual !== undefined && courseData.desconto_percentual !== null
+            ? String(courseData.desconto_percentual)
           : '0'
       );
       setCategory(courseData.categoria || '');
@@ -404,11 +417,10 @@ const loadCourse = async () => {
 
     setLoading(true);
     try {
-      const payload: Record<string, any> = {
+      const payloadBase: Record<string, any> = {
         titulo: title,
         descricao: description,
         preco_certificado: parseFloat(price),
-        desconto_percentual: descontoValor,
         categoria: category.trim() || null,
         nivel: level || null,
         carga_horaria_horas: cargaHoraria ? parseInt(cargaHoraria) : null,
@@ -416,14 +428,24 @@ const loadCourse = async () => {
         professor_nome: teacherName.trim() || user.name || null,
       };
       if (isAdmin) {
-        payload.imagem_capa_url = thumbnail.trim() || null;
+        payloadBase.imagem_capa_url = thumbnail.trim() || null;
       }
 
       if (isEditing) {
-        const { error } = await supabase
+        const payloadWithDiscountPercent = { ...payloadBase, discount_percent: descontoValor };
+        let { error } = await supabase
           .from('cursos')
-          .update(payload)
+          .update(payloadWithDiscountPercent)
           .eq('id', id);
+
+        if (error && isMissingColumnError(error, 'discount_percent')) {
+          const payloadWithDescontoPercentual = { ...payloadBase, desconto_percentual: descontoValor };
+          ({ error } = await supabase
+            .from('cursos')
+            .update(payloadWithDescontoPercentual)
+            .eq('id', id));
+        }
+
         if (error) throw error;
         toast.success('Curso atualizado com sucesso!');
         // Redirecionar baseado no role do usuário
@@ -434,16 +456,30 @@ const loadCourse = async () => {
         }
         return;
       } else {
-        const { data, error } = await supabase
+        const insertBase = {
+          ...payloadBase,
+          ativo: false,
+          professor_id: user.id,
+        };
+        const insertWithDiscountPercent = { ...insertBase, discount_percent: descontoValor };
+
+        let { data, error } = await supabase
           .from('cursos')
-          .insert({
-            ...payload,
-            ativo: false,
-            professor_id: user.id,
-          })
+          .insert(insertWithDiscountPercent)
           .select('id')
           .single();
+
+        if (error && isMissingColumnError(error, 'discount_percent')) {
+          const insertWithDescontoPercentual = { ...insertBase, desconto_percentual: descontoValor };
+          ({ data, error } = await supabase
+            .from('cursos')
+            .insert(insertWithDescontoPercentual)
+            .select('id')
+            .single());
+        }
+
         if (error) throw error;
+        if (!data?.id) throw new Error('Curso criado, mas sem ID retornado');
         toast.success('Curso criado com sucesso!');
         navigate(`/teacher/course/${data.id}/edit`);
         return;
