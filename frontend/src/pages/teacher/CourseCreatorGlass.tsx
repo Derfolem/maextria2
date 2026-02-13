@@ -5,7 +5,7 @@ import { FaSave, FaMagic, FaImage, FaVideo } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../lib/store';
 import { supabase } from '../../lib/supabase';
-import { parseCourseText } from '../../lib/courseTextParser'; // Import the parser
+import { parseCourseText, parseBulkCourseText } from '../../lib/courseTextParser'; // Import the parsers
 import api from '../../lib/api'; // Import the custom API client
 import { Course as CourseType } from '../../types'; // Alias to avoid confusion with parsedCourse
 import { trackCourseCreated } from '../../lib/analytics';
@@ -43,6 +43,8 @@ export default function CourseCreatorGlass() {
   const [rawCourseText, setRawCourseText] = useState('');
   // State for parsed course structure (to be populated by the extractor)
   const [parsedCourse, setParsedCourse] = useState<CourseType | null>(null);
+  // State for multiple courses (bulk import)
+  const [parsedCourses, setParsedCourses] = useState<CourseType[] | null>(null);
 
   useEffect(() => {
     if (user?.name && !teacherName) {
@@ -159,13 +161,132 @@ export default function CourseCreatorGlass() {
     }
   };
 
+  const handleSaveBulkCourses = async () => {
+    if (!parsedCourses || parsedCourses.length === 0) return;
+
+    try {
+      const finalCategoryId = isAdmin ? selectedCategoryId || null : null;
+
+      if (USE_LOCAL_AUTH) {
+        // Local auth: Use API endpoint (if available)
+        const payload = {
+          courses: parsedCourses.map(c => ({
+            title: c.title,
+            description: c.description,
+            difficulty: c.level || 'beginner',
+            price: c.price,
+            certificate_price: c.price,
+            duration_hours: c.duration_hours || null,
+            modules: c.modules?.map(m => ({
+              title: m.title,
+              description: m.description,
+              order_index: m.order_index,
+              lessons: m.lessons?.map(l => ({
+                title: l.title,
+                content: l.content,
+                video_url: l.video_url,
+                order_index: l.order_index,
+              })),
+            })),
+          })),
+        };
+
+        const response = await api.post('/courses/bulk', payload);
+        toast.success(`${parsedCourses.length} curso(s) criado(s) com sucesso!`);
+        navigate('/teacher/my-courses');
+      } else {
+        // Supabase: Batch insert (SAME AS BulkCourseImport)
+        const now = Date.now();
+
+        const coursePayloads = parsedCourses.map((course, ci) => ({
+          titulo: course.title,
+          slug: course.title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") + "-" + (now + ci),
+          descricao: course.description,
+          preco_certificado: course.price,
+          nivel: course.level || 'beginner',
+          professor_id: user?.id || null,
+          professor_nome: user?.name || '',
+          categoria_id: finalCategoryId,
+          carga_horaria_horas: course.duration_hours || null,
+          is_published: false,
+        }));
+
+        const { data: createdCourses, error: coursesError } = await supabase
+          .from('cursos').insert(coursePayloads).select('id');
+        if (coursesError) throw coursesError;
+
+        // Batch insert modules
+        const modulePayloads: any[] = [];
+        const moduleSourceMap: { courseIdx: number; moduleIdx: number }[] = [];
+
+        parsedCourses.forEach((course, ci) => {
+          course.modules?.forEach((mod, mi) => {
+            modulePayloads.push({
+              curso_id: createdCourses[ci].id,
+              titulo_modulo: mod.title,
+              conteudo_texto_html: mod.description,
+              ordem: mod.order_index,
+            });
+            moduleSourceMap.push({ courseIdx: ci, moduleIdx: mi });
+          });
+        });
+
+        let createdModules: any[] = [];
+        if (modulePayloads.length > 0) {
+          const { data, error } = await supabase.from('modulos').insert(modulePayloads).select('id');
+          if (error) throw error;
+          createdModules = data;
+        }
+
+        // Batch insert lessons
+        const lessonPayloads: any[] = [];
+        createdModules.forEach((mod, mi) => {
+          const { courseIdx, moduleIdx } = moduleSourceMap[mi];
+          const lessons = parsedCourses[courseIdx].modules?.[moduleIdx]?.lessons || [];
+          lessons.forEach(lesson => {
+            lessonPayloads.push({
+              modulo_id: mod.id,
+              titulo: lesson.title,
+              conteudo_html: lesson.content,
+              video_url: lesson.video_url,
+              ordem: lesson.order_index,
+            });
+          });
+        });
+
+        if (lessonPayloads.length > 0) {
+          const { error } = await supabase.from('aulas').insert(lessonPayloads);
+          if (error) throw error;
+        }
+
+        toast.success(`${parsedCourses.length} curso(s) criado(s) com sucesso!`);
+        navigate('/teacher/my-courses');
+      }
+    } catch (error: any) {
+      console.error('Error saving bulk courses:', error);
+      toast.error(error.response?.data?.error || error.message || 'Erro ao salvar cursos em massa.');
+    }
+  };
+
   const handleSaveCourse = async () => {
-    if (!parsedCourse) {
+    // Check if we have bulk courses or single course
+    if (!parsedCourse && !parsedCourses) {
       toast.error('Nenhum curso extraído para salvar. Por favor, cole e extraia o texto primeiro.');
       return;
     }
     if (!user?.id) {
       toast.error('Usuário não autenticado.');
+      return;
+    }
+
+    // BULK MODE: Save multiple courses
+    if (parsedCourses && parsedCourses.length > 0) {
+      return await handleSaveBulkCourses();
+    }
+
+    // SINGLE MODE: Existing validation and save logic (UNCHANGED)
+    if (!parsedCourse) {
+      toast.error('Nenhum curso extraído para salvar.');
       return;
     }
     if (!parsedCourse.title || !parsedCourse.description || !parsedCourse.price) {
@@ -285,28 +406,49 @@ export default function CourseCreatorGlass() {
     if (!rawCourseText.trim()) {
       toast.error('O campo de texto do curso está vazio.');
       setParsedCourse(null);
+      setParsedCourses(null);
       return;
     }
     try {
-      // Pass currentUserId and currentUserName to the parser
-      const parsed = parseCourseText(rawCourseText, user?.id || '', user?.name || '');
-      if (parsed) {
-        setParsedCourse(parsed);
-        // Also populate basic fields from parsed data
-        setTitle(parsed.title || '');
-        setDescription(parsed.description || '');
-        setLevel(parsed.level || '');
-        setPrice(String(parsed.price) || ''); // Convert number to string for input
-        // Thumbnail and teacherName are not extracted from text directly, so leave them
-        toast.success('Texto do curso extraído com sucesso!');
+      // Check if text contains multiple courses (separated by ===)
+      const hasMultipleCourses = rawCourseText.includes('\n===\n') || rawCourseText.includes('\r\n===\r\n');
+
+      if (hasMultipleCourses) {
+        // BULK MODE: Parse multiple courses
+        const courses = parseBulkCourseText(rawCourseText, user?.id || '', user?.name || '');
+        if (courses.length === 0) {
+          toast.error('Nenhum curso válido encontrado. Verifique o formato.');
+          setParsedCourses(null);
+          setParsedCourse(null);
+          return;
+        }
+        setParsedCourses(courses);
+        setParsedCourse(null); // Clear single course
+        toast.success(`${courses.length} curso(s) extraído(s) com sucesso!`);
       } else {
-        toast.error('Não foi possível extrair informações do texto. Verifique o formato.');
-        setParsedCourse(null);
+        // SINGLE MODE: Parse one course (EXISTING BEHAVIOR - UNCHANGED)
+        const parsed = parseCourseText(rawCourseText, user?.id || '', user?.name || '');
+        if (parsed) {
+          setParsedCourse(parsed);
+          setParsedCourses(null); // Clear bulk courses
+          // Also populate basic fields from parsed data
+          setTitle(parsed.title || '');
+          setDescription(parsed.description || '');
+          setLevel(parsed.level || '');
+          setPrice(String(parsed.price) || ''); // Convert number to string for input
+          // Thumbnail and teacherName are not extracted from text directly, so leave them
+          toast.success('Texto do curso extraído com sucesso!');
+        } else {
+          toast.error('Não foi possível extrair informações do texto. Verifique o formato.');
+          setParsedCourse(null);
+          setParsedCourses(null);
+        }
       }
     } catch (error) {
       console.error('Error parsing text:', error);
       toast.error('Erro ao processar o texto. Verifique o console.');
       setParsedCourse(null);
+      setParsedCourses(null);
     }
   };
   // Inserir imagem no conteúdo da aula
@@ -601,9 +743,44 @@ export default function CourseCreatorGlass() {
                 </div>
               )}
             </div>
+          ) : parsedCourses && parsedCourses.length > 0 ? (
+            <div className="text-[hsl(var(--foreground))] space-y-4">
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-lg font-semibold">
+                  {parsedCourses.length} curso(s) extraído(s)
+                </p>
+                <span className="text-sm text-[hsl(var(--muted-foreground))]">
+                  {parsedCourses.reduce((a, c) => a + (c.modules?.length || 0), 0)} módulos • {' '}
+                  {parsedCourses.reduce((a, c) => a + (c.modules?.reduce((acc, m) => acc + (m.lessons?.length || 0), 0) || 0), 0)} aulas
+                </span>
+              </div>
+              <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+                {parsedCourses.map((course, idx) => (
+                  <div key={idx} className="glass-card p-4 rounded-lg border border-[hsl(var(--border))]">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-base">{course.title || '(sem título)'}</span>
+                      <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                        {course.modules?.length || 0} mód • {course.modules?.reduce((a, m) => a + (m.lessons?.length || 0), 0) || 0} aulas
+                      </span>
+                    </div>
+                    {course.description && (
+                      <p className="text-sm text-[hsl(var(--muted-foreground))] mb-2 line-clamp-2">
+                        {course.description.replace(/<[^>]*>/g, '')}
+                      </p>
+                    )}
+                    <div className="flex gap-3 text-xs text-[hsl(var(--muted-foreground))]">
+                      <span>Nível: {course.level || 'N/A'}</span>
+                      <span>Preço: R$ {course.price?.toFixed(2) || '0.00'}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           ) : (
             <p className="text-[hsl(var(--muted-foreground))]">
               Cole e extraia o texto para ver a pré-visualização.
+              <br /><br />
+              <span className="text-xs">💡 Dica: Para importar múltiplos cursos, separe-os com <code className="bg-[hsl(var(--muted))] px-1.5 py-0.5 rounded">===</code> numa linha própria.</span>
             </p>
           )}
         </div>
