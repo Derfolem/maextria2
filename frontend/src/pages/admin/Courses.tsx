@@ -4,9 +4,8 @@ import { Course } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
 import toast from 'react-hot-toast';
-import { FaTrash, FaEye, FaEyeSlash, FaSearch, FaArrowRight, FaEdit, FaClock, FaTimes, FaFilter, FaFileUpload } from 'react-icons/fa';
+import { FaTrash, FaEye, FaEyeSlash, FaSearch, FaArrowRight, FaEdit, FaClock, FaTimes, FaFilter } from 'react-icons/fa';
 import { normalizeCourse } from '../../lib/normalizeCourse';
-import BulkCourseImport from './BulkCourseImport';
 import { trackContentPublished } from '../../lib/analytics';
 import { stripHtml } from '../../lib/text';
 
@@ -20,7 +19,6 @@ export default function AdminCourses() {
   const [filter, setFilter] = useState<FilterOption>('recentes');
   const [feedbackOpen, setFeedbackOpen] = useState<string | number | null>(null);
   const [feedbackText, setFeedbackText] = useState('');
-  const [bulkImportOpen, setBulkImportOpen] = useState(false);
   const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -196,16 +194,6 @@ export default function AdminCourses() {
 
   return (
     <div className="max-w-7xl mx-auto px-[clamp(24px,5vw,80px)] py-[clamp(40px,6vh,80px)]">
-      {bulkImportOpen && (
-        <BulkCourseImport
-          onClose={() => setBulkImportOpen(false)}
-          onSuccess={() => {
-            setBulkImportOpen(false);
-            loadCourses();
-          }}
-        />
-      )}
-
       <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-10">
         <div>
           <p className="text-xs uppercase tracking-[0.35em] text-[hsl(var(--primary))]">Curadoria</p>
@@ -214,20 +202,12 @@ export default function AdminCourses() {
             Revise, publique ou recuse cursos antes de liberar para o marketplace.
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 self-end">
-          <Link
-            to="/admin/course/new-glass"
-            className="btn-primary flex items-center gap-2 justify-center"
-          >
-            <FaEdit /> Criar com Extrator
-          </Link>
-          <button
-            onClick={() => setBulkImportOpen(true)}
-            className="btn-accent flex items-center gap-2"
-          >
-            <FaFileUpload /> Importar em massa
-          </button>
-        </div>
+        <Link
+          to="/admin/course/new-glass"
+          className="btn-accent flex items-center gap-2 self-end"
+        >
+          <FaEdit /> Criar com Extrator
+        </Link>
       </div>
 
       <div className="card mb-8">
