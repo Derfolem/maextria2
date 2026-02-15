@@ -312,7 +312,11 @@ export default function AdminCourses() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2">
+                {(() => {
+                  const isOwnDraft = String(course.teacher_id) === String(user?.id) && !course.is_published;
+                  return (
+                    <>
                 <Link
                   to={`/preview/course/${course.id}`}
                   className="btn-outline inline-flex items-center gap-2 whitespace-nowrap"
@@ -320,7 +324,7 @@ export default function AdminCourses() {
                   <FaEye />
                   Visualizar
                 </Link>
-                {(course.em_curadoria || (String(course.teacher_id) === String(user?.id) && !course.is_published)) ? (
+                {(course.em_curadoria || isOwnDraft) ? (
                   <Link
                     to={`/teacher/course/${course.id}/edit`}
                     className="btn-outline inline-flex items-center gap-2 whitespace-nowrap"
@@ -362,17 +366,17 @@ export default function AdminCourses() {
                       }}
                       className="btn-outline inline-flex items-center gap-2 whitespace-nowrap border-red-400 text-red-500 hover:bg-red-500 hover:text-white"
                     >
-                      <FaTimes />
-                      Reprovar
-                    </button>
+                    <FaTimes />
+                    Reprovar
+                  </button>
                   </>
-                ) : String(course.teacher_id) === String(user?.id) ? (
+                ) : isOwnDraft ? (
                   <button
                     onClick={() => togglePublish(course.id, false)}
                     className="btn-accent inline-flex items-center gap-2 whitespace-nowrap"
                   >
                     <FaArrowRight />
-                    Publicar
+                    Aprovar
                   </button>
                 ) : (
                   <span className="text-sm text-[hsl(var(--muted-foreground))] px-3 py-2">
@@ -386,6 +390,9 @@ export default function AdminCourses() {
                   <FaTrash />
                   Excluir
                 </button>
+                    </>
+                  );
+                })()}
               </div>
             </div>
 

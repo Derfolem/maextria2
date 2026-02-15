@@ -111,7 +111,8 @@ export default function BulkCourseImport({ onClose, onSuccess }: { onClose: () =
           nivel: course.level || 'beginner',
           professor_id: selectedTeacherId || user?.id || null,
           carga_horaria_horas: course.duration_hours || null,
-          is_published: false,
+          ativo: false,
+          em_curadoria: false,
         }));
 
         const { data: createdCourses, error: coursesError } = await supabase

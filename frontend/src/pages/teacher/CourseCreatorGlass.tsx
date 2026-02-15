@@ -208,7 +208,8 @@ export default function CourseCreatorGlass() {
           professor_nome: user?.name || '',
           categoria_id: finalCategoryId,
           carga_horaria_horas: course.duration_hours || null,
-          is_published: false,
+          ativo: false,
+          em_curadoria: false,
         }));
 
         const { data: createdCourses, error: coursesError } = await supabase
@@ -338,7 +339,8 @@ export default function CourseCreatorGlass() {
             professor_nome: user.name,
             imagem_capa_url: finalThumbnail,
             carga_horaria_horas: parsedCourse.duration_hours || null,
-            is_published: false,
+            ativo: false,
+            em_curadoria: false,
           })
           .select('id')
           .single();
