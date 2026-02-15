@@ -9,7 +9,7 @@ import { normalizeCourse } from '../../lib/normalizeCourse';
 import { trackContentPublished } from '../../lib/analytics';
 import { stripHtml } from '../../lib/text';
 
-type FilterOption = 'recentes' | 'modificados' | 'publicados' | 'reprovados' | 'aguardando' | 'curadoria' | 'az';
+type FilterOption = 'recentes' | 'modificados' | 'publicados' | 'reprovados' | 'aguardando' | 'curadoria' | 'rascunho' | 'az';
 
 export default function AdminCourses() {
   const { user } = useAuthStore();
@@ -157,6 +157,9 @@ export default function AdminCourses() {
       case 'curadoria':
         result = result.filter(c => c.em_curadoria);
         break;
+      case 'rascunho':
+        result = result.filter(c => !c.em_curadoria && !c.is_published);
+        break;
       case 'aguardando':
         result = result.filter(c => !c.em_curadoria && !c.is_published);
         break;
@@ -234,6 +237,7 @@ export default function AdminCourses() {
               <option value="publicados">Publicados</option>
               <option value="reprovados">Reprovados</option>
               <option value="curadoria">Em curadoria</option>
+              <option value="rascunho">Rascunho</option>
               <option value="aguardando">Aguardando envio</option>
               <option value="az">A-Z</option>
             </select>
