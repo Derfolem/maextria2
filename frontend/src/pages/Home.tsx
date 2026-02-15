@@ -139,8 +139,8 @@ export default function Home() {
           'cursos profissionalizantes'
         ]}
       />
-      <div>
-      <section className="hero-gradient text-white">
+      <div className="flex flex-col">
+      <section className="hero-gradient text-white order-2">
         <div className="hero-grid min-h-[100svh]">
           <div className="max-w-7xl mx-auto px-[clamp(24px,5vw,80px)] py-[clamp(80px,10vh,160px)] lg:py-[clamp(120px,14vh,200px)]">
             <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-14 items-center">
@@ -254,7 +254,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="relative py-[clamp(80px,10vh,120px)] overflow-hidden">
+      <section className="relative py-[clamp(80px,10vh,120px)] overflow-hidden order-1">
         {/* Fundo dinâmico com imagem do curso */}
         <div className="absolute inset-0 z-0">
           <AnimatePresence mode="wait">
@@ -485,7 +485,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-[clamp(80px,10vh,160px)]">
+      <section className="py-[clamp(80px,10vh,160px)] order-3">
         <div className="max-w-7xl mx-auto px-[clamp(24px,5vw,80px)]">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -541,13 +541,15 @@ export default function Home() {
           </div>
         </div>
       </section>
-      <Suspense fallback={null}>
-        <HomeBelowFold
-          loadingTopCourses={loadingTopCourses}
-          topCourses={topCourses}
-          fallbackImages={fallbackImages}
-        />
-      </Suspense>
+      <div className="order-3">
+        <Suspense fallback={null}>
+          <HomeBelowFold
+            loadingTopCourses={loadingTopCourses}
+            topCourses={topCourses}
+            fallbackImages={fallbackImages}
+          />
+        </Suspense>
+      </div>
     </div>
     </>
   );
