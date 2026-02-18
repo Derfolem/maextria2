@@ -26,6 +26,7 @@ export default function CourseEditor() {
   const [moduleQuizzes, setModuleQuizzes] = useState<Record<string, any>>({});
   const [finalQuiz, setFinalQuiz] = useState<any | null>(null);
   const [questionDrafts, setQuestionDrafts] = useState<Record<string, any>>({});
+  const [extractorDrafts, setExtractorDrafts] = useState<Record<string, { raw: string; questions: any[] }>>({});
   const [modules, setModules] = useState<Module[]>([]);
   const [loading, setLoading] = useState(false);
   const [discountColumn, setDiscountColumn] = useState<DiscountColumn>(null);
@@ -825,6 +826,200 @@ const loadCourse = async () => {
     });
   };
 
+  const openExtractorDraft = (quizId: string) => {
+    setExtractorDrafts((prev) => ({
+      ...prev,
+      [quizId]: prev[quizId] || { raw: '', questions: [] },
+    }));
+  };
+
+  const closeExtractorDraft = (quizId: string) => {
+    setExtractorDrafts((prev) => {
+      const next = { ...prev };
+      delete next[quizId];
+      return next;
+    });
+  };
+
+  const updateExtractorRaw = (quizId: string, raw: string) => {
+    setExtractorDrafts((prev) => ({
+      ...prev,
+      [quizId]: {
+        ...(prev[quizId] || { raw: '', questions: [] }),
+        raw,
+      },
+    }));
+  };
+
+  const unwrapWrappedText = (value: string) => {
+    const trimmed = value.trim();
+    if (trimmed.startsWith('(') && trimmed.endsWith(')')) {
+      return trimmed.slice(1, -1).trim();
+    }
+    return trimmed;
+  };
+
+  const parseQuestionsFromRaw = (raw: string) => {
+    const normalized = raw.replace(/\r/g, '').trim();
+    if (!normalized) {
+      throw new Error('Cole o texto do questionario para extrair as questoes.');
+    }
+
+    const chunks = normalized
+      .split(/\n\s*\n+/)
+      .map((chunk) => chunk.trim())
+      .filter(Boolean);
+
+    const parsed = chunks.map((chunk, chunkIndex) => {
+      const linesLocal = chunk
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+      if (linesLocal.length < 6) {
+        throw new Error('Questao ' + (chunkIndex + 1) + ': formato incompleto.');
+      }
+
+      const qMatch = linesLocal[0].match(/^\d+\.\s*(.+)$/i);
+      if (!qMatch) {
+        throw new Error('Questao ' + (chunkIndex + 1) + ': enunciado invalido.');
+      }
+
+      const alternatives: Record<string, string> = {};
+      for (let i = 1; i <= 4; i += 1) {
+        const altLine = linesLocal[i];
+        const altMatch = altLine.match(/^([a-d])\.\s*(.+)$/i);
+        if (!altMatch) {
+          throw new Error('Questao ' + (chunkIndex + 1) + ': alternativa ' + i + ' invalida.');
+        }
+        alternatives[altMatch[1].toLowerCase()] = unwrapWrappedText(altMatch[2]);
+      }
+
+      const answerLine = linesLocal.find((line) => /^resposta\s*certa\s*:/i.test(line));
+      if (!answerLine) {
+        throw new Error('Questao ' + (chunkIndex + 1) + ': resposta certa nao informada.');
+      }
+      const answerMatch = answerLine.match(/^resposta\s*certa\s*:\s*\(?\s*([a-d])\s*\)?$/i);
+      if (!answerMatch) {
+        throw new Error('Questao ' + (chunkIndex + 1) + ': resposta certa invalida.');
+      }
+
+      return {
+        enunciado: unwrapWrappedText(qMatch[1]),
+        alternativa_a: alternatives.a || '',
+        alternativa_b: alternatives.b || '',
+        alternativa_c: alternatives.c || '',
+        alternativa_d: alternatives.d || '',
+        correta: answerMatch[1].toLowerCase(),
+      };
+    });
+
+    if (parsed.length > 10) {
+      throw new Error('Limite de 10 questoes por extracao.');
+    }
+
+    return parsed;
+  };
+
+  const extractQuestionsFromRaw = (quizId: string) => {
+    try {
+      const raw = extractorDrafts[quizId]?.raw || '';
+      const questions = parseQuestionsFromRaw(raw);
+      setExtractorDrafts((prev) => ({
+        ...prev,
+        [quizId]: {
+          ...(prev[quizId] || { raw: '', questions: [] }),
+          questions,
+        },
+      }));
+      toast.success(questions.length + ' questoes extraidas.');
+    } catch (error: any) {
+      toast.error(error?.message || 'Nao foi possivel extrair as questoes.');
+    }
+  };
+
+  const updateExtractedQuestion = (quizId: string, index: number, field: string, value: string) => {
+    setExtractorDrafts((prev) => {
+      const current = prev[quizId] || { raw: '', questions: [] };
+      const nextQuestions = [...current.questions];
+      nextQuestions[index] = { ...nextQuestions[index], [field]: value };
+      return {
+        ...prev,
+        [quizId]: { ...current, questions: nextQuestions },
+      };
+    });
+  };
+
+  const removeExtractedQuestion = (quizId: string, index: number) => {
+    setExtractorDrafts((prev) => {
+      const current = prev[quizId] || { raw: '', questions: [] };
+      const nextQuestions = current.questions.filter((_: any, itemIndex: number) => itemIndex !== index);
+      return {
+        ...prev,
+        [quizId]: { ...current, questions: nextQuestions },
+      };
+    });
+  };
+
+  const saveExtractedQuestions = async (quizId: string) => {
+    const batch = extractorDrafts[quizId]?.questions || [];
+    if (!batch.length) {
+      toast.error('Extraia pelo menos uma questao antes de salvar.');
+      return;
+    }
+
+    const hasInvalid = batch.some(
+      (item: any) =>
+        !item.enunciado || !item.alternativa_a || !item.alternativa_b || !item.alternativa_c || !item.alternativa_d
+    );
+    if (hasInvalid) {
+      toast.error('Todas as questoes precisam de enunciado e alternativas.');
+      return;
+    }
+
+    try {
+      const currentQuestions = getQuizQuestions(quizId);
+      let nextOrder = Math.max(0, ...currentQuestions.map((item: any) => Number(item.ordem || 0))) + 1;
+      const payload = batch.map((item: any) => ({
+        questionario_id: quizId,
+        enunciado: item.enunciado,
+        alternativa_a: item.alternativa_a,
+        alternativa_b: item.alternativa_b,
+        alternativa_c: item.alternativa_c,
+        alternativa_d: item.alternativa_d,
+        correta: String(item.correta || 'a').toLowerCase(),
+        ordem: nextOrder++,
+      }));
+
+      const { data, error } = await supabase
+        .from('questoes')
+        .insert(payload)
+        .select('*');
+      if (error) throw error;
+
+      const createdQuestions = data || [];
+
+      setModuleQuizzes((prev) => {
+        const next = { ...prev };
+        Object.keys(next).forEach((key) => {
+          if (next[key]?.id === quizId) {
+            const merged = [...(next[key].questoes || []), ...createdQuestions];
+            next[key] = { ...next[key], questoes: sortQuestions(merged) };
+          }
+        });
+        return next;
+      });
+      if (finalQuiz?.id === quizId) {
+        const merged = [...(finalQuiz.questoes || []), ...createdQuestions];
+        setFinalQuiz({ ...finalQuiz, questoes: sortQuestions(merged) });
+      }
+
+      closeExtractorDraft(quizId);
+      toast.success(createdQuestions.length + ' questoes salvas.');
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao salvar questoes extraidas.');
+    }
+  };
   const getQuizQuestions = (quizId: string) => {
     if (finalQuiz?.id === quizId) return sortQuestions(finalQuiz.questoes || []);
     const moduleQuiz = Object.values(moduleQuizzes).find((quiz: any) => quiz?.id === quizId) as any;
@@ -1251,6 +1446,13 @@ const loadCourse = async () => {
                               >
                                 Adicionar questão
                               </button>
+                              <button
+                                type="button"
+                                onClick={() => openExtractorDraft(moduleQuizzes[String(module.id)].id)}
+                                className="btn-outline text-xs"
+                              >
+                                Gerar questionário com extrator de texto
+                              </button>
                             </div>
                           ) : (
                             <button
@@ -1325,6 +1527,124 @@ const loadCourse = async () => {
                                   Cancelar
                                 </button>
                               </div>
+                            </div>
+                          )}
+
+                        {moduleQuizzes[String(module.id)] &&
+                          extractorDrafts[moduleQuizzes[String(module.id)].id] && (
+                            <div className="border border-[hsl(var(--border))] rounded-[12px] p-4 mb-4 bg-[hsl(var(--card))]">
+                              <h4 className="font-semibold mb-2">Extrator de questoes</h4>
+                              <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
+                                Cole no formato: 1. enunciado / a. b. c. d. / Resposta certa: a (maximo 10 questoes).
+                              </p>
+                              <textarea
+                                value={extractorDrafts[moduleQuizzes[String(module.id)].id].raw || ''}
+                                onChange={(event) =>
+                                  updateExtractorRaw(moduleQuizzes[String(module.id)].id, event.target.value)
+                                }
+                                className="input-field mb-3"
+                                rows={8}
+                                placeholder="1. (enunciado)\na. (alternativa A)\nb. (alternativa B)\nc. (alternativa C)\nd. (alternativa D)\nResposta certa: (a)"
+                              />
+                              <div className="flex flex-wrap items-center gap-2 mb-3">
+                                <button
+                                  type="button"
+                                  className="btn-outline text-xs"
+                                  onClick={() => extractQuestionsFromRaw(moduleQuizzes[String(module.id)].id)}
+                                >
+                                  Extrair questoes
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn-outline text-xs"
+                                  onClick={() => closeExtractorDraft(moduleQuizzes[String(module.id)].id)}
+                                >
+                                  Fechar extrator
+                                </button>
+                              </div>
+
+                              {(extractorDrafts[moduleQuizzes[String(module.id)].id].questions || []).length > 0 && (
+                                <div className="space-y-3">
+                                  {extractorDrafts[moduleQuizzes[String(module.id)].id].questions.map((question: any, index: number) => (
+                                    <div key={index} className="rounded-[10px] border border-[hsl(var(--border))] p-3">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <p className="text-sm font-medium">Questao {index + 1}</p>
+                                        <button
+                                          type="button"
+                                          className="btn-outline text-xs text-red-600"
+                                          onClick={() => removeExtractedQuestion(moduleQuizzes[String(module.id)].id, index)}
+                                        >
+                                          Apagar
+                                        </button>
+                                      </div>
+                                      <textarea
+                                        className="input-field mb-2"
+                                        rows={2}
+                                        value={question.enunciado || ''}
+                                        onChange={(event) =>
+                                          updateExtractedQuestion(
+                                            moduleQuizzes[String(module.id)].id,
+                                            index,
+                                            'enunciado',
+                                            event.target.value
+                                          )
+                                        }
+                                        placeholder="Enunciado"
+                                      />
+                                      {(['a', 'b', 'c', 'd'] as const).map((key) => (
+                                        <input
+                                          key={key}
+                                          type="text"
+                                          className="input-field mb-2"
+                                          value={question['alternativa_' + key] || ''}
+                                          onChange={(event) =>
+                                            updateExtractedQuestion(
+                                              moduleQuizzes[String(module.id)].id,
+                                              index,
+                                              'alternativa_' + key,
+                                              event.target.value
+                                            )
+                                          }
+                                          placeholder={'Alternativa ' + key.toUpperCase()}
+                                        />
+                                      ))}
+                                      <select
+                                        className="input-field text-sm max-w-[160px]"
+                                        value={question.correta || 'a'}
+                                        onChange={(event) =>
+                                          updateExtractedQuestion(
+                                            moduleQuizzes[String(module.id)].id,
+                                            index,
+                                            'correta',
+                                            event.target.value
+                                          )
+                                        }
+                                      >
+                                        <option value="a">Correta: A</option>
+                                        <option value="b">Correta: B</option>
+                                        <option value="c">Correta: C</option>
+                                        <option value="d">Correta: D</option>
+                                      </select>
+                                    </div>
+                                  ))}
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <button
+                                      type="button"
+                                      className="btn-accent text-xs"
+                                      onClick={() => saveExtractedQuestions(moduleQuizzes[String(module.id)].id)}
+                                    >
+                                      Salvar questoes extraidas
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="btn-outline text-xs"
+                                      onClick={() => closeExtractorDraft(moduleQuizzes[String(module.id)].id)}
+                                    >
+                                      Cancelar
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           )}
 
@@ -1489,13 +1809,22 @@ const loadCourse = async () => {
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">Prova final</h2>
                 {finalQuiz ? (
-                  <button
-                    type="button"
-                    onClick={() => openQuestionDraft(finalQuiz.id)}
-                    className="btn-outline text-xs"
-                  >
-                    Adicionar questão
-                  </button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => openQuestionDraft(finalQuiz.id)}
+                      className="btn-outline text-xs"
+                    >
+                      Adicionar questão
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openExtractorDraft(finalQuiz.id)}
+                      className="btn-outline text-xs"
+                    >
+                      Gerar questionário com extrator de texto
+                    </button>
+                  </div>
                 ) : (
                   <button
                     type="button"
@@ -1556,6 +1885,106 @@ const loadCourse = async () => {
                   </div>
                 </div>
               )}
+              {finalQuiz && extractorDrafts[finalQuiz.id] && (
+                <div className="border border-[hsl(var(--border))] rounded-[12px] p-4 mb-4 bg-[hsl(var(--card))]">
+                  <h4 className="font-semibold mb-2">Extrator de questoes</h4>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
+                    Cole no formato: 1. enunciado / a. b. c. d. / Resposta certa: a (maximo 10 questoes).
+                  </p>
+                  <textarea
+                    value={extractorDrafts[finalQuiz.id].raw || ''}
+                    onChange={(event) => updateExtractorRaw(finalQuiz.id, event.target.value)}
+                    className="input-field mb-3"
+                    rows={8}
+                    placeholder="1. (enunciado)\na. (alternativa A)\nb. (alternativa B)\nc. (alternativa C)\nd. (alternativa D)\nResposta certa: (a)"
+                  />
+                  <div className="flex flex-wrap items-center gap-2 mb-3">
+                    <button
+                      type="button"
+                      className="btn-outline text-xs"
+                      onClick={() => extractQuestionsFromRaw(finalQuiz.id)}
+                    >
+                      Extrair questoes
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-outline text-xs"
+                      onClick={() => closeExtractorDraft(finalQuiz.id)}
+                    >
+                      Fechar extrator
+                    </button>
+                  </div>
+
+                  {(extractorDrafts[finalQuiz.id].questions || []).length > 0 && (
+                    <div className="space-y-3">
+                      {extractorDrafts[finalQuiz.id].questions.map((question: any, index: number) => (
+                        <div key={index} className="rounded-[10px] border border-[hsl(var(--border))] p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-sm font-medium">Questao {index + 1}</p>
+                            <button
+                              type="button"
+                              className="btn-outline text-xs text-red-600"
+                              onClick={() => removeExtractedQuestion(finalQuiz.id, index)}
+                            >
+                              Apagar
+                            </button>
+                          </div>
+                          <textarea
+                            className="input-field mb-2"
+                            rows={2}
+                            value={question.enunciado || ''}
+                            onChange={(event) =>
+                              updateExtractedQuestion(finalQuiz.id, index, 'enunciado', event.target.value)
+                            }
+                            placeholder="Enunciado"
+                          />
+                          {(['a', 'b', 'c', 'd'] as const).map((key) => (
+                            <input
+                              key={key}
+                              type="text"
+                              className="input-field mb-2"
+                              value={question['alternativa_' + key] || ''}
+                              onChange={(event) =>
+                                updateExtractedQuestion(finalQuiz.id, index, 'alternativa_' + key, event.target.value)
+                              }
+                              placeholder={'Alternativa ' + key.toUpperCase()}
+                            />
+                          ))}
+                          <select
+                            className="input-field text-sm max-w-[160px]"
+                            value={question.correta || 'a'}
+                            onChange={(event) =>
+                              updateExtractedQuestion(finalQuiz.id, index, 'correta', event.target.value)
+                            }
+                          >
+                            <option value="a">Correta: A</option>
+                            <option value="b">Correta: B</option>
+                            <option value="c">Correta: C</option>
+                            <option value="d">Correta: D</option>
+                          </select>
+                        </div>
+                      ))}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          className="btn-accent text-xs"
+                          onClick={() => saveExtractedQuestions(finalQuiz.id)}
+                        >
+                          Salvar questoes extraidas
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-outline text-xs"
+                          onClick={() => closeExtractorDraft(finalQuiz.id)}
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {finalQuiz && (
                 <div className="space-y-3">
                   {(finalQuiz.questoes || []).length === 0 ? (
