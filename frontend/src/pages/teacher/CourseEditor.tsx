@@ -851,6 +851,32 @@ const loadCourse = async () => {
     }));
   };
 
+  const downloadQuestionTemplate = () => {
+    const template = [
+      '1. (enunciado da questao 1)',
+      'a. (resposta a)',
+      'b. (resposta b)',
+      'c. (resposta c)',
+      'd. (resposta d)',
+      'Resposta certa: (a)',
+      '',
+      '2. (enunciado da questao 2)',
+      'a. (resposta a)',
+      'b. (resposta b)',
+      'c. (resposta c)',
+      'd. (resposta d)',
+      'Resposta certa: (b)',
+    ].join('\n');
+
+    const blob = new Blob([template], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'modelo-questionario.txt';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   const unwrapWrappedText = (value: string) => {
     const trimmed = value.trim();
     if (trimmed.startsWith('(') && trimmed.endsWith(')')) {
@@ -1557,6 +1583,13 @@ const loadCourse = async () => {
                                 <button
                                   type="button"
                                   className="btn-outline text-xs"
+                                  onClick={downloadQuestionTemplate}
+                                >
+                                  Baixar modelo
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn-outline text-xs"
                                   onClick={() => closeExtractorDraft(moduleQuizzes[String(module.id)].id)}
                                 >
                                   Fechar extrator
@@ -1905,6 +1938,13 @@ const loadCourse = async () => {
                       onClick={() => extractQuestionsFromRaw(finalQuiz.id)}
                     >
                       Extrair questoes
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-outline text-xs"
+                      onClick={downloadQuestionTemplate}
+                    >
+                      Baixar modelo
                     </button>
                     <button
                       type="button"
