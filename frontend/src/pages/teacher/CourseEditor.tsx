@@ -100,6 +100,13 @@ export default function CourseEditor() {
   };
 
   const emptyLessonImages = () => ['', '', ''];
+  const sortQuestions = (questions: any[] = []) =>
+    [...questions].sort((a: any, b: any) => {
+      const aOrder = a?.ordem ?? Number.MAX_SAFE_INTEGER;
+      const bOrder = b?.ordem ?? Number.MAX_SAFE_INTEGER;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      return String(a?.id || '').localeCompare(String(b?.id || ''));
+    });
 
   const detectDiscountColumn = async () => {
     try {
@@ -410,12 +417,16 @@ const loadCourse = async () => {
       const moduleMap: Record<string, any> = {};
       let final: any | null = null;
       (quizzesData || []).forEach((quiz: any) => {
+        const normalizedQuiz = {
+          ...quiz,
+          questoes: sortQuestions(quiz.questoes || []),
+        };
         if (quiz.tipo === 'final') {
-          final = quiz;
+          final = normalizedQuiz;
           return;
         }
         if (quiz.modulo_id) {
-          moduleMap[String(quiz.modulo_id)] = quiz;
+          moduleMap[String(quiz.modulo_id)] = normalizedQuiz;
         }
       });
       setModuleQuizzes(moduleMap);
@@ -748,7 +759,7 @@ const loadCourse = async () => {
         .select('*, questoes(*)')
         .single();
       if (error) throw error;
-      setModuleQuizzes((prev) => ({ ...prev, [moduleId]: data }));
+      setModuleQuizzes((prev) => ({ ...prev, [moduleId]: { ...data, questoes: sortQuestions(data.questoes || []) } }));
       toast.success('Questionário criado.');
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao criar questionário.');
@@ -769,7 +780,7 @@ const loadCourse = async () => {
         .select('*, questoes(*)')
         .single();
       if (error) throw error;
-      setFinalQuiz(data);
+      setFinalQuiz({ ...data, questoes: sortQuestions(data.questoes || []) });
       toast.success('Prova final criada.');
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao criar prova final.');
@@ -801,6 +812,7 @@ const loadCourse = async () => {
         alternativa_c: question.alternativa_c || '',
         alternativa_d: question.alternativa_d || '',
         correta: question.correta || 'a',
+        ordem: question.ordem || undefined,
       },
     }));
   };
@@ -811,6 +823,12 @@ const loadCourse = async () => {
       delete next[quizId];
       return next;
     });
+  };
+
+  const getQuizQuestions = (quizId: string) => {
+    if (finalQuiz?.id === quizId) return sortQuestions(finalQuiz.questoes || []);
+    const moduleQuiz = Object.values(moduleQuizzes).find((quiz: any) => quiz?.id === quizId) as any;
+    return sortQuestions(moduleQuiz?.questoes || []);
   };
 
   const saveQuestion = async (quizId: string, draft: any) => {
@@ -826,6 +844,8 @@ const loadCourse = async () => {
 
     try {
       const isEditingQuestion = Boolean(draft?.id);
+      const currentQuestions = getQuizQuestions(quizId);
+      const nextOrder = Math.max(0, ...currentQuestions.map((item: any) => Number(item.ordem || 0))) + 1;
       let data: any = null;
       if (isEditingQuestion) {
         const response = await supabase
@@ -837,6 +857,7 @@ const loadCourse = async () => {
             alternativa_c,
             alternativa_d,
             correta: String(correta).toLowerCase(),
+            ordem: draft?.ordem || nextOrder,
           })
           .eq('id', draft.id)
           .select('*')
@@ -854,6 +875,7 @@ const loadCourse = async () => {
             alternativa_c,
             alternativa_d,
             correta: String(correta).toLowerCase(),
+            ordem: nextOrder,
           })
           .select('*')
           .single();
@@ -871,7 +893,7 @@ const loadCourse = async () => {
               : [...existingQuestions, data];
             next[key] = {
               ...next[key],
-              questoes: updatedQuestions,
+              questoes: sortQuestions(updatedQuestions),
             };
           }
         });
@@ -885,7 +907,7 @@ const loadCourse = async () => {
           : [...existingQuestions, data];
         setFinalQuiz({
           ...finalQuiz,
-          questoes: updatedQuestions,
+          questoes: sortQuestions(updatedQuestions),
         });
       }
 
@@ -893,6 +915,44 @@ const loadCourse = async () => {
       toast.success(isEditingQuestion ? 'Questão atualizada.' : 'Questão adicionada.');
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao salvar questão.');
+    }
+  };
+
+  const reorderQuestions = async (quizId: string, questionId: string, direction: 'up' | 'down') => {
+    const questions = getQuizQuestions(quizId);
+    const currentIndex = questions.findIndex((item: any) => item.id === questionId);
+    if (currentIndex < 0) return;
+
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= questions.length) return;
+
+    const nextQuestions = [...questions];
+    const [moved] = nextQuestions.splice(currentIndex, 1);
+    nextQuestions.splice(targetIndex, 0, moved);
+    const ordered = nextQuestions.map((item: any, index: number) => ({ ...item, ordem: index + 1 }));
+
+    try {
+      const updates = ordered.map((item: any) =>
+        supabase.from('questoes').update({ ordem: item.ordem }).eq('id', item.id)
+      );
+      const results = await Promise.all(updates);
+      const errorResult = results.find((result: any) => result.error);
+      if (errorResult?.error) throw errorResult.error;
+
+      setModuleQuizzes((prev) => {
+        const next = { ...prev };
+        Object.keys(next).forEach((key) => {
+          if (next[key]?.id === quizId) {
+            next[key] = { ...next[key], questoes: ordered };
+          }
+        });
+        return next;
+      });
+      if (finalQuiz?.id === quizId) {
+        setFinalQuiz({ ...finalQuiz, questoes: ordered });
+      }
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao reordenar questões.');
     }
   };
 
@@ -1275,7 +1335,7 @@ const loadCourse = async () => {
                                 Nenhuma questão criada ainda.
                               </p>
                             ) : (
-                              (moduleQuizzes[String(module.id)].questoes || []).map((question: any, index: number) => (
+                              sortQuestions(moduleQuizzes[String(module.id)].questoes || []).map((question: any, index: number) => (
                                 <div
                                   key={question.id}
                                   className="rounded-[12px] border border-[hsl(var(--border))] p-3 bg-[hsl(var(--card))]"
@@ -1285,6 +1345,22 @@ const loadCourse = async () => {
                                       {index + 1}. {question.enunciado}
                                     </p>
                                     <div className="flex items-center gap-2 shrink-0">
+                                      <button
+                                        type="button"
+                                        className="btn-outline text-xs"
+                                        onClick={() => reorderQuestions(moduleQuizzes[String(module.id)].id, question.id, 'up')}
+                                        disabled={index === 0}
+                                      >
+                                        Subir
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="btn-outline text-xs"
+                                        onClick={() => reorderQuestions(moduleQuizzes[String(module.id)].id, question.id, 'down')}
+                                        disabled={index === sortQuestions(moduleQuizzes[String(module.id)].questoes || []).length - 1}
+                                      >
+                                        Descer
+                                      </button>
                                       <button
                                         type="button"
                                         className="btn-outline text-xs flex items-center gap-1"
@@ -1487,7 +1563,7 @@ const loadCourse = async () => {
                       Nenhuma questão criada ainda.
                     </p>
                   ) : (
-                    (finalQuiz.questoes || []).map((question: any, index: number) => (
+                    sortQuestions(finalQuiz.questoes || []).map((question: any, index: number) => (
                       <div
                         key={question.id}
                         className="rounded-[12px] border border-[hsl(var(--border))] p-3 bg-[hsl(var(--card))]"
@@ -1497,6 +1573,22 @@ const loadCourse = async () => {
                             {index + 1}. {question.enunciado}
                           </p>
                           <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              type="button"
+                              className="btn-outline text-xs"
+                              onClick={() => reorderQuestions(finalQuiz.id, question.id, 'up')}
+                              disabled={index === 0}
+                            >
+                              Subir
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-outline text-xs"
+                              onClick={() => reorderQuestions(finalQuiz.id, question.id, 'down')}
+                              disabled={index === sortQuestions(finalQuiz.questoes || []).length - 1}
+                            >
+                              Descer
+                            </button>
                             <button
                               type="button"
                               className="btn-outline text-xs flex items-center gap-1"
