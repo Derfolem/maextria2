@@ -14,6 +14,14 @@ import { trackVideoStart, trackLessonComplete } from '../../lib/analytics';
 const YOUTUBE_REGEX = /(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{6,})/;
 const VIMEO_REGEX = /vimeo\.com\/(?:video\/)?(\d+)/;
 
+const sortQuizQuestions = (questions: any[] = []) =>
+  [...questions].sort((a: any, b: any) => {
+    const aOrder = a?.ordem ?? Number.MAX_SAFE_INTEGER;
+    const bOrder = b?.ordem ?? Number.MAX_SAFE_INTEGER;
+    if (aOrder !== bOrder) return aOrder - bOrder;
+    return String(a?.id || '').localeCompare(String(b?.id || ''));
+  });
+
 const getVideoData = (rawUrl: string) => {
   const url = rawUrl.trim();
   if (!url) return null;
@@ -54,12 +62,15 @@ export default function CoursePlayer() {
   const [notes, setNotes] = useState<Array<{ id: string; text: string; createdAt: string }>>([]);
   const [moduleQuizzes, setModuleQuizzes] = useState<Record<string, any>>({});
   const [finalQuiz, setFinalQuiz] = useState<any | null>(null);
+  const [surpriseQuizzes, setSurpriseQuizzes] = useState<any[]>([]);
   const [selectedQuiz, setSelectedQuiz] = useState<any | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submittingQuiz, setSubmittingQuiz] = useState(false);
   const [quizResult, setQuizResult] = useState<{ percentual: number; aprovado: boolean } | null>(null);
   const [minScore, setMinScore] = useState(60);
   const [quizResponses, setQuizResponses] = useState<Record<string, boolean>>({});
+  const [quizAttempts, setQuizAttempts] = useState<Record<string, boolean>>({});
+  const [lastLessonBeforeQuiz, setLastLessonBeforeQuiz] = useState<Lesson | null>(null);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [pendingRating, setPendingRating] = useState<{ lessonId: string | number; action: 'complete' | 'next' } | null>(null);
   const [expandedModules, setExpandedModules] = useState<string[]>([]);
@@ -228,17 +239,24 @@ export default function CoursePlayer() {
         .eq('curso_id', id);
       const moduleMap: Record<string, any> = {};
       let final: any | null = null;
+      const surprises: any[] = [];
       (quizzesData || []).forEach((quiz: any) => {
+        const normalizedQuiz = { ...quiz, questoes: sortQuizQuestions(quiz.questoes || []) };
         if (quiz.tipo === 'final') {
-          final = quiz;
+          final = normalizedQuiz;
+          return;
+        }
+        if (quiz.tipo === 'surpresa') {
+          surprises.push(normalizedQuiz);
           return;
         }
         if (quiz.modulo_id) {
-          moduleMap[String(quiz.modulo_id)] = quiz;
+          moduleMap[String(quiz.modulo_id)] = normalizedQuiz;
         }
       });
       setModuleQuizzes(moduleMap);
       setFinalQuiz(final);
+      setSurpriseQuizzes(surprises);
 
       const quizIds = (quizzesData || []).map((quiz: any) => quiz.id);
       if (quizIds.length > 0) {
@@ -251,9 +269,15 @@ export default function CoursePlayer() {
           acc[String(item.questionario_id)] = Boolean(item.aprovado);
           return acc;
         }, {});
+        const attemptMap = (responsesData || []).reduce((acc: Record<string, boolean>, item: any) => {
+          acc[String(item.questionario_id)] = true;
+          return acc;
+        }, {});
         setQuizResponses(responseMap);
+        setQuizAttempts(attemptMap);
       } else {
         setQuizResponses({});
+        setQuizAttempts({});
       }
 
       const { data: settingsData } = await supabase
@@ -484,9 +508,10 @@ export default function CoursePlayer() {
       .map((item) => String(item.lesson_id))
   );
   const completedLessons = completedLessonIds.size;
-  const totalQuizzes = Object.keys(moduleQuizzes).length + (finalQuiz ? 1 : 0);
+  const totalQuizzes = Object.keys(moduleQuizzes).length + (finalQuiz ? 1 : 0) + surpriseQuizzes.length;
   const completedQuizzes = Object.values(moduleQuizzes).filter((quiz: any) => quizResponses[String(quiz.id)]).length
-    + (finalQuiz && quizResponses[String(finalQuiz.id)] ? 1 : 0);
+    + (finalQuiz && quizResponses[String(finalQuiz.id)] ? 1 : 0)
+    + surpriseQuizzes.filter((quiz: any) => quizAttempts[String(quiz.id)]).length;
   const totalProgressItems = totalLessons + totalQuizzes;
   const completedProgressItems = completedLessons + completedQuizzes;
   const progressPercentage = totalProgressItems > 0
@@ -530,11 +555,34 @@ export default function CoursePlayer() {
       ? String(currentModule.lessons?.[currentModule.lessons.length - 1]?.id) === String(selectedLesson.id)
       : false;
 
-    if (!canPreview && currentModule && isLastLessonInModule) {
-      const moduleQuiz = moduleQuizzes[String(currentModule.id)];
-      if (moduleQuiz && !quizResponses[String(moduleQuiz.id)]) {
-        openQuiz(moduleQuiz);
+    if (!canPreview && currentModule) {
+      const lessonSurprise = surpriseQuizzes.find((quiz: any) =>
+        quiz.surpresa_alvo_tipo === 'aula'
+        && String(quiz.surpresa_aula_id || '') === String(selectedLesson.id)
+        && !quizAttempts[String(quiz.id)]
+      );
+      if (lessonSurprise) {
+        openQuiz(lessonSurprise);
         return;
+      }
+
+      const moduleSurprise = surpriseQuizzes.find((quiz: any) =>
+        quiz.surpresa_alvo_tipo === 'modulo'
+        && String(quiz.modulo_id || '') === String(currentModule.id)
+        && isLastLessonInModule
+        && !quizAttempts[String(quiz.id)]
+      );
+      if (moduleSurprise) {
+        openQuiz(moduleSurprise);
+        return;
+      }
+
+      if (isLastLessonInModule) {
+        const moduleQuiz = moduleQuizzes[String(currentModule.id)];
+        if (moduleQuiz && !quizResponses[String(moduleQuiz.id)]) {
+          openQuiz(moduleQuiz);
+          return;
+        }
       }
     }
 
@@ -574,6 +622,7 @@ export default function CoursePlayer() {
   const finalQuizPassed = finalQuiz ? quizResponses[String(finalQuiz.id)] : true;
 
   const openQuiz = (quiz: any) => {
+    setLastLessonBeforeQuiz(selectedLesson);
     setSelectedLesson(null);
     setSelectedQuiz(quiz);
     setAnswers({});
@@ -633,6 +682,7 @@ export default function CoursePlayer() {
       }
       setQuizResult({ percentual, aprovado });
       setQuizResponses((prev) => ({ ...prev, [String(selectedQuiz.id)]: aprovado }));
+      setQuizAttempts((prev) => ({ ...prev, [String(selectedQuiz.id)]: true }));
       toast.success(aprovado ? 'Prova aprovada!' : `Nota abaixo do mínimo (${minScore}%).`);
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao enviar prova.');
@@ -706,9 +756,9 @@ export default function CoursePlayer() {
                     <FaPlay />
                     <span>{selectedQuiz.titulo}</span>
                   </div>
-                  <h2 className="headline-font text-3xl mb-4">Questionário</h2>
+                  <h2 className="headline-font text-3xl mb-4">Questionario</h2>
 
-                  {(selectedQuiz.questoes || []).map((questao: any, index: number) => (
+                  {sortQuizQuestions(selectedQuiz.questoes || []).map((questao: any, index: number) => (
                     <div key={questao.id} className="border border-[hsl(var(--border))] rounded-[12px] p-4 mb-4">
                       <p className="font-semibold mb-3">{index + 1}. {questao.enunciado}</p>
                       {(['a', 'b', 'c', 'd'] as const).map((key) => (
@@ -721,16 +771,48 @@ export default function CoursePlayer() {
                             onChange={() => setAnswers((prev) => ({ ...prev, [String(questao.id)]: key }))}
                           />
                           <span>{questao[`alternativa_${key}`]}</span>
+                          {quizResult && (
+                            <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                              {questao.correta === key ? 'Gabarito' : answers[String(questao.id)] === key ? 'Sua resposta' : ''}
+                            </span>
+                          )}
                         </label>
                       ))}
                     </div>
                   ))}
 
                   {quizResult ? (
-                    <div className="mt-4 p-4 rounded-[12px] bg-[hsl(var(--muted))]">
+                    <div className="mt-4 p-4 rounded-[12px] bg-[hsl(var(--muted))] space-y-3">
                       <p className="font-semibold">
                         Resultado: {quizResult.percentual}% ({quizResult.aprovado ? 'Aprovado' : 'Reprovado'})
                       </p>
+                      <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                        Gabarito exibido acima.
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          className="btn-outline"
+                          onClick={() => {
+                            setAnswers({});
+                            setQuizResult(null);
+                          }}
+                        >
+                          Tentar novamente
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-outline"
+                          onClick={() => {
+                            if (lastLessonBeforeQuiz) setSelectedLesson(lastLessonBeforeQuiz);
+                            setSelectedQuiz(null);
+                            setQuizResult(null);
+                            setAnswers({});
+                          }}
+                        >
+                          Voltar para aula
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <button
@@ -1015,6 +1097,18 @@ export default function CoursePlayer() {
                           <span className="flex-grow text-sm">{lesson.title}</span>
                         </button>
                       ))}
+                      {surpriseQuizzes
+                        .filter((quiz: any) => String(quiz.modulo_id || '') === String(module.id))
+                        .map((quiz: any) => (
+                          <button
+                            key={quiz.id}
+                            type="button"
+                            onClick={() => openQuiz(quiz)}
+                            className="w-full text-left p-3 rounded-[12px] border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]"
+                          >
+                            {quizAttempts[String(quiz.id)] ? 'Questionario surpresa (respondido)' : 'Questionario surpresa'}
+                          </button>
+                        ))}
                       {moduleQuizzes[String(module.id)] && (
                         <button
                           type="button"

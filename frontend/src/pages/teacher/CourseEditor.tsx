@@ -25,6 +25,16 @@ export default function CourseEditor() {
   const [teacherName, setTeacherName] = useState('');
   const [moduleQuizzes, setModuleQuizzes] = useState<Record<string, any>>({});
   const [finalQuiz, setFinalQuiz] = useState<any | null>(null);
+  const [surpriseQuizzes, setSurpriseQuizzes] = useState<any[]>([]);
+  const [surpriseDraft, setSurpriseDraft] = useState<{
+    targetType: 'aula' | 'modulo';
+    moduleId: string;
+    lessonId: string;
+  }>({
+    targetType: 'aula',
+    moduleId: '',
+    lessonId: '',
+  });
   const [questionDrafts, setQuestionDrafts] = useState<Record<string, any>>({});
   const [extractorDrafts, setExtractorDrafts] = useState<Record<string, { raw: string; questions: any[] }>>({});
   const [modules, setModules] = useState<Module[]>([]);
@@ -417,6 +427,7 @@ const loadCourse = async () => {
 
       const moduleMap: Record<string, any> = {};
       let final: any | null = null;
+      const surprises: any[] = [];
       (quizzesData || []).forEach((quiz: any) => {
         const normalizedQuiz = {
           ...quiz,
@@ -426,12 +437,19 @@ const loadCourse = async () => {
           final = normalizedQuiz;
           return;
         }
+        if (quiz.tipo === 'surpresa') {
+          surprises.push(normalizedQuiz);
+          return;
+        }
         if (quiz.modulo_id) {
           moduleMap[String(quiz.modulo_id)] = normalizedQuiz;
         }
       });
       setModuleQuizzes(moduleMap);
       setFinalQuiz(final);
+      setSurpriseQuizzes(
+        surprises.sort((a: any, b: any) => Number(a?.surpresa_slot || 0) - Number(b?.surpresa_slot || 0))
+      );
     } catch (error) {
       toast.error('Erro ao carregar curso');
       navigate('/teacher/my-courses');
@@ -788,6 +806,104 @@ const loadCourse = async () => {
     }
   };
 
+  const getAllLessons = () =>
+    modules.flatMap((module: Module) =>
+      (module.lessons || []).map((lesson: Lesson) => ({
+        id: String(lesson.id),
+        title: lesson.title || 'Aula sem titulo',
+        moduleId: String(module.id),
+        moduleTitle: module.title || 'Modulo sem titulo',
+      }))
+    );
+
+  const getAvailableSurpriseSlot = () => {
+    const used = new Set((surpriseQuizzes || []).map((quiz: any) => Number(quiz?.surpresa_slot || 0)));
+    if (!used.has(1)) return 1;
+    if (!used.has(2)) return 2;
+    return null;
+  };
+
+  const getSurpriseQuizById = (quizId: string) =>
+    (surpriseQuizzes || []).find((quiz: any) => String(quiz.id) === String(quizId)) || null;
+
+  const createSurpriseQuiz = async () => {
+    if (!id) return;
+    if (surpriseQuizzes.length >= 2) {
+      toast.error('Limite atingido: voce pode criar ate 2 questionarios surpresa por curso.');
+      return;
+    }
+
+    const slot = getAvailableSurpriseSlot();
+    if (!slot) {
+      toast.error('Nao ha vaga para novo questionario surpresa.');
+      return;
+    }
+
+    let targetModuleId = '';
+    let targetLessonId: string | null = null;
+    let targetLabel = '';
+
+    if (surpriseDraft.targetType === 'modulo') {
+      if (!surpriseDraft.moduleId) {
+        toast.error('Selecione o modulo onde o questionario surpresa vai aparecer.');
+        return;
+      }
+      targetModuleId = surpriseDraft.moduleId;
+      const module = modules.find((item) => String(item.id) === String(surpriseDraft.moduleId));
+      targetLabel = ('apos o modulo ' + (module?.title || '')).trim();
+    } else {
+      if (!surpriseDraft.lessonId) {
+        toast.error('Selecione a aula onde o questionario surpresa vai aparecer.');
+        return;
+      }
+      const lesson = getAllLessons().find((item) => item.id === surpriseDraft.lessonId);
+      if (!lesson) {
+        toast.error('Aula selecionada nao encontrada.');
+        return;
+      }
+      targetModuleId = lesson.moduleId;
+      targetLessonId = lesson.id;
+      targetLabel = 'apos a aula ' + lesson.title;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('questionarios')
+        .insert({
+          curso_id: id,
+          modulo_id: targetModuleId,
+          titulo: 'Questionario surpresa ' + slot + ' (' + targetLabel + ')',
+          tipo: 'surpresa',
+          surpresa_slot: slot,
+          surpresa_alvo_tipo: surpriseDraft.targetType,
+          surpresa_aula_id: targetLessonId,
+        })
+        .select('*, questoes(*)')
+        .single();
+      if (error) throw error;
+      const normalizedQuiz = { ...data, questoes: sortQuestions(data.questoes || []) };
+      setSurpriseQuizzes((prev) =>
+        [...prev, normalizedQuiz].sort((a: any, b: any) => Number(a?.surpresa_slot || 0) - Number(b?.surpresa_slot || 0))
+      );
+      setSurpriseDraft({ targetType: 'aula', moduleId: '', lessonId: '' });
+      toast.success('Questionario surpresa criado.');
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao criar questionario surpresa.');
+    }
+  };
+
+  const deleteSurpriseQuiz = async (quizId: string) => {
+    if (!confirm('Excluir este questionario surpresa e as questoes dele?')) return;
+    try {
+      const { error } = await supabase.from('questionarios').delete().eq('id', quizId);
+      if (error) throw error;
+      setSurpriseQuizzes((prev) => prev.filter((quiz: any) => String(quiz.id) !== String(quizId)));
+      toast.success('Questionario surpresa excluido.');
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao excluir questionario surpresa.');
+    }
+  };
+
   const openQuestionDraft = (quizId: string) => {
     setQuestionDrafts((prev) => ({
       ...prev,
@@ -885,7 +1001,7 @@ const loadCourse = async () => {
     return trimmed;
   };
 
-  const parseQuestionsFromRaw = (raw: string) => {
+  const parseQuestionsFromRaw = (raw: string, maxQuestions: number) => {
     const normalized = raw.replace(/\r/g, '').trim();
     if (!normalized) {
       throw new Error('Cole o texto do questionario para extrair as questoes.');
@@ -940,17 +1056,17 @@ const loadCourse = async () => {
       };
     });
 
-    if (parsed.length > 10) {
-      throw new Error('Limite de 10 questoes por extracao.');
+    if (parsed.length > maxQuestions) {
+      throw new Error('Limite de ' + maxQuestions + ' questoes por extracao.');
     }
 
     return parsed;
   };
 
-  const extractQuestionsFromRaw = (quizId: string) => {
+  const extractQuestionsFromRaw = (quizId: string, maxQuestions: number) => {
     try {
       const raw = extractorDrafts[quizId]?.raw || '';
-      const questions = parseQuestionsFromRaw(raw);
+      const questions = parseQuestionsFromRaw(raw, maxQuestions);
       setExtractorDrafts((prev) => ({
         ...prev,
         [quizId]: {
@@ -1004,7 +1120,18 @@ const loadCourse = async () => {
     }
 
     try {
+      const surpriseQuiz = getSurpriseQuizById(quizId);
       const currentQuestions = getQuizQuestions(quizId);
+      if (surpriseQuiz) {
+        if (batch.length !== 4) {
+          toast.error('Questionario surpresa exige exatamente 4 questoes por extracao.');
+          return;
+        }
+        if (currentQuestions.length > 0) {
+          toast.error('Apague as questoes atuais do questionario surpresa antes de usar o extrator.');
+          return;
+        }
+      }
       let nextOrder = Math.max(0, ...currentQuestions.map((item: any) => Number(item.ordem || 0))) + 1;
       const payload = batch.map((item: any) => ({
         questionario_id: quizId,
@@ -1039,6 +1166,15 @@ const loadCourse = async () => {
         const merged = [...(finalQuiz.questoes || []), ...createdQuestions];
         setFinalQuiz({ ...finalQuiz, questoes: sortQuestions(merged) });
       }
+      if (surpriseQuiz) {
+        setSurpriseQuizzes((prev) =>
+          prev.map((quiz: any) =>
+            String(quiz.id) === String(quizId)
+              ? { ...quiz, questoes: sortQuestions([...(quiz.questoes || []), ...createdQuestions]) }
+              : quiz
+          )
+        );
+      }
 
       closeExtractorDraft(quizId);
       toast.success(createdQuestions.length + ' questoes salvas.');
@@ -1048,6 +1184,8 @@ const loadCourse = async () => {
   };
   const getQuizQuestions = (quizId: string) => {
     if (finalQuiz?.id === quizId) return sortQuestions(finalQuiz.questoes || []);
+    const surpriseQuiz = getSurpriseQuizById(quizId);
+    if (surpriseQuiz) return sortQuestions(surpriseQuiz.questoes || []);
     const moduleQuiz = Object.values(moduleQuizzes).find((quiz: any) => quiz?.id === quizId) as any;
     return sortQuestions(moduleQuiz?.questoes || []);
   };
@@ -1065,7 +1203,12 @@ const loadCourse = async () => {
 
     try {
       const isEditingQuestion = Boolean(draft?.id);
+      const surpriseQuiz = getSurpriseQuizById(quizId);
       const currentQuestions = getQuizQuestions(quizId);
+      if (surpriseQuiz && !isEditingQuestion && currentQuestions.length >= 4) {
+        toast.error('Questionario surpresa permite apenas 4 questoes.');
+        return;
+      }
       const nextOrder = Math.max(0, ...currentQuestions.map((item: any) => Number(item.ordem || 0))) + 1;
       let data: any = null;
       if (isEditingQuestion) {
@@ -1131,6 +1274,18 @@ const loadCourse = async () => {
           questoes: sortQuestions(updatedQuestions),
         });
       }
+      if (surpriseQuiz) {
+        setSurpriseQuizzes((prev) =>
+          prev.map((quiz: any) => {
+            if (String(quiz.id) !== String(quizId)) return quiz;
+            const existingQuestions = quiz.questoes || [];
+            const updatedQuestions = existingQuestions.some((item: any) => item.id === data.id)
+              ? existingQuestions.map((item: any) => (item.id === data.id ? data : item))
+              : [...existingQuestions, data];
+            return { ...quiz, questoes: sortQuestions(updatedQuestions) };
+          })
+        );
+      }
 
       cancelQuestionDraft(quizId);
       toast.success(isEditingQuestion ? 'Questão atualizada.' : 'Questão adicionada.');
@@ -1172,6 +1327,11 @@ const loadCourse = async () => {
       if (finalQuiz?.id === quizId) {
         setFinalQuiz({ ...finalQuiz, questoes: ordered });
       }
+      if (getSurpriseQuizById(quizId)) {
+        setSurpriseQuizzes((prev) =>
+          prev.map((quiz: any) => (String(quiz.id) === String(quizId) ? { ...quiz, questoes: ordered } : quiz))
+        );
+      }
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao reordenar questões.');
     }
@@ -1205,6 +1365,15 @@ const loadCourse = async () => {
           questoes: (finalQuiz.questoes || []).filter((item: any) => item.id !== questionId),
         });
       }
+      if (getSurpriseQuizById(quizId)) {
+        setSurpriseQuizzes((prev) =>
+          prev.map((quiz: any) =>
+            String(quiz.id) === String(quizId)
+              ? { ...quiz, questoes: (quiz.questoes || []).filter((item: any) => item.id !== questionId) }
+              : quiz
+          )
+        );
+      }
 
       toast.success('Questão excluída.');
     } catch (error: any) {
@@ -1227,6 +1396,8 @@ const loadCourse = async () => {
       },
     }));
   };
+
+  const surpriseLessonOptions = getAllLessons();
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
@@ -1477,7 +1648,7 @@ const loadCourse = async () => {
                                 onClick={() => openExtractorDraft(moduleQuizzes[String(module.id)].id)}
                                 className="btn-outline text-xs"
                               >
-                                Gerar questionário com extrator de texto
+                                Gerar questionario com extrator de texto
                               </button>
                             </div>
                           ) : (
@@ -1576,7 +1747,7 @@ const loadCourse = async () => {
                                 <button
                                   type="button"
                                   className="btn-outline text-xs"
-                                  onClick={() => extractQuestionsFromRaw(moduleQuizzes[String(module.id)].id)}
+                                  onClick={() => extractQuestionsFromRaw(moduleQuizzes[String(module.id)].id, 10)}
                                 >
                                   Extrair questoes
                                 </button>
@@ -1839,6 +2010,152 @@ const loadCourse = async () => {
               )}
             </div>
             <div className="card">
+              <div className="flex flex-col gap-3 mb-4">
+                <h2 className="text-xl font-semibold">Questionario surpresa</h2>
+                <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                  Voce pode criar apenas 2 questionarios surpresa (4 questoes cada). Use o questionario do modulo para avaliacoes mais profundas.
+                </p>
+                <div className="grid md:grid-cols-4 gap-2">
+                  <select
+                    className="input-field"
+                    value={surpriseDraft.targetType}
+                    onChange={(event) => setSurpriseDraft((prev) => ({ ...prev, targetType: event.target.value as 'aula' | 'modulo' }))}
+                  >
+                    <option value="aula">Apos uma aula</option>
+                    <option value="modulo">Apos um modulo</option>
+                  </select>
+                  {surpriseDraft.targetType === 'modulo' ? (
+                    <select
+                      className="input-field md:col-span-2"
+                      value={surpriseDraft.moduleId}
+                      onChange={(event) => setSurpriseDraft((prev) => ({ ...prev, moduleId: event.target.value }))}
+                    >
+                      <option value="">Selecione o modulo</option>
+                      {modules.map((module) => (
+                        <option key={module.id} value={String(module.id)}>{module.title}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <select
+                      className="input-field md:col-span-2"
+                      value={surpriseDraft.lessonId}
+                      onChange={(event) => setSurpriseDraft((prev) => ({ ...prev, lessonId: event.target.value }))}
+                    >
+                      <option value="">Selecione a aula</option>
+                      {surpriseLessonOptions.map((lesson) => (
+                        <option key={lesson.id} value={lesson.id}>
+                          {lesson.moduleTitle} - {lesson.title}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  <button
+                    type="button"
+                    className="btn-outline text-xs"
+                    onClick={createSurpriseQuiz}
+                    disabled={surpriseQuizzes.length >= 2}
+                  >
+                    Criar questionario surpresa
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {surpriseQuizzes.length === 0 ? (
+                  <p className="text-sm text-[hsl(var(--muted-foreground))]">Nenhum questionario surpresa criado.</p>
+                ) : (
+                  surpriseQuizzes.map((quiz: any) => (
+                    <div key={quiz.id} className="rounded-[12px] border border-[hsl(var(--border))] p-4 bg-[hsl(var(--card))]">
+                      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                        <div>
+                          <p className="font-semibold">{quiz.titulo}</p>
+                          <p className="text-xs text-[hsl(var(--muted-foreground))]">4 questoes obrigatorias</p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <button type="button" className="btn-outline text-xs" onClick={() => openQuestionDraft(quiz.id)}>Adicionar questao</button>
+                          <button type="button" className="btn-outline text-xs" onClick={() => openExtractorDraft(quiz.id)}>Usar extrator (4 questoes)</button>
+                          <button type="button" className="btn-outline text-xs text-red-600" onClick={() => deleteSurpriseQuiz(quiz.id)}>Excluir</button>
+                        </div>
+                      </div>
+
+                      {questionDrafts[quiz.id] && (
+                        <div className="border border-[hsl(var(--border))] rounded-[12px] p-4 mb-4">
+                          <textarea
+                            value={questionDrafts[quiz.id].enunciado || ''}
+                            onChange={(event) => updateQuestionDraft(quiz.id, 'enunciado', event.target.value)}
+                            className="input-field mb-2"
+                            rows={2}
+                            placeholder="Enunciado"
+                          />
+                          {(['a', 'b', 'c', 'd'] as const).map((key) => (
+                            <input
+                              key={key}
+                              className="input-field mb-2"
+                              value={questionDrafts[quiz.id]['alternativa_' + key] || ''}
+                              onChange={(event) => updateQuestionDraft(quiz.id, 'alternativa_' + key, event.target.value)}
+                              placeholder={'Alternativa ' + key.toUpperCase()}
+                            />
+                          ))}
+                          <div className="flex flex-wrap gap-2">
+                            <select
+                              className="input-field text-sm max-w-[160px]"
+                              value={questionDrafts[quiz.id].correta || 'a'}
+                              onChange={(event) => updateQuestionDraft(quiz.id, 'correta', event.target.value)}
+                            >
+                              <option value="a">Correta: A</option>
+                              <option value="b">Correta: B</option>
+                              <option value="c">Correta: C</option>
+                              <option value="d">Correta: D</option>
+                            </select>
+                            <button type="button" className="btn-accent text-xs" onClick={() => saveQuestion(quiz.id, questionDrafts[quiz.id])}>
+                              {questionDrafts[quiz.id]?.id ? 'Atualizar questao' : 'Salvar questao'}
+                            </button>
+                            <button type="button" className="btn-outline text-xs" onClick={() => cancelQuestionDraft(quiz.id)}>Cancelar</button>
+                          </div>
+                        </div>
+                      )}
+
+                      {extractorDrafts[quiz.id] && (
+                        <div className="border border-[hsl(var(--border))] rounded-[12px] p-4 mb-4">
+                          <p className="text-xs text-[hsl(var(--muted-foreground))] mb-2">Cole 4 questoes no formato padrao.</p>
+                          <textarea
+                            value={extractorDrafts[quiz.id].raw || ''}
+                            onChange={(event) => updateExtractorRaw(quiz.id, event.target.value)}
+                            className="input-field mb-2"
+                            rows={8}
+                          />
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            <button type="button" className="btn-outline text-xs" onClick={() => extractQuestionsFromRaw(quiz.id, 4)}>Extrair questoes</button>
+                            <button type="button" className="btn-outline text-xs" onClick={() => saveExtractedQuestions(quiz.id)}>Salvar extraidas</button>
+                            <button type="button" className="btn-outline text-xs" onClick={() => closeExtractorDraft(quiz.id)}>Fechar</button>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="space-y-2">
+                        {sortQuestions(quiz.questoes || []).map((question: any, index: number) => (
+                          <div key={question.id} className="rounded-[10px] border border-[hsl(var(--border))] p-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="font-medium">{index + 1}. {question.enunciado}</p>
+                              <div className="flex gap-1">
+                                <button type="button" className="btn-outline text-xs" onClick={() => startEditQuestion(quiz.id, question)}>Editar</button>
+                                <button type="button" className="btn-outline text-xs text-red-600" onClick={() => deleteQuestion(quiz.id, question.id)}>Apagar</button>
+                              </div>
+                            </div>
+                            <p className="text-xs text-[hsl(var(--muted-foreground))]">Correta: {String(question.correta || '').toUpperCase()}</p>
+                          </div>
+                        ))}
+                        {(quiz.questoes || []).length < 4 && (
+                          <p className="text-xs text-[hsl(var(--muted-foreground))]">Faltam {4 - (quiz.questoes || []).length} questao(oes) para completar este questionario surpresa.</p>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="card">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">Prova final</h2>
                 {finalQuiz ? (
@@ -1855,7 +2172,7 @@ const loadCourse = async () => {
                       onClick={() => openExtractorDraft(finalQuiz.id)}
                       className="btn-outline text-xs"
                     >
-                      Gerar questionário com extrator de texto
+                      Gerar prova final com extrator de texto
                     </button>
                   </div>
                 ) : (
@@ -1935,7 +2252,7 @@ const loadCourse = async () => {
                     <button
                       type="button"
                       className="btn-outline text-xs"
-                      onClick={() => extractQuestionsFromRaw(finalQuiz.id)}
+                      onClick={() => extractQuestionsFromRaw(finalQuiz.id, 10)}
                     >
                       Extrair questoes
                     </button>
