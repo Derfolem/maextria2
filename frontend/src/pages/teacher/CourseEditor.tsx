@@ -827,6 +827,23 @@ const loadCourse = async () => {
     }
   };
 
+  const deleteFinalQuiz = async (quizId: string) => {
+    if (!confirm('Cancelar a prova final?')) return;
+    try {
+      const { error } = await supabase
+        .from('questionarios')
+        .delete()
+        .eq('id', quizId);
+      if (error) throw error;
+      setFinalQuiz(null);
+      cancelQuestionDraft(quizId);
+      closeExtractorDraft(quizId);
+      toast.success('Prova final cancelada.');
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao cancelar prova final.');
+    }
+  };
+
   const getAllLessons = () =>
     modules.flatMap((module: Module) =>
       (module.lessons || []).map((lesson: Lesson) => ({
@@ -2208,6 +2225,15 @@ const loadCourse = async () => {
                     >
                       Gerar prova final com extrator de texto
                     </button>
+                    {(finalQuiz.questoes || []).length === 0 && (
+                      <button
+                        type="button"
+                        onClick={() => deleteFinalQuiz(finalQuiz.id)}
+                        className="btn-outline text-xs text-red-600"
+                      >
+                        Cancelar prova final
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <button
