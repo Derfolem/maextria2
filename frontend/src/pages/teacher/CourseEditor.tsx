@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Module, Lesson } from '../../types';
 import toast from 'react-hot-toast';
-import { FaPlus, FaTrash, FaSave, FaRobot } from 'react-icons/fa';
+import { FaPlus, FaTrash, FaSave, FaRobot, FaEdit, FaTimes } from 'react-icons/fa';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
 import RichTextEditor from '../../components/RichTextEditor';
@@ -776,7 +776,44 @@ const loadCourse = async () => {
     }
   };
 
-  const addQuestion = async (quizId: string, draft: any) => {
+  const openQuestionDraft = (quizId: string) => {
+    setQuestionDrafts((prev) => ({
+      ...prev,
+      [quizId]: {
+        enunciado: '',
+        alternativa_a: '',
+        alternativa_b: '',
+        alternativa_c: '',
+        alternativa_d: '',
+        correta: 'a',
+      },
+    }));
+  };
+
+  const startEditQuestion = (quizId: string, question: any) => {
+    setQuestionDrafts((prev) => ({
+      ...prev,
+      [quizId]: {
+        id: question.id,
+        enunciado: question.enunciado || '',
+        alternativa_a: question.alternativa_a || '',
+        alternativa_b: question.alternativa_b || '',
+        alternativa_c: question.alternativa_c || '',
+        alternativa_d: question.alternativa_d || '',
+        correta: question.correta || 'a',
+      },
+    }));
+  };
+
+  const cancelQuestionDraft = (quizId: string) => {
+    setQuestionDrafts((prev) => {
+      const next = { ...prev };
+      delete next[quizId];
+      return next;
+    });
+  };
+
+  const saveQuestion = async (quizId: string, draft: any) => {
     const { enunciado, alternativa_a, alternativa_b, alternativa_c, alternativa_d, correta } = draft;
     if (!enunciado || !alternativa_a || !alternativa_b || !alternativa_c || !alternativa_d) {
       toast.error('Preencha todas as alternativas.');
@@ -788,19 +825,84 @@ const loadCourse = async () => {
     }
 
     try {
-      const { data, error } = await supabase
+      const isEditingQuestion = Boolean(draft?.id);
+      let data: any = null;
+      if (isEditingQuestion) {
+        const response = await supabase
+          .from('questoes')
+          .update({
+            enunciado,
+            alternativa_a,
+            alternativa_b,
+            alternativa_c,
+            alternativa_d,
+            correta: String(correta).toLowerCase(),
+          })
+          .eq('id', draft.id)
+          .select('*')
+          .single();
+        if (response.error) throw response.error;
+        data = response.data;
+      } else {
+        const response = await supabase
+          .from('questoes')
+          .insert({
+            questionario_id: quizId,
+            enunciado,
+            alternativa_a,
+            alternativa_b,
+            alternativa_c,
+            alternativa_d,
+            correta: String(correta).toLowerCase(),
+          })
+          .select('*')
+          .single();
+        if (response.error) throw response.error;
+        data = response.data;
+      }
+
+      setModuleQuizzes((prev) => {
+        const next = { ...prev };
+        Object.keys(next).forEach((key) => {
+          if (next[key]?.id === quizId) {
+            const existingQuestions = next[key].questoes || [];
+            const updatedQuestions = existingQuestions.some((item: any) => item.id === data.id)
+              ? existingQuestions.map((item: any) => (item.id === data.id ? data : item))
+              : [...existingQuestions, data];
+            next[key] = {
+              ...next[key],
+              questoes: updatedQuestions,
+            };
+          }
+        });
+        return next;
+      });
+
+      if (finalQuiz?.id === quizId) {
+        const existingQuestions = finalQuiz.questoes || [];
+        const updatedQuestions = existingQuestions.some((item: any) => item.id === data.id)
+          ? existingQuestions.map((item: any) => (item.id === data.id ? data : item))
+          : [...existingQuestions, data];
+        setFinalQuiz({
+          ...finalQuiz,
+          questoes: updatedQuestions,
+        });
+      }
+
+      cancelQuestionDraft(quizId);
+      toast.success(isEditingQuestion ? 'Questão atualizada.' : 'Questão adicionada.');
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao salvar questão.');
+    }
+  };
+
+  const deleteQuestion = async (quizId: string, questionId: string) => {
+    if (!confirm('Cancelar e excluir esta questão?')) return;
+    try {
+      const { error } = await supabase
         .from('questoes')
-        .insert({
-          questionario_id: quizId,
-          enunciado,
-          alternativa_a,
-          alternativa_b,
-          alternativa_c,
-          alternativa_d,
-          correta: String(correta).toLowerCase(),
-        })
-        .select('*')
-        .single();
+        .delete()
+        .eq('id', questionId);
       if (error) throw error;
 
       setModuleQuizzes((prev) => {
@@ -809,7 +911,7 @@ const loadCourse = async () => {
           if (next[key]?.id === quizId) {
             next[key] = {
               ...next[key],
-              questoes: [...(next[key].questoes || []), data],
+              questoes: (next[key].questoes || []).filter((item: any) => item.id !== questionId),
             };
           }
         });
@@ -819,18 +921,13 @@ const loadCourse = async () => {
       if (finalQuiz?.id === quizId) {
         setFinalQuiz({
           ...finalQuiz,
-          questoes: [...(finalQuiz.questoes || []), data],
+          questoes: (finalQuiz.questoes || []).filter((item: any) => item.id !== questionId),
         });
       }
 
-      setQuestionDrafts((prev) => {
-        const next = { ...prev };
-        delete next[quizId];
-        return next;
-      });
-      toast.success('Questão adicionada.');
+      toast.success('Questão excluída.');
     } catch (error: any) {
-      toast.error(error?.message || 'Erro ao adicionar questão.');
+      toast.error(error?.message || 'Erro ao excluir questão.');
     }
   };
 
@@ -1089,7 +1186,7 @@ const loadCourse = async () => {
                               <span>Questionário do módulo configurado.</span>
                               <button
                                 type="button"
-                                onClick={() => updateQuestionDraft(moduleQuizzes[String(module.id)].id, 'enunciado', '')}
+                                onClick={() => openQuestionDraft(moduleQuizzes[String(module.id)].id)}
                                 className="btn-outline text-xs"
                               >
                                 Adicionar questão
@@ -1151,18 +1248,75 @@ const loadCourse = async () => {
                                 <button
                                   type="button"
                                   onClick={() =>
-                                    addQuestion(
+                                    saveQuestion(
                                       moduleQuizzes[String(module.id)].id,
                                       questionDrafts[moduleQuizzes[String(module.id)].id]
                                     )
                                   }
                                   className="btn-accent text-xs"
                                 >
-                                  Salvar questão
+                                  {questionDrafts[moduleQuizzes[String(module.id)].id]?.id ? 'Atualizar questão' : 'Salvar questão'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => cancelQuestionDraft(moduleQuizzes[String(module.id)].id)}
+                                  className="btn-outline text-xs"
+                                >
+                                  Cancelar
                                 </button>
                               </div>
                             </div>
                           )}
+
+                        {moduleQuizzes[String(module.id)] && (
+                          <div className="mb-4 space-y-3">
+                            {(moduleQuizzes[String(module.id)].questoes || []).length === 0 ? (
+                              <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                                Nenhuma questão criada ainda.
+                              </p>
+                            ) : (
+                              (moduleQuizzes[String(module.id)].questoes || []).map((question: any, index: number) => (
+                                <div
+                                  key={question.id}
+                                  className="rounded-[12px] border border-[hsl(var(--border))] p-3 bg-[hsl(var(--card))]"
+                                >
+                                  <div className="flex items-start justify-between gap-3">
+                                    <p className="font-medium">
+                                      {index + 1}. {question.enunciado}
+                                    </p>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      <button
+                                        type="button"
+                                        className="btn-outline text-xs flex items-center gap-1"
+                                        onClick={() => startEditQuestion(moduleQuizzes[String(module.id)].id, question)}
+                                      >
+                                        <FaEdit />
+                                        <span>Editar</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="btn-outline text-xs flex items-center gap-1 text-red-600"
+                                        onClick={() => deleteQuestion(moduleQuizzes[String(module.id)].id, question.id)}
+                                      >
+                                        <FaTimes />
+                                        <span>Cancelar</span>
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <div className="mt-2 text-sm text-[hsl(var(--muted-foreground))] space-y-1">
+                                    <p>A) {question.alternativa_a}</p>
+                                    <p>B) {question.alternativa_b}</p>
+                                    <p>C) {question.alternativa_c}</p>
+                                    <p>D) {question.alternativa_d}</p>
+                                    <p className="font-medium text-[hsl(var(--primary))]">
+                                      Correta: {String(question.correta || '').toUpperCase()}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        )}
 
                         {module.lessons?.map((lesson) => (
                           <div
@@ -1261,7 +1415,7 @@ const loadCourse = async () => {
                 {finalQuiz ? (
                   <button
                     type="button"
-                    onClick={() => updateQuestionDraft(finalQuiz.id, 'enunciado', '')}
+                    onClick={() => openQuestionDraft(finalQuiz.id)}
                     className="btn-outline text-xs"
                   >
                     Adicionar questão
@@ -1311,12 +1465,68 @@ const loadCourse = async () => {
                     </select>
                     <button
                       type="button"
-                      onClick={() => addQuestion(finalQuiz.id, questionDrafts[finalQuiz.id])}
+                      onClick={() => saveQuestion(finalQuiz.id, questionDrafts[finalQuiz.id])}
                       className="btn-accent text-xs"
                     >
-                      Salvar questão
+                      {questionDrafts[finalQuiz.id]?.id ? 'Atualizar questão' : 'Salvar questão'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => cancelQuestionDraft(finalQuiz.id)}
+                      className="btn-outline text-xs"
+                    >
+                      Cancelar
                     </button>
                   </div>
+                </div>
+              )}
+              {finalQuiz && (
+                <div className="space-y-3">
+                  {(finalQuiz.questoes || []).length === 0 ? (
+                    <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                      Nenhuma questão criada ainda.
+                    </p>
+                  ) : (
+                    (finalQuiz.questoes || []).map((question: any, index: number) => (
+                      <div
+                        key={question.id}
+                        className="rounded-[12px] border border-[hsl(var(--border))] p-3 bg-[hsl(var(--card))]"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <p className="font-medium">
+                            {index + 1}. {question.enunciado}
+                          </p>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              type="button"
+                              className="btn-outline text-xs flex items-center gap-1"
+                              onClick={() => startEditQuestion(finalQuiz.id, question)}
+                            >
+                              <FaEdit />
+                              <span>Editar</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-outline text-xs flex items-center gap-1 text-red-600"
+                              onClick={() => deleteQuestion(finalQuiz.id, question.id)}
+                            >
+                              <FaTimes />
+                              <span>Cancelar</span>
+                            </button>
+                          </div>
+                        </div>
+                        <div className="mt-2 text-sm text-[hsl(var(--muted-foreground))] space-y-1">
+                          <p>A) {question.alternativa_a}</p>
+                          <p>B) {question.alternativa_b}</p>
+                          <p>C) {question.alternativa_c}</p>
+                          <p>D) {question.alternativa_d}</p>
+                          <p className="font-medium text-[hsl(var(--primary))]">
+                            Correta: {String(question.correta || '').toUpperCase()}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               )}
               <p className="text-sm text-[hsl(var(--muted-foreground))]">
