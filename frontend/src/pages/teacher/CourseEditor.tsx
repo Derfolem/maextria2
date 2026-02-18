@@ -2074,7 +2074,11 @@ const loadCourse = async () => {
                         <div className="flex flex-wrap gap-2">
                           <button type="button" className="btn-outline text-xs" onClick={() => openQuestionDraft(quiz.id)}>Adicionar questao</button>
                           <button type="button" className="btn-outline text-xs" onClick={() => openExtractorDraft(quiz.id)}>Usar extrator (4 questoes)</button>
-                          <button type="button" className="btn-outline text-xs text-red-600" onClick={() => deleteSurpriseQuiz(quiz.id)}>Excluir</button>
+                          {(quiz.questoes || []).length === 0 ? (
+                            <button type="button" className="btn-outline text-xs text-red-600" onClick={() => deleteSurpriseQuiz(quiz.id)}>Cancelar questionario</button>
+                          ) : (
+                            <button type="button" className="btn-outline text-xs text-red-600" onClick={() => deleteSurpriseQuiz(quiz.id)}>Excluir</button>
+                          )}
                         </div>
                       </div>
 
