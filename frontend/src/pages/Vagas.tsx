@@ -3,8 +3,6 @@ import { Link } from 'react-router-dom';
 import { FaArrowRight, FaSearch, FaMapMarkerAlt, FaBriefcase, FaBuilding, FaExternalLinkAlt } from 'react-icons/fa';
 import { SEO } from '../components/SEO';
 
-const APP_ID = import.meta.env.VITE_ADZUNA_APP_ID as string;
-const APP_KEY = import.meta.env.VITE_ADZUNA_APP_KEY as string;
 const RESULTS_PER_PAGE = 10;
 
 // Termos mais buscados para carga inicial
@@ -97,11 +95,10 @@ export default function Vagas() {
 
     try {
       const params = new URLSearchParams({
-        app_id: APP_ID,
-        app_key: APP_KEY,
         results_per_page: String(RESULTS_PER_PAGE),
         what,
         sort_by: 'date',
+        page: String(pageNum),
       });
 
       // Só envia "where" se o usuário digitou uma cidade específica
@@ -109,7 +106,7 @@ export default function Vagas() {
         params.set('where', loc.trim());
       }
 
-      const url = `https://api.adzuna.com/v1/api/jobs/br/search/${pageNum}?${params.toString()}`;
+      const url = `/api/vagas?${params.toString()}`;
 
       const res = await fetch(url);
 
