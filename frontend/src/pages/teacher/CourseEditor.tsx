@@ -785,6 +785,27 @@ const loadCourse = async () => {
     }
   };
 
+  const deleteModuleQuiz = async (moduleId: string, quizId: string) => {
+    if (!confirm('Cancelar este questionario do modulo?')) return;
+    try {
+      const { error } = await supabase
+        .from('questionarios')
+        .delete()
+        .eq('id', quizId);
+      if (error) throw error;
+      setModuleQuizzes((prev) => {
+        const next = { ...prev };
+        delete next[moduleId];
+        return next;
+      });
+      cancelQuestionDraft(quizId);
+      closeExtractorDraft(quizId);
+      toast.success('Questionario do modulo cancelado.');
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao cancelar questionario do modulo.');
+    }
+  };
+
   const ensureFinalQuiz = async () => {
     if (!id) return;
     if (finalQuiz) return;
@@ -1650,6 +1671,15 @@ const loadCourse = async () => {
                               >
                                 Gerar questionario com extrator de texto
                               </button>
+                              {(moduleQuizzes[String(module.id)]?.questoes || []).length === 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => deleteModuleQuiz(String(module.id), moduleQuizzes[String(module.id)].id)}
+                                  className="btn-outline text-xs text-red-600"
+                                >
+                                  Cancelar questionario do modulo
+                                </button>
+                              )}
                             </div>
                           ) : (
                             <button
