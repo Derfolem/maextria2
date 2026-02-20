@@ -854,7 +854,7 @@ export default function Courses() {
                                 )}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="font-medium text-sm truncate group-hover:text-[hsl(var(--primary))] transition">
+                                <p className="font-medium text-sm leading-snug group-hover:text-[hsl(var(--primary))] transition">
                                   {course.title}
                                 </p>
                                 {course.duration_hours && (
