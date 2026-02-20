@@ -836,7 +836,7 @@ export default function Courses() {
                             <Link
                               key={tc.id}
                               to={`/courses/${course.id}`}
-                              className="group flex gap-3 p-3 rounded-lg bg-[hsl(var(--muted))] hover:bg-[hsl(var(--border))] transition"
+                              className="group flex gap-3 p-3 rounded-lg bg-[hsl(var(--muted))] hover:bg-[hsl(var(--border))] transition min-w-0"
                             >
                               <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
                                 {course.thumbnail ? (
