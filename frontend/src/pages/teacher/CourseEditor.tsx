@@ -2177,23 +2177,121 @@ const loadCourse = async () => {
                           />
                           <div className="flex flex-wrap gap-2 mb-2">
                             <button type="button" className="btn-outline text-xs" onClick={() => extractQuestionsFromRaw(quiz.id, 4)}>Extrair questoes</button>
-                            <button type="button" className="btn-outline text-xs" onClick={() => saveExtractedQuestions(quiz.id)}>Salvar extraidas</button>
                             <button type="button" className="btn-outline text-xs" onClick={() => closeExtractorDraft(quiz.id)}>Fechar</button>
                           </div>
+                          {(extractorDrafts[quiz.id].questions || []).length > 0 && (
+                            <div className="space-y-3">
+                              {extractorDrafts[quiz.id].questions.map((question: any, index: number) => (
+                                <div key={index} className="rounded-[10px] border border-[hsl(var(--border))] p-3">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <p className="text-sm font-medium">Questao {index + 1}</p>
+                                    <button
+                                      type="button"
+                                      className="btn-outline text-xs text-red-600"
+                                      onClick={() => removeExtractedQuestion(quiz.id, index)}
+                                    >
+                                      Apagar
+                                    </button>
+                                  </div>
+                                  <textarea
+                                    className="input-field mb-2"
+                                    rows={2}
+                                    value={question.enunciado || ''}
+                                    onChange={(event) => updateExtractedQuestion(quiz.id, index, 'enunciado', event.target.value)}
+                                    placeholder="Enunciado"
+                                  />
+                                  {(['a', 'b', 'c', 'd'] as const).map((key) => (
+                                    <input
+                                      key={key}
+                                      type="text"
+                                      className="input-field mb-2"
+                                      value={question['alternativa_' + key] || ''}
+                                      onChange={(event) => updateExtractedQuestion(quiz.id, index, 'alternativa_' + key, event.target.value)}
+                                      placeholder={'Alternativa ' + key.toUpperCase()}
+                                    />
+                                  ))}
+                                  <select
+                                    className="input-field text-sm max-w-[160px]"
+                                    value={question.correta || 'a'}
+                                    onChange={(event) => updateExtractedQuestion(quiz.id, index, 'correta', event.target.value)}
+                                  >
+                                    <option value="a">Correta: A</option>
+                                    <option value="b">Correta: B</option>
+                                    <option value="c">Correta: C</option>
+                                    <option value="d">Correta: D</option>
+                                  </select>
+                                </div>
+                              ))}
+                              <div className="flex flex-wrap items-center gap-2">
+                                <button
+                                  type="button"
+                                  className="btn-accent text-xs"
+                                  onClick={() => saveExtractedQuestions(quiz.id)}
+                                >
+                                  Salvar questoes extraidas
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn-outline text-xs"
+                                  onClick={() => closeExtractorDraft(quiz.id)}
+                                >
+                                  Cancelar
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
 
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         {sortQuestions(quiz.questoes || []).map((question: any, index: number) => (
-                          <div key={question.id} className="rounded-[10px] border border-[hsl(var(--border))] p-3">
-                            <div className="flex items-start justify-between gap-2">
-                              <p className="font-medium">{index + 1}. {question.enunciado}</p>
-                              <div className="flex gap-1">
-                                <button type="button" className="btn-outline text-xs" onClick={() => startEditQuestion(quiz.id, question)}>Editar</button>
-                                <button type="button" className="btn-outline text-xs text-red-600" onClick={() => deleteQuestion(quiz.id, question.id)}>Apagar</button>
+                          <div key={question.id} className="rounded-[12px] border border-[hsl(var(--border))] p-3 bg-[hsl(var(--card))]">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                              <p className="font-medium min-w-0 break-words">{index + 1}. {question.enunciado}</p>
+                              <div className="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:flex-nowrap sm:justify-end sm:items-center shrink-0">
+                                <button
+                                  type="button"
+                                  className="btn-outline text-xs w-full sm:w-auto"
+                                  onClick={() => reorderQuestions(quiz.id, question.id, 'up')}
+                                  disabled={index === 0}
+                                >
+                                  Subir
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn-outline text-xs w-full sm:w-auto"
+                                  onClick={() => reorderQuestions(quiz.id, question.id, 'down')}
+                                  disabled={index === sortQuestions(quiz.questoes || []).length - 1}
+                                >
+                                  Descer
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn-outline text-xs flex items-center justify-center gap-1 w-full sm:w-auto"
+                                  onClick={() => startEditQuestion(quiz.id, question)}
+                                >
+                                  <FaEdit />
+                                  <span>Editar</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn-outline text-xs flex items-center justify-center gap-1 w-full sm:w-auto text-red-600"
+                                  onClick={() => deleteQuestion(quiz.id, question.id)}
+                                >
+                                  <FaTimes />
+                                  <span>Apagar</span>
+                                </button>
                               </div>
                             </div>
-                            <p className="text-xs text-[hsl(var(--muted-foreground))]">Correta: {String(question.correta || '').toUpperCase()}</p>
+                            <div className="mt-2 text-sm text-[hsl(var(--muted-foreground))] space-y-1">
+                              <p>A) {question.alternativa_a}</p>
+                              <p>B) {question.alternativa_b}</p>
+                              <p>C) {question.alternativa_c}</p>
+                              <p>D) {question.alternativa_d}</p>
+                              <p className="font-medium text-[hsl(var(--primary))]">
+                                Correta: {String(question.correta || '').toUpperCase()}
+                              </p>
+                            </div>
                           </div>
                         ))}
                         {(quiz.questoes || []).length < 4 && (
