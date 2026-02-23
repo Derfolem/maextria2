@@ -21,6 +21,12 @@ export default function TeacherMyCourses() {
   const [cursosTrilhaMap, setCursosTrilhaMap] = useState<Record<string, string[]>>({});
   const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
+  const getCourseTimestamp = (course: Course, field: 'created_at' | 'updated_at') => {
+    const primary = new Date(course[field] as any).getTime();
+    if (Number.isFinite(primary)) return primary;
+    const fallback = new Date(course.created_at as any).getTime();
+    return Number.isFinite(fallback) ? fallback : 0;
+  };
 
   const filteredAndSortedCourses = useMemo(() => {
     let result = [...courses];
@@ -45,17 +51,17 @@ export default function TeacherMyCourses() {
     // Aplicar ordenacao
     switch (filter) {
       case 'recentes':
-        result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        result.sort((a, b) => getCourseTimestamp(b, 'created_at') - getCourseTimestamp(a, 'created_at'));
         break;
       case 'editados':
       case 'modificados':
-        result.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+        result.sort((a, b) => getCourseTimestamp(b, 'updated_at') - getCourseTimestamp(a, 'updated_at'));
         break;
       case 'az':
         result.sort((a, b) => a.title.localeCompare(b.title, 'pt-BR'));
         break;
       default:
-        result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        result.sort((a, b) => getCourseTimestamp(b, 'created_at') - getCourseTimestamp(a, 'created_at'));
     }
 
     return result;
