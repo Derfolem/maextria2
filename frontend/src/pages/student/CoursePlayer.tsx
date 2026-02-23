@@ -4,7 +4,7 @@ import { Course, Lesson, Progress } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
 import toast from 'react-hot-toast';
-import { FaCheckCircle, FaCircle, FaDownload, FaArrowLeft, FaCertificate, FaPlay, FaStar, FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { FaCheckCircle, FaCircle, FaDownload, FaArrowLeft, FaCertificate, FaPlay, FaStar, FaChevronDown, FaChevronUp, FaLock } from 'react-icons/fa';
 import { normalizeCourse } from '../../lib/normalizeCourse';
 import DOMPurify from 'dompurify';
 import StarRating from '../../components/StarRating';
@@ -74,6 +74,7 @@ export default function CoursePlayer() {
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [pendingRating, setPendingRating] = useState<{ lessonId: string | number; action: 'complete' | 'next' } | null>(null);
   const [expandedModules, setExpandedModules] = useState<string[]>([]);
+  const [unlockedModuleIds, setUnlockedModuleIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadCourse();
@@ -292,6 +293,19 @@ export default function CoursePlayer() {
         }
       }
 
+      // Carregar módulos desbloqueados persistidos (apenas para alunos)
+      if (!canPreview && user) {
+        const moduleIds = mappedModules.map((m: any) => String(m.id));
+        if (moduleIds.length > 0) {
+          const { data: unlockedData } = await supabase
+            .from('modulos_desbloqueados')
+            .select('modulo_id')
+            .eq('usuario_id', user.id)
+            .in('modulo_id', moduleIds);
+          setUnlockedModuleIds(new Set((unlockedData || []).map((r: any) => String(r.modulo_id))));
+        }
+      }
+
       if (normalizedCourse.modules?.[0]?.lessons?.[0]) {
         setSelectedLesson(normalizedCourse.modules[0].lessons[0]);
       }
@@ -329,6 +343,31 @@ export default function CoursePlayer() {
 
   const isLessonCompleted = (lessonId: string | number) => {
     return progress.some((p) => String(p.lesson_id) === String(lessonId) && p.completed);
+  };
+
+  const isModuleUnlocked = (moduleId: string | number): boolean => {
+    if (canPreview || !course) return true;
+    const sorted = [...(course.modules || [])].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+    if (sorted[0] && String(sorted[0].id) === String(moduleId)) return true;
+    return unlockedModuleIds.has(String(moduleId));
+  };
+
+  const checkAndUnlockNextModule = async (completedModuleId: string | number) => {
+    if (!user || canPreview || !course) return;
+    const sorted = [...(course.modules || [])].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+    const idx = sorted.findIndex((m) => String(m.id) === String(completedModuleId));
+    if (idx < 0 || idx >= sorted.length - 1) return;
+    const nextId = String(sorted[idx + 1].id);
+    if (unlockedModuleIds.has(nextId)) return;
+    try {
+      await supabase
+        .from('modulos_desbloqueados')
+        .upsert({ usuario_id: user.id, modulo_id: nextId }, { onConflict: 'usuario_id,modulo_id' });
+      setUnlockedModuleIds((prev) => new Set([...prev, nextId]));
+      toast.success('Próximo módulo desbloqueado!');
+    } catch (error) {
+      console.error('Erro ao desbloquear modulo:', error);
+    }
   };
 
   const markLessonComplete = async (lessonId: string | number, rating?: number) => {
@@ -382,6 +421,21 @@ export default function CoursePlayer() {
       });
       toast.success('Aula avaliada e concluída!');
       trackLessonComplete(String(course?.id), String(lessonId), progressPercentage);
+
+      // Verificar se o módulo ficou completo para desbloquear o próximo
+      const completedModule = course?.modules?.find((m) =>
+        m.lessons?.some((l) => String(l.id) === String(lessonId))
+      );
+      if (completedModule) {
+        const allLessonsDone = completedModule.lessons?.every((l) =>
+          String(l.id) === String(lessonId) || isLessonCompleted(l.id)
+        ) ?? false;
+        const moduleQuiz = moduleQuizzes[String(completedModule.id)];
+        const quizPassed = !moduleQuiz || quizResponses[String(moduleQuiz.id)];
+        if (allLessonsDone && quizPassed) {
+          checkAndUnlockNextModule(completedModule.id);
+        }
+      }
     } catch (error) {
       toast.error('Erro ao marcar aula como concluída');
     }
@@ -527,6 +581,10 @@ export default function CoursePlayer() {
 
   const goToLesson = (lesson: Lesson | null) => {
     if (!lesson) return;
+    if (!canPreview && !isModuleUnlocked(lesson.module_id)) {
+      toast.error('Conclua o módulo anterior para acessar este módulo.');
+      return;
+    }
     setSelectedQuiz(null);
     setSelectedLesson(lesson);
   };
@@ -684,6 +742,16 @@ export default function CoursePlayer() {
       setQuizResponses((prev) => ({ ...prev, [String(selectedQuiz.id)]: aprovado }));
       setQuizAttempts((prev) => ({ ...prev, [String(selectedQuiz.id)]: true }));
       toast.success(aprovado ? 'Prova aprovada!' : `Nota abaixo do mínimo (${minScore}%).`);
+
+      // Se questionário de módulo aprovado, verificar desbloqueio do próximo módulo
+      if (aprovado && selectedQuiz.tipo === 'modulo') {
+        const quizModuleId = Object.keys(moduleQuizzes).find(
+          (mid) => String(moduleQuizzes[mid]?.id) === String(selectedQuiz.id)
+        );
+        if (quizModuleId && isModuleLessonsDone(quizModuleId)) {
+          checkAndUnlockNextModule(quizModuleId);
+        }
+      }
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao enviar prova.');
     } finally {
@@ -1056,28 +1124,38 @@ export default function CoursePlayer() {
           <aside className="card h-fit sticky top-24">
             <h3 className="text-lg font-semibold mb-4">Conteúdo do curso</h3>
             <div className="space-y-6">
-              {course.modules?.map((module) => (
+              {course.modules?.map((module) => {
+                const moduleLocked = !isModuleUnlocked(module.id);
+                return (
                 <div key={module.id}>
                   <button
                     type="button"
-                    onClick={() => toggleModuleExpanded(module.id)}
-                    className="w-full flex items-center justify-between gap-3 rounded-[12px] border border-[hsl(var(--border))] px-3 py-2 text-left transition hover:bg-[hsl(var(--muted))]"
+                    onClick={() => {
+                      if (moduleLocked) {
+                        toast.error('Conclua o módulo anterior para desbloquear este.');
+                        return;
+                      }
+                      toggleModuleExpanded(module.id);
+                    }}
+                    className={`w-full flex items-center justify-between gap-3 rounded-[12px] border border-[hsl(var(--border))] px-3 py-2 text-left transition ${moduleLocked ? 'opacity-60 cursor-not-allowed' : 'hover:bg-[hsl(var(--muted))]'}`}
                   >
                     <div>
                       <p className="text-xs uppercase tracking-[0.3em] text-[hsl(var(--muted-foreground))]">
                         {module.title}
                       </p>
                       <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                        {(module.lessons?.length || 0)} aula(s)
+                        {(module.lessons?.length || 0)} aula(s){moduleLocked ? ' • bloqueado' : ''}
                       </p>
                     </div>
-                    {expandedModules.includes(String(module.id)) ? (
+                    {moduleLocked ? (
+                      <FaLock className="text-[hsl(var(--muted-foreground))] flex-shrink-0" />
+                    ) : expandedModules.includes(String(module.id)) ? (
                       <FaChevronUp className="text-[hsl(var(--muted-foreground))]" />
                     ) : (
                       <FaChevronDown className="text-[hsl(var(--muted-foreground))]" />
                     )}
                   </button>
-                  {expandedModules.includes(String(module.id)) && (
+                  {!moduleLocked && expandedModules.includes(String(module.id)) && (
                     <div className="space-y-2 mt-3">
                       {module.lessons?.map((lesson) => (
                         <button
@@ -1129,7 +1207,8 @@ export default function CoursePlayer() {
                     </div>
                   )}
                 </div>
-              ))}
+              );
+              })}
               {finalQuiz && (
                 <button
                   type="button"
