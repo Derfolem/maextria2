@@ -9,7 +9,7 @@ import { normalizeCourse } from '../../lib/normalizeCourse';
 import { trackContentPublished } from '../../lib/analytics';
 import { stripHtml } from '../../lib/text';
 
-type FilterOption = 'recentes' | 'modificados' | 'publicados' | 'reprovados' | 'aguardando' | 'curadoria' | 'rascunho' | 'az';
+type FilterOption = 'recentes' | 'editados' | 'modificados' | 'publicados' | 'reprovados' | 'aguardando' | 'curadoria' | 'rascunho' | 'az';
 
 export default function AdminCourses() {
   const { user } = useAuthStore();
@@ -170,6 +170,7 @@ export default function AdminCourses() {
       case 'recentes':
         result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         break;
+      case 'editados':
       case 'modificados':
         result.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
         break;
@@ -233,7 +234,7 @@ export default function AdminCourses() {
               className="input-field py-2 pr-8"
             >
               <option value="recentes">Mais recentes</option>
-              <option value="modificados">Modificados recentemente</option>
+              <option value="editados">Editado recente</option>
               <option value="publicados">Publicados</option>
               <option value="reprovados">Reprovados</option>
               <option value="curadoria">Em curadoria</option>

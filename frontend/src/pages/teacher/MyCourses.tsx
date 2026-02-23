@@ -9,7 +9,7 @@ import { useAuthStore } from '../../lib/store';
 import TrilhaModal from '../../components/TrilhaModal';
 import { stripHtml } from '../../lib/text';
 
-type FilterOption = 'recentes' | 'modificados' | 'publicados' | 'reprovados' | 'curadoria' | 'trilhas' | 'az';
+type FilterOption = 'recentes' | 'editados' | 'modificados' | 'publicados' | 'reprovados' | 'curadoria' | 'trilhas' | 'az';
 
 export default function TeacherMyCourses() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -47,6 +47,7 @@ export default function TeacherMyCourses() {
       case 'recentes':
         result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         break;
+      case 'editados':
       case 'modificados':
         result.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
         break;
@@ -396,7 +397,7 @@ export default function TeacherMyCourses() {
               className="input-field py-2 pr-8 text-[hsl(var(--member-strong))]"
             >
               <option value="recentes">Mais recentes</option>
-              <option value="modificados">Modificados recentemente</option>
+              <option value="editados">Editado recente</option>
               <option value="publicados">Publicados</option>
               <option value="reprovados">Reprovados</option>
               <option value="curadoria">Em curadoria</option>
