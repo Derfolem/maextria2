@@ -1475,10 +1475,10 @@ const loadCourse = async () => {
       </div>
 
       <div className="space-y-8">
-        <div className="card">
+        <div className="card overflow-hidden">
           <h2 className="text-xl font-semibold mb-4">Informações Básicas</h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
+          <div className="grid md:grid-cols-2 gap-4 min-w-0">
+            <div className="min-w-0">
               <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-2">
                 Título do Curso *
               </label>
@@ -1491,7 +1491,7 @@ const loadCourse = async () => {
               />
             </div>
 
-            <div>
+            <div className="min-w-0">
               <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-2">
                 Preço (R$) *
               </label>
@@ -1505,7 +1505,7 @@ const loadCourse = async () => {
               />
             </div>
 
-            <div>
+            <div className="min-w-0">
               <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-2">
                 Desconto (%)
               </label>
@@ -1521,7 +1521,7 @@ const loadCourse = async () => {
               />
             </div>
 
-            <div>
+            <div className="min-w-0">
               <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-2">
                 Categoria
               </label>
@@ -1534,7 +1534,7 @@ const loadCourse = async () => {
               />
             </div>
 
-            <div>
+            <div className="min-w-0">
               <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-2">
                 Nível
               </label>
@@ -1546,7 +1546,7 @@ const loadCourse = async () => {
               </select>
             </div>
 
-            <div>
+            <div className="min-w-0">
               <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-2">
                 Carga Horária
               </label>
@@ -1564,7 +1564,7 @@ const loadCourse = async () => {
               </select>
             </div>
 
-            <div className="md:col-span-2">
+            <div className="md:col-span-2 min-w-0">
               <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-2">
                 URL da Imagem
               </label>
@@ -1583,7 +1583,7 @@ const loadCourse = async () => {
               )}
             </div>
 
-            <div className="md:col-span-2">
+            <div className="md:col-span-2 min-w-0">
               <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-2">
                 Descrição *
               </label>
@@ -1596,7 +1596,7 @@ const loadCourse = async () => {
             </div>
 
             {(user?.role === 'admin' || user?.role === 'teacher') && (
-              <div className="md:col-span-2">
+              <div className="md:col-span-2 min-w-0">
                 <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-2">
                   Nome exibido do professor
                 </label>
