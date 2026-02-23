@@ -1915,10 +1915,10 @@ const loadCourse = async () => {
                                     <p className="font-medium min-w-0 break-words">
                                       {index + 1}. {question.enunciado}
                                     </p>
-                                    <div className="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:flex-wrap sm:justify-end sm:items-center shrink-0">
+                                    <div className="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:flex-nowrap sm:justify-end sm:items-center shrink-0">
                                       <button
                                         type="button"
-                                        className="btn-outline text-xs w-full"
+                                        className="btn-outline text-xs w-full sm:w-auto"
                                         onClick={() => reorderQuestions(moduleQuizzes[String(module.id)].id, question.id, 'up')}
                                         disabled={index === 0}
                                       >
@@ -1926,7 +1926,7 @@ const loadCourse = async () => {
                                       </button>
                                       <button
                                         type="button"
-                                        className="btn-outline text-xs w-full"
+                                        className="btn-outline text-xs w-full sm:w-auto"
                                         onClick={() => reorderQuestions(moduleQuizzes[String(module.id)].id, question.id, 'down')}
                                         disabled={index === sortQuestions(moduleQuizzes[String(module.id)].questoes || []).length - 1}
                                       >
@@ -1934,7 +1934,7 @@ const loadCourse = async () => {
                                       </button>
                                       <button
                                         type="button"
-                                        className="btn-outline text-xs flex items-center justify-center gap-1 w-full"
+                                        className="btn-outline text-xs flex items-center justify-center gap-1 w-full sm:w-auto"
                                         onClick={() => startEditQuestion(moduleQuizzes[String(module.id)].id, question)}
                                       >
                                         <FaEdit />
@@ -1942,7 +1942,7 @@ const loadCourse = async () => {
                                       </button>
                                       <button
                                         type="button"
-                                        className="btn-outline text-xs flex items-center justify-center gap-1 w-full text-red-600"
+                                        className="btn-outline text-xs flex items-center justify-center gap-1 w-full sm:w-auto text-red-600"
                                         onClick={() => deleteQuestion(moduleQuizzes[String(module.id)].id, question.id)}
                                       >
                                         <FaTimes />
@@ -2418,10 +2418,10 @@ const loadCourse = async () => {
                           <p className="font-medium min-w-0 break-words">
                             {index + 1}. {question.enunciado}
                           </p>
-                          <div className="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:flex-wrap sm:justify-end sm:items-center shrink-0">
+                          <div className="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:flex-nowrap sm:justify-end sm:items-center shrink-0">
                             <button
                               type="button"
-                              className="btn-outline text-xs w-full"
+                              className="btn-outline text-xs w-full sm:w-auto"
                               onClick={() => reorderQuestions(finalQuiz.id, question.id, 'up')}
                               disabled={index === 0}
                             >
@@ -2429,7 +2429,7 @@ const loadCourse = async () => {
                             </button>
                             <button
                               type="button"
-                              className="btn-outline text-xs w-full"
+                              className="btn-outline text-xs w-full sm:w-auto"
                               onClick={() => reorderQuestions(finalQuiz.id, question.id, 'down')}
                               disabled={index === sortQuestions(finalQuiz.questoes || []).length - 1}
                             >
@@ -2437,7 +2437,7 @@ const loadCourse = async () => {
                             </button>
                             <button
                               type="button"
-                              className="btn-outline text-xs flex items-center justify-center gap-1 w-full"
+                              className="btn-outline text-xs flex items-center justify-center gap-1 w-full sm:w-auto"
                               onClick={() => startEditQuestion(finalQuiz.id, question)}
                             >
                               <FaEdit />
@@ -2445,7 +2445,7 @@ const loadCourse = async () => {
                             </button>
                             <button
                               type="button"
-                              className="btn-outline text-xs flex items-center justify-center gap-1 w-full text-red-600"
+                              className="btn-outline text-xs flex items-center justify-center gap-1 w-full sm:w-auto text-red-600"
                               onClick={() => deleteQuestion(finalQuiz.id, question.id)}
                             >
                               <FaTimes />
