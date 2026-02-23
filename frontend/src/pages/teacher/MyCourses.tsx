@@ -27,6 +27,18 @@ export default function TeacherMyCourses() {
     const fallback = new Date(course.created_at as any).getTime();
     return Number.isFinite(fallback) ? fallback : 0;
   };
+  const formatDateTime = (value: string | number) => {
+    const date = new Date(value as any);
+    if (!Number.isFinite(date.getTime())) return '-';
+    return date.toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+  };
 
   const filteredAndSortedCourses = useMemo(() => {
     let result = [...courses];
@@ -496,6 +508,8 @@ export default function TeacherMyCourses() {
                     )}
                     <span>•</span>
                     <span>Criado em {new Date(course.created_at).toLocaleDateString('pt-BR')}</span>
+                    <span>•</span>
+                    <span>Editado em {formatDateTime(course.updated_at)}</span>
                   </div>
                 </div>
 

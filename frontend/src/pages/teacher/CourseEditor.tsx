@@ -9,6 +9,7 @@ import RichTextEditor from '../../components/RichTextEditor';
 
 export default function CourseEditor() {
   type DiscountColumn = 'discount_percent' | 'desconto_percentual' | null;
+  type CourseTimestampColumn = 'updated_at' | 'atualizado_em' | null;
   const { id } = useParams();
   const navigate = useNavigate();
   const isEditing = Boolean(id);
@@ -40,6 +41,7 @@ export default function CourseEditor() {
   const [modules, setModules] = useState<Module[]>([]);
   const [loading, setLoading] = useState(false);
   const [discountColumn, setDiscountColumn] = useState<DiscountColumn>(null);
+  const [courseTimestampColumn, setCourseTimestampColumn] = useState<CourseTimestampColumn>(null);
   const [aiAccess, setAiAccess] = useState<{ expires_at: string | null } | null>(null);
   const [aiAccessLoading, setAiAccessLoading] = useState(false);
   const user = useAuthStore((state) => state.user);
@@ -132,13 +134,27 @@ export default function CourseEditor() {
 
       if (Object.prototype.hasOwnProperty.call(sample, 'discount_percent')) {
         setDiscountColumn('discount_percent');
-        return;
-      }
-      if (Object.prototype.hasOwnProperty.call(sample, 'desconto_percentual')) {
+      } else if (Object.prototype.hasOwnProperty.call(sample, 'desconto_percentual')) {
         setDiscountColumn('desconto_percentual');
+      }
+      if (Object.prototype.hasOwnProperty.call(sample, 'updated_at')) {
+        setCourseTimestampColumn('updated_at');
+      } else if (Object.prototype.hasOwnProperty.call(sample, 'atualizado_em')) {
+        setCourseTimestampColumn('atualizado_em');
       }
     } catch (error) {
       // keep null and proceed without discount column to avoid 400 errors
+    }
+  };
+
+  const touchCourseTimestamp = async () => {
+    if (!isEditing || !id || !courseTimestampColumn) return;
+    const { error } = await supabase
+      .from('cursos')
+      .update({ [courseTimestampColumn]: new Date().toISOString() })
+      .eq('id', id);
+    if (error) {
+      console.warn('Erro ao atualizar timestamp do curso:', error);
     }
   };
 
@@ -363,6 +379,13 @@ const loadCourse = async () => {
       } else {
         setDiscountColumn(null);
       }
+      if (Object.prototype.hasOwnProperty.call(courseData, 'updated_at')) {
+        setCourseTimestampColumn('updated_at');
+      } else if (Object.prototype.hasOwnProperty.call(courseData, 'atualizado_em')) {
+        setCourseTimestampColumn('atualizado_em');
+      } else {
+        setCourseTimestampColumn(null);
+      }
       setCategory(courseData.categoria || '');
       setLevel(courseData.nivel || '');
       setCargaHoraria(courseData.carga_horaria_horas ? String(courseData.carga_horaria_horas) : '');
@@ -494,6 +517,9 @@ const loadCourse = async () => {
         } else if (discountColumn === 'desconto_percentual') {
           updatePayload.desconto_percentual = descontoValor;
         }
+        if (courseTimestampColumn) {
+          updatePayload[courseTimestampColumn] = new Date().toISOString();
+        }
 
         const { error } = await supabase
           .from('cursos')
@@ -574,6 +600,7 @@ const loadCourse = async () => {
           lessons: [],
         },
       ]);
+      await touchCourseTimestamp();
       toast.success('Módulo adicionado!');
       if (modules.length === 0) {
         navigate('/teacher/my-courses');
@@ -598,6 +625,7 @@ const loadCourse = async () => {
         .update(payload)
         .eq('id', moduleId);
       if (error) throw error;
+      await touchCourseTimestamp();
     } catch (error) {
       toast.error('Erro ao atualizar módulo');
     }
@@ -613,6 +641,7 @@ const loadCourse = async () => {
         .eq('id', moduleId);
       if (error) throw error;
       setModules(modules.filter((m) => m.id !== moduleId));
+      await touchCourseTimestamp();
       toast.success('Módulo excluído!');
     } catch (error) {
       toast.error('Erro ao excluir módulo');
@@ -655,6 +684,7 @@ const loadCourse = async () => {
             : m
         )
       );
+      await touchCourseTimestamp();
       toast.success('Aula adicionada!');
     } catch (error) {
       toast.error('Erro ao adicionar aula');
@@ -697,6 +727,7 @@ const loadCourse = async () => {
         .update(payload)
         .eq('id', lessonId);
       if (error) throw error;
+      await touchCourseTimestamp();
     } catch (error) {
       toast.error('Erro ao atualizar aula');
     }
@@ -752,6 +783,7 @@ const loadCourse = async () => {
             : m
         )
       );
+      await touchCourseTimestamp();
       toast.success('Aula excluída!');
     } catch (error) {
       toast.error('Erro ao excluir aula');
@@ -779,6 +811,7 @@ const loadCourse = async () => {
         .single();
       if (error) throw error;
       setModuleQuizzes((prev) => ({ ...prev, [moduleId]: { ...data, questoes: sortQuestions(data.questoes || []) } }));
+      await touchCourseTimestamp();
       toast.success('Questionário criado.');
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao criar questionário.');
@@ -800,6 +833,7 @@ const loadCourse = async () => {
       });
       cancelQuestionDraft(quizId);
       closeExtractorDraft(quizId);
+      await touchCourseTimestamp();
       toast.success('Questionario do modulo cancelado.');
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao cancelar questionario do modulo.');
@@ -821,6 +855,7 @@ const loadCourse = async () => {
         .single();
       if (error) throw error;
       setFinalQuiz({ ...data, questoes: sortQuestions(data.questoes || []) });
+      await touchCourseTimestamp();
       toast.success('Prova final criada.');
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao criar prova final.');
@@ -838,6 +873,7 @@ const loadCourse = async () => {
       setFinalQuiz(null);
       cancelQuestionDraft(quizId);
       closeExtractorDraft(quizId);
+      await touchCourseTimestamp();
       toast.success('Prova final cancelada.');
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao cancelar prova final.');
@@ -924,6 +960,7 @@ const loadCourse = async () => {
         [...prev, normalizedQuiz].sort((a: any, b: any) => Number(a?.surpresa_slot || 0) - Number(b?.surpresa_slot || 0))
       );
       setSurpriseDraft({ targetType: 'aula', moduleId: '', lessonId: '' });
+      await touchCourseTimestamp();
       toast.success('Questionario surpresa criado.');
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao criar questionario surpresa.');
@@ -1215,6 +1252,7 @@ const loadCourse = async () => {
       }
 
       closeExtractorDraft(quizId);
+      await touchCourseTimestamp();
       toast.success(createdQuestions.length + ' questoes salvas.');
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao salvar questoes extraidas.');
@@ -1326,6 +1364,7 @@ const loadCourse = async () => {
       }
 
       cancelQuestionDraft(quizId);
+      await touchCourseTimestamp();
       toast.success(isEditingQuestion ? 'Questão atualizada.' : 'Questão adicionada.');
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao salvar questão.');
@@ -1370,6 +1409,7 @@ const loadCourse = async () => {
           prev.map((quiz: any) => (String(quiz.id) === String(quizId) ? { ...quiz, questoes: ordered } : quiz))
         );
       }
+      await touchCourseTimestamp();
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao reordenar questões.');
     }
@@ -1413,6 +1453,7 @@ const loadCourse = async () => {
         );
       }
 
+      await touchCourseTimestamp();
       toast.success('Questão excluída.');
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao excluir questão.');
