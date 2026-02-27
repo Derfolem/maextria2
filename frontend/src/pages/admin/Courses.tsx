@@ -4,10 +4,11 @@ import { Course } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
 import toast from 'react-hot-toast';
-import { FaTrash, FaEye, FaEyeSlash, FaSearch, FaArrowRight, FaEdit, FaClock, FaTimes, FaFilter } from 'react-icons/fa';
+import { FaTrash, FaEye, FaEyeSlash, FaSearch, FaArrowRight, FaEdit, FaClock, FaTimes, FaFilter, FaShareAlt } from 'react-icons/fa';
 import { normalizeCourse } from '../../lib/normalizeCourse';
 import { trackContentPublished } from '../../lib/analytics';
 import { stripHtml } from '../../lib/text';
+import ShareModal from '../../components/ShareModal';
 
 type FilterOption = 'recentes' | 'editados' | 'modificados' | 'publicados' | 'reprovados' | 'aguardando' | 'curadoria' | 'rascunho' | 'az';
 
@@ -20,6 +21,7 @@ export default function AdminCourses() {
   const [feedbackOpen, setFeedbackOpen] = useState<string | number | null>(null);
   const [feedbackText, setFeedbackText] = useState('');
   const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
+  const [shareModalCourse, setShareModalCourse] = useState<Course | null>(null);
   const getCourseTimestamp = (course: Course, field: 'created_at' | 'updated_at') => {
     const primary = new Date(course[field] as any).getTime();
     if (Number.isFinite(primary)) return primary;
@@ -215,6 +217,7 @@ export default function AdminCourses() {
   }
 
   return (
+    <>
     <div className="max-w-7xl mx-auto px-[clamp(24px,5vw,80px)] py-[clamp(40px,6vh,80px)]">
       <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-10">
         <div>
@@ -408,6 +411,16 @@ export default function AdminCourses() {
                     Aguardando envio
                   </span>
                 )}
+                {course.is_published && (
+                  <button
+                    onClick={() => setShareModalCourse(course)}
+                    className="btn-outline inline-flex items-center gap-2 whitespace-nowrap border-[hsl(var(--primary))] text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))] hover:text-white"
+                    title="Compartilhar nas redes sociais"
+                  >
+                    <FaShareAlt />
+                    Compartilhar
+                  </button>
+                )}
                 <button
                   onClick={() => deleteCourse(course.id)}
                   className="btn-outline inline-flex items-center gap-2 whitespace-nowrap border-red-400 text-red-500 hover:bg-red-500 hover:text-white"
@@ -473,5 +486,13 @@ export default function AdminCourses() {
         Total: {filteredAndSortedCourses.length} curso(s)
       </div>
     </div>
+
+    {shareModalCourse && (
+      <ShareModal
+        course={shareModalCourse}
+        onClose={() => setShareModalCourse(null)}
+      />
+    )}
+    </>
   );
 }
