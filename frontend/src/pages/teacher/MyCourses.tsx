@@ -2,11 +2,12 @@ import { useEffect, useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Course, Trilha } from '../../types';
 import toast from 'react-hot-toast';
-import { FaEye, FaPlus, FaEdit, FaTrash, FaCopy, FaPaperPlane, FaExclamationTriangle, FaClock, FaFilter, FaRoute } from 'react-icons/fa';
+import { FaEye, FaPlus, FaEdit, FaTrash, FaCopy, FaPaperPlane, FaExclamationTriangle, FaClock, FaFilter, FaRoute, FaShareAlt } from 'react-icons/fa';
 import { normalizeCourse } from '../../lib/normalizeCourse';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../lib/store';
 import TrilhaModal from '../../components/TrilhaModal';
+import ShareModal from '../../components/ShareModal';
 import { stripHtml } from '../../lib/text';
 
 type FilterOption = 'recentes' | 'editados' | 'modificados' | 'publicados' | 'reprovados' | 'curadoria' | 'trilhas' | 'az';
@@ -19,6 +20,7 @@ export default function TeacherMyCourses() {
   const [trilhaModal, setTrilhaModal] = useState(false);
   const [editingTrilha, setEditingTrilha] = useState<Trilha | null>(null);
   const [cursosTrilhaMap, setCursosTrilhaMap] = useState<Record<string, string[]>>({});
+  const [shareModalCourse, setShareModalCourse] = useState<Course | null>(null);
   const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
   const getCourseTimestamp = (course: Course, field: 'created_at' | 'updated_at') => {
@@ -537,6 +539,16 @@ export default function TeacherMyCourses() {
                     <FaCopy />
                     <span>Duplicar</span>
                   </button>
+                  {course.is_published && (
+                    <button
+                      onClick={() => setShareModalCourse(course)}
+                      className="btn-outline flex items-center space-x-1 border-[hsl(var(--primary))] text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))] hover:text-white"
+                      title="Compartilhar nas redes sociais"
+                    >
+                      <FaShareAlt />
+                      <span>Compartilhar</span>
+                    </button>
+                  )}
                   {!course.is_published && !course.em_curadoria && (
                     <button
                       onClick={() => toggleCuradoria(course.id, course.em_curadoria || false)}
@@ -642,6 +654,13 @@ export default function TeacherMyCourses() {
         trilha={editingTrilha}
         professorId={String(user?.id || '')}
       />
+
+      {shareModalCourse && (
+        <ShareModal
+          course={shareModalCourse}
+          onClose={() => setShareModalCourse(null)}
+        />
+      )}
     </div>
   );
 }
