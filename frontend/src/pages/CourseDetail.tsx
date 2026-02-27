@@ -7,6 +7,8 @@ import toast from 'react-hot-toast';
 import { FaBook, FaCheckCircle, FaUser, FaClock } from 'react-icons/fa';
 import { normalizeCourse } from '../lib/normalizeCourse';
 import { SEO, createCourseSchema, createBreadcrumbSchema } from '../components/SEO';
+import { trackCourseView, trackEnrollment } from '../lib/analytics';
+import { trackMarketingEvent } from '../lib/marketing';
 import { Breadcrumb } from '../components/Breadcrumb';
 import DOMPurify from 'dompurify';
 import { stripHtml } from '../lib/text';
@@ -71,6 +73,9 @@ export default function CourseDetail() {
       });
 
       setCourse(normalized);
+
+      // Rastrear visualização do curso no Google Analytics
+      trackCourseView(String(normalized.id), normalized.title, normalized.category);
     } catch (error) {
       toast.error('Erro ao carregar curso');
     } finally {
@@ -96,6 +101,18 @@ export default function CourseDetail() {
   };
 
   const handleEnroll = async () => {
+    if (course) {
+      void trackMarketingEvent('course_cta_click', {
+        courseId: String(course.id),
+        courseTitle: course.title,
+        metadata: {
+          isAuthenticated,
+          canPreview,
+          isPublished: course.is_published,
+        },
+      });
+    }
+
     if (!isAuthenticated) {
       toast.error('Faça login para se inscrever');
       navigate('/login');
@@ -126,6 +143,12 @@ export default function CourseDetail() {
       }
       toast.success('Inscrição realizada com sucesso!');
       setIsEnrolled(true);
+
+      // Rastrear matrícula como conversão no Google Analytics
+      if (course) {
+        trackEnrollment(String(course.id), course.title, course.price || 0);
+      }
+
       navigate('/student/my-courses');
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao se inscrever');

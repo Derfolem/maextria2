@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../lib/store';
 import { FaBook, FaBars, FaTimes, FaInstagram, FaLinkedinIn, FaYoutube, FaBell, FaFacebookF } from 'react-icons/fa';
 import { supabase } from '../lib/supabase';
+import DOMPurify from 'dompurify';
+
 const SITE_BASE_URL = 'https://www.maextria.com.br';
 const DEFAULT_OG_IMAGE = `${SITE_BASE_URL}/maextria-logo.png`;
 
@@ -89,6 +91,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const isHome = location.pathname === '/';
+  const [banner, setBanner] = useState({
+    enabled: false,
+    imageUrl: '',
+    linkUrl: '',
+    alt: 'Banner promocional',
+  });
   const [seoConfig, setSeoConfig] = useState({
     title: '',
     description: '',
@@ -99,12 +107,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [systemFlagsLoaded, setSystemFlagsLoaded] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const bannerEnabled = banner.enabled && Boolean(banner.imageUrl);
   const isMemberArea =
     location.pathname.startsWith('/admin') ||
     location.pathname.startsWith('/teacher') ||
     location.pathname.startsWith('/professor') ||
     location.pathname.startsWith('/student');
+  const isTeacherLanding = location.pathname === '/sou-professor';
+  const showBanner = bannerEnabled && !isMemberArea && !isTeacherLanding;
   const needsProfileCompletion = isAuthenticated && user?.role !== 'admin' && user?.profile_completed === false;
+
+  const pageViewKey = useMemo(() => {
+    const base = location.pathname + location.search;
+    return `maextria_pv_${base}`;
+  }, [location.pathname, location.search]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -132,11 +148,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    const loadSiteConfig = async () => {
+    const loadMarketingConfig = async () => {
       const { data } = await supabase
         .from('configuracoes_site')
         .select('chave, valor')
         .in('chave', [
+          'marketing_banner_enabled',
+          'marketing_banner_image_url',
+          'marketing_banner_link_url',
+          'marketing_banner_alt',
+          'marketing_pixel_head',
+          'marketing_pixel_body',
           'seo_meta_title',
           'seo_meta_description',
           'seo_meta_keywords',
@@ -146,6 +168,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         ]);
 
       const resolve = (key: string) => data?.find((item: any) => item.chave === key)?.valor ?? '';
+      const bannerEnabledValue = resolve('marketing_banner_enabled') === '1';
+      setBanner({
+        enabled: bannerEnabledValue,
+        imageUrl: resolve('marketing_banner_image_url'),
+        linkUrl: resolve('marketing_banner_link_url'),
+        alt: resolve('marketing_banner_alt') || 'Banner promocional',
+      });
       setSeoConfig({
         title: resolve('seo_meta_title'),
         description: resolve('seo_meta_description'),
@@ -155,9 +184,38 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       });
       setMaintenanceMode(resolve('maintenance_mode') === '1');
       setSystemFlagsLoaded(true);
+
+      const headCode = resolve('marketing_pixel_head');
+      const bodyCode = resolve('marketing_pixel_body');
+      if (headCode) {
+        const marker = document.getElementById('maextria-pixel-head');
+        if (!marker) {
+          const container = document.createElement('div');
+          container.id = 'maextria-pixel-head';
+          // Sanitizar código de marketing para prevenir XSS, mas permitir scripts de analytics
+          container.innerHTML = DOMPurify.sanitize(headCode, {
+            ADD_TAGS: ['script', 'noscript', 'iframe'],
+            ADD_ATTR: ['async', 'defer', 'src', 'type']
+          });
+          document.head.appendChild(container);
+        }
+      }
+      if (bodyCode) {
+        const marker = document.getElementById('maextria-pixel-body');
+        if (!marker) {
+          const container = document.createElement('div');
+          container.id = 'maextria-pixel-body';
+          // Sanitizar código de marketing para prevenir XSS, mas permitir scripts de analytics
+          container.innerHTML = DOMPurify.sanitize(bodyCode, {
+            ADD_TAGS: ['script', 'noscript', 'iframe'],
+            ADD_ATTR: ['async', 'defer', 'src', 'type']
+          });
+          document.body.appendChild(container);
+        }
+      }
     };
 
-    loadSiteConfig();
+    loadMarketingConfig();
   }, []);
 
   useEffect(() => {
@@ -215,6 +273,34 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     }
   }, [seoConfig, location.pathname]);
 
+  useEffect(() => {
+    const trackPageView = async () => {
+      try {
+        const sessionKey = 'maextria_session_id';
+        let sessionId = window.localStorage.getItem(sessionKey);
+        if (!sessionId) {
+          sessionId = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+          window.localStorage.setItem(sessionKey, sessionId);
+        }
+        if (window.localStorage.getItem(pageViewKey)) {
+          return;
+        }
+        window.localStorage.setItem(pageViewKey, '1');
+        const { data: authData } = await supabase.auth.getUser();
+        await supabase.from('marketing_pageviews').insert({
+          session_id: sessionId,
+          path: `${location.pathname}${location.search}`,
+          referrer: document.referrer || null,
+          user_agent: navigator.userAgent,
+          user_id: authData.user?.id ?? null,
+        });
+      } catch (error) {
+        console.error('Pageview error:', error);
+      }
+    };
+
+    trackPageView();
+  }, [location.pathname, location.search, pageViewKey]);
 
   const loadNotificationBadge = async (userId: string, role: 'student' | 'teacher' | 'admin') => {
     try {
@@ -392,6 +478,29 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 Completar cadastro
               </Link>
             </div>
+          </div>
+        )}
+        {showBanner && (
+          <div className="w-full bg-transparent">
+            {banner.linkUrl ? (
+              <a href={banner.linkUrl} className="block" target="_blank" rel="noreferrer">
+                <img
+                  src={banner.imageUrl}
+                  alt={banner.alt}
+                  loading="lazy"
+                  decoding="async"
+                  className="block h-auto w-full"
+                />
+              </a>
+            ) : (
+              <img
+                src={banner.imageUrl}
+                alt={banner.alt}
+                loading="lazy"
+                decoding="async"
+                className="block h-auto w-full"
+              />
+            )}
           </div>
         )}
         {children}

@@ -6,6 +6,7 @@ import { useAuthStore } from '../../lib/store';
 import toast from 'react-hot-toast';
 import { FaTrash, FaEye, FaEyeSlash, FaSearch, FaArrowRight, FaEdit, FaClock, FaTimes, FaFilter, FaShareAlt } from 'react-icons/fa';
 import { normalizeCourse } from '../../lib/normalizeCourse';
+import { trackContentPublished } from '../../lib/analytics';
 import { stripHtml } from '../../lib/text';
 import ShareModal from '../../components/ShareModal';
 
@@ -149,6 +150,7 @@ export default function AdminCourses() {
         .eq('id', String(courseId));
       if (error) throw error;
       toast.success('Curso aprovado e publicado!');
+      trackContentPublished('course', String(courseId));
       loadCourses();
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao aprovar curso');

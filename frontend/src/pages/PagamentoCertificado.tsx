@@ -6,6 +6,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { getValidAccessToken, supabase } from '../lib/supabase';
 import { handlePdfDownload, isMobileUserAgent, openPdfPopup, setPdfPopupError } from '../lib/downloadPdf';
 import { useAuthStore } from '../lib/store';
+import { trackBeginCheckout, trackCertificateDownload } from '../lib/analytics';
 
 interface Certificado {
   id: string;
@@ -206,6 +207,7 @@ export default function PagamentoCertificado() {
       }
 
       setClientSecret(data.clientSecret);
+      trackBeginCheckout(cursoId, curso?.titulo || '', discountPercent > 0 ? finalPrice : basePrice);
     } catch (error: any) {
       toast.error(error?.message || 'Erro ao iniciar pagamento.');
     } finally {
@@ -243,6 +245,7 @@ export default function PagamentoCertificado() {
 
       const filename = `certificado-${curso?.titulo?.replace(/\s+/g, '-').toLowerCase()}.pdf`;
       handlePdfDownload(data.pdf, filename, popup);
+      trackCertificateDownload(cursoId, curso?.titulo || '');
       toast.success('Download iniciado.');
     } catch (error: any) {
       setPdfPopupError(popup, error?.message || 'Erro ao gerar certificado.');
