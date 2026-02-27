@@ -8,6 +8,7 @@ import { FaBook, FaCheckCircle, FaUser, FaClock } from 'react-icons/fa';
 import { normalizeCourse } from '../lib/normalizeCourse';
 import { SEO, createCourseSchema, createBreadcrumbSchema } from '../components/SEO';
 import { trackCourseView, trackEnrollment } from '../lib/analytics';
+import { trackMarketingEvent } from '../lib/marketing';
 import { Breadcrumb } from '../components/Breadcrumb';
 import DOMPurify from 'dompurify';
 import { stripHtml } from '../lib/text';
@@ -100,6 +101,18 @@ export default function CourseDetail() {
   };
 
   const handleEnroll = async () => {
+    if (course) {
+      void trackMarketingEvent('course_cta_click', {
+        courseId: String(course.id),
+        courseTitle: course.title,
+        metadata: {
+          isAuthenticated,
+          canPreview,
+          isPublished: course.is_published,
+        },
+      });
+    }
+
     if (!isAuthenticated) {
       toast.error('Faça login para se inscrever');
       navigate('/login');

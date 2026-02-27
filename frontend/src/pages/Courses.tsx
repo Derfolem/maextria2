@@ -24,6 +24,7 @@ import { normalizeCourse } from '../lib/normalizeCourse';
 import { SEO } from '../components/SEO';
 import StarRating from '../components/StarRating';
 import { trackSearch } from '../lib/analytics';
+import { trackMarketingEvent } from '../lib/marketing';
 import { stripHtml } from '../lib/text';
 
 type SortOption = 'popular' | 'recent' | 'az' | 'za';
@@ -96,6 +97,7 @@ export default function Courses() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSearchEventRef = useRef('');
 
   // Trilhas
   const [trilhas, setTrilhas] = useState<Trilha[]>([]);
@@ -136,15 +138,6 @@ export default function Courses() {
     if (selectedTrilha) params.set('trilha', selectedTrilha);
     setSearchParams(params, { replace: true });
   }, [search, selectedCategory, selectedLevel, durationRange, sortBy, showTrilhas, selectedTrilha, setSearchParams]);
-
-  useEffect(() => {
-    if (!search.trim()) return;
-    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-    searchDebounceRef.current = setTimeout(() => {
-      trackSearch(search.trim());
-    }, 600);
-    return () => { if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current); };
-  }, [search]);
 
   useEffect(() => {
     setVisibleCount(6);
@@ -192,6 +185,10 @@ export default function Courses() {
   };
 
   const handleIniciarTrilha = async (trilhaId: string) => {
+    void trackMarketingEvent('trilha_start_click', {
+      metadata: { trilhaId },
+    });
+
     if (!isAuthenticated) {
       navigate(`/login?redirect=/courses?filter=trilhas&trilha=${trilhaId}`);
       return;
@@ -206,6 +203,12 @@ export default function Courses() {
       if (error) throw error;
 
       toast.success(`Matriculado em ${data.cursos_matriculados} curso(s)!`);
+      void trackMarketingEvent('trilha_start_success', {
+        metadata: {
+          trilhaId,
+          cursosMatriculados: data?.cursos_matriculados ?? 0,
+        },
+      });
       navigate('/student/dashboard');
     } catch (error: any) {
       console.error('Erro ao matricular na trilha:', error);
@@ -342,6 +345,45 @@ export default function Courses() {
   }, [courses, search, selectedCategory, selectedLevel, durationRange, sortBy]);
 
   const activeFiltersCount = [selectedCategory, selectedLevel, durationRange, showTrilhas ? 'trilhas' : ''].filter(Boolean).length;
+
+  useEffect(() => {
+    const query = search.trim();
+    if (query.length < 2) return;
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      const key = `${query.toLowerCase()}|${filteredCourses.length}`;
+      if (lastSearchEventRef.current === key) return;
+      lastSearchEventRef.current = key;
+      trackSearch(query, filteredCourses.length);
+      void trackMarketingEvent('course_search', {
+        searchTerm: query,
+        resultCount: filteredCourses.length,
+        metadata: {
+          selectedCategory: selectedCategory || null,
+          selectedLevel: selectedLevel || null,
+          durationRange: durationRange || null,
+          sortBy,
+          showTrilhas,
+        },
+      });
+    }, 600);
+
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
+  }, [search, filteredCourses.length, selectedCategory, selectedLevel, durationRange, sortBy, showTrilhas]);
+
+  const handleCourseClick = (course: Course, source: string, position: number) => {
+    void trackMarketingEvent('course_click', {
+      courseId: String(course.id),
+      courseTitle: course.title,
+      metadata: {
+        source,
+        position,
+        category: course.category || null,
+      },
+    });
+  };
 
   const clearFilters = () => {
     setSearch('');
@@ -620,7 +662,25 @@ export default function Courses() {
                         </button>
                       )}
                     </div>
-                    <button className="btn-primary rounded-xl px-6 w-full sm:w-auto whitespace-nowrap">
+                    <button
+                      className="btn-primary rounded-xl px-6 w-full sm:w-auto whitespace-nowrap"
+                      onClick={() => {
+                        const query = search.trim();
+                        if (query.length < 2) return;
+                        void trackMarketingEvent('course_search', {
+                          searchTerm: query,
+                          resultCount: filteredCourses.length,
+                          metadata: {
+                            source: 'search_button',
+                            selectedCategory: selectedCategory || null,
+                            selectedLevel: selectedLevel || null,
+                            durationRange: durationRange || null,
+                            sortBy,
+                            showTrilhas,
+                          },
+                        });
+                      }}
+                    >
                       Buscar
                     </button>
                   </div>
@@ -639,7 +699,11 @@ export default function Courses() {
                             key={i}
                             onClick={() => {
                               if (sug.type === 'course') {
-                                window.location.href = `/courses/${sug.id}`;
+                                const selectedCourse = courses.find((course) => String(course.id) === String(sug.id));
+                                if (selectedCourse) {
+                                  handleCourseClick(selectedCourse, 'search_suggestion', i + 1);
+                                }
+                                navigate(`/courses/${sug.id}`);
                               } else {
                                 setSelectedCategory(sug.text);
                                 setSearch('');
@@ -836,6 +900,7 @@ export default function Courses() {
                             <Link
                               key={tc.id}
                               to={`/courses/${course.id}`}
+                              onClick={() => handleCourseClick(course, 'trilha_course_card', Number(tc.ordem || 0))}
                               className="group flex gap-3 p-3 rounded-lg bg-[hsl(var(--muted))] hover:bg-[hsl(var(--border))] transition min-w-0"
                             >
                               <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
@@ -925,6 +990,7 @@ export default function Courses() {
                     >
                       <Link
                         to={`/courses/${course.id}`}
+                        onClick={() => handleCourseClick(course, 'grid_card', i + 1)}
                         className="card group block p-0 overflow-hidden hover:-translate-y-1 hover:shadow-xl transition-all duration-300"
                       >
                         <div className="relative aspect-video overflow-hidden">
@@ -988,6 +1054,7 @@ export default function Courses() {
                     >
                       <Link
                         to={`/courses/${course.id}`}
+                        onClick={() => handleCourseClick(course, 'list_card', i + 1)}
                         className="card group flex gap-6 p-4 hover:shadow-lg transition-all duration-300"
                       >
                         <div className="w-48 h-32 flex-shrink-0 rounded-lg overflow-hidden">
