@@ -5,8 +5,6 @@ import toast from 'react-hot-toast';
 import { FaUser, FaEnvelope, FaLock, FaHourglassHalf, FaGoogle, FaEye, FaEyeSlash, FaIdCard } from 'react-icons/fa';
 import { supabase } from '../lib/supabase';
 import { formatCpf, isValidCpf, normalizeCpf } from '../lib/validators';
-import { trackSignUp } from '../lib/analytics';
-import { trackMarketingEvent } from '../lib/marketing';
 
 export default function Register() {
   const [name, setName] = useState('');
@@ -60,13 +58,6 @@ export default function Register() {
 
     try {
       const result = await register(name, email, password, normalizedCpf);
-      trackSignUp('email');
-      void trackMarketingEvent('signup_success', {
-        metadata: {
-          method: 'email',
-          needsEmailConfirmation: Boolean(result.needsEmailConfirmation),
-        },
-      });
       if (result.needsEmailConfirmation) {
         toast.success('Conta criada! Verifique seu email e complete seu cadastro ao entrar.');
         navigate('/login');

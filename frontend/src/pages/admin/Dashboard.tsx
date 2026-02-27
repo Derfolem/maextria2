@@ -16,62 +16,6 @@ type AdminNotification = {
   metadata?: Record<string, any>;
 };
 
-type InterestMetrics = {
-  period_days: number;
-  totals: {
-    pageviews: number;
-    sessions: number;
-    new_sessions: number;
-    returning_sessions: number;
-    avg_pageviews_per_session: number;
-    bounce_rate: number;
-    searches: number;
-    search_sessions: number;
-    search_no_result: number;
-    search_no_result_rate: number;
-    course_clicks: number;
-    course_click_sessions: number;
-    cta_clicks: number;
-    signup_events: number;
-    cadastros: number;
-    signup_conversion_rate: number;
-    click_through_rate: number;
-    search_to_click_rate: number;
-    avg_searches_per_search_session: number;
-  };
-  top_search_terms: Array<{ term: string; total: number; zero_result: number }>;
-  top_courses: Array<{ course_id: string | null; course_title: string; total_clicks: number; unique_sessions: number; cta_clicks: number }>;
-  top_referrers: Array<{ referrer: string; total: number }>;
-};
-
-const EMPTY_INTEREST_METRICS: InterestMetrics = {
-  period_days: 30,
-  totals: {
-    pageviews: 0,
-    sessions: 0,
-    new_sessions: 0,
-    returning_sessions: 0,
-    avg_pageviews_per_session: 0,
-    bounce_rate: 0,
-    searches: 0,
-    search_sessions: 0,
-    search_no_result: 0,
-    search_no_result_rate: 0,
-    course_clicks: 0,
-    course_click_sessions: 0,
-    cta_clicks: 0,
-    signup_events: 0,
-    cadastros: 0,
-    signup_conversion_rate: 0,
-    click_through_rate: 0,
-    search_to_click_rate: 0,
-    avg_searches_per_search_session: 0,
-  },
-  top_search_terms: [],
-  top_courses: [],
-  top_referrers: [],
-};
-
 export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats>({});
   const [loading, setLoading] = useState(true);
@@ -79,13 +23,6 @@ export default function AdminDashboard() {
   const [userDistribution, setUserDistribution] = useState<Array<{ name: string; value: number }>>([]);
   const [recentNotifications, setRecentNotifications] = useState<AdminNotification[]>([]);
   const [loadingNotifications, setLoadingNotifications] = useState(true);
-  const [marketingStats, setMarketingStats] = useState({
-    pageviews: 0,
-    sessions: 0,
-    topPages: [] as Array<{ path: string; total: number }>,
-    interest: EMPTY_INTEREST_METRICS as InterestMetrics,
-  });
-  const [loadingMarketing, setLoadingMarketing] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [threads, setThreads] = useState<Array<any>>([]);
   const [threadsLoading, setThreadsLoading] = useState(true);
@@ -104,7 +41,6 @@ export default function AdminDashboard() {
     loadStats();
     loadNotifications();
     loadMessaging();
-    loadMarketingStats();
   }, []);
 
   useEffect(() => {
@@ -220,49 +156,6 @@ export default function AdminDashboard() {
 
     setLoadingNotifications(false);
   };
-
-  const loadMarketingStats = async () => {
-    setLoadingMarketing(true);
-    try {
-      const since = new Date();
-      since.setDate(since.getDate() - 30);
-
-      const [{ data: pageviews }, { data: interestData, error: interestError }] = await Promise.all([
-        supabase
-          .from('marketing_pageviews')
-          .select('path, session_id')
-          .gte('created_at', since.toISOString()),
-        supabase.rpc('admin_interest_metrics', { p_days: 30 }),
-      ]);
-
-      if (interestError) {
-        throw interestError;
-      }
-
-      const total = pageviews?.length || 0;
-      const sessionCount = new Set((pageviews || []).map((row: any) => row.session_id)).size;
-      const counts = (pageviews || []).reduce((acc: Record<string, number>, row: any) => {
-        acc[row.path] = (acc[row.path] || 0) + 1;
-        return acc;
-      }, {});
-      const topPages = Object.entries(counts)
-        .map(([path, count]) => ({ path, total: count }))
-        .sort((a, b) => b.total - a.total)
-        .slice(0, 5);
-
-      setMarketingStats({
-        pageviews: total,
-        sessions: sessionCount,
-        topPages,
-        interest: (interestData as InterestMetrics) || EMPTY_INTEREST_METRICS,
-      });
-    } catch (error) {
-      console.error('Error loading marketing stats:', error);
-    } finally {
-      setLoadingMarketing(false);
-    }
-  };
-
 
   const loadMessaging = async () => {
     setThreadsLoading(true);
@@ -502,165 +395,6 @@ export default function AdminDashboard() {
               <Tooltip />
             </PieChart>
           </ResponsiveContainer>
-        </div>
-      </div>
-
-      <div className="card mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-          <div className="flex items-center gap-3">
-            <div className="h-11 w-11 rounded-2xl bg-[hsl(var(--muted))] flex items-center justify-center text-[hsl(var(--primary))]">
-              <FaBullhorn />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold">Metricas de marketing (30 dias)</h2>
-              <p className="text-sm text-[hsl(var(--muted-foreground))]">Visao geral de alcance e trafego</p>
-            </div>
-          </div>
-        </div>
-        {loadingMarketing ? (
-          <p className="text-sm text-[hsl(var(--muted-foreground))]">Carregando metricas...</p>
-        ) : (
-          <div className="space-y-6">
-            <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-4">
-              <div className="rounded-[12px] border border-[hsl(var(--border))] p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))]">Visitas novas</p>
-                <p className="text-2xl font-semibold mt-2">{marketingStats.interest.totals.new_sessions}</p>
-                <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">de {marketingStats.interest.totals.sessions} sessoes</p>
-              </div>
-              <div className="rounded-[12px] border border-[hsl(var(--border))] p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))]">Buscas</p>
-                <p className="text-2xl font-semibold mt-2">{marketingStats.interest.totals.searches}</p>
-                <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">{marketingStats.interest.totals.search_no_result} sem resultado</p>
-              </div>
-              <div className="rounded-[12px] border border-[hsl(var(--border))] p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))]">Cliques em cursos</p>
-                <p className="text-2xl font-semibold mt-2">{marketingStats.interest.totals.course_clicks}</p>
-                <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">{marketingStats.interest.totals.click_through_rate}% das sessoes</p>
-              </div>
-              <div className="rounded-[12px] border border-[hsl(var(--border))] p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))]">CTA curso</p>
-                <p className="text-2xl font-semibold mt-2">{marketingStats.interest.totals.cta_clicks}</p>
-                <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">cliques em matricula</p>
-              </div>
-              <div className="rounded-[12px] border border-[hsl(var(--border))] p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))]">Cadastros</p>
-                <p className="text-2xl font-semibold mt-2">{marketingStats.interest.totals.cadastros}</p>
-                <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">{marketingStats.interest.totals.signup_conversion_rate}% conv. nova visita</p>
-              </div>
-              <div className="rounded-[12px] border border-[hsl(var(--border))] p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-[hsl(var(--muted-foreground))]">Bounce rate</p>
-                <p className="text-2xl font-semibold mt-2">{marketingStats.interest.totals.bounce_rate}%</p>
-                <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">{marketingStats.interest.totals.avg_pageviews_per_session} pags/sessao</p>
-              </div>
-            </div>
-
-            <div className="grid lg:grid-cols-2 gap-6">
-              <div className="rounded-[12px] border border-[hsl(var(--border))] p-4">
-                <p className="text-sm font-semibold">Top cursos com mais interesse</p>
-                <div className="mt-3 space-y-2">
-                  {marketingStats.interest.top_courses.length === 0 ? (
-                    <p className="text-sm text-[hsl(var(--muted-foreground))]">Sem dados</p>
-                  ) : (
-                    marketingStats.interest.top_courses.map((item, index) => (
-                      <div key={`${item.course_id || 'course'}-${index}`} className="flex items-center justify-between gap-3 text-sm">
-                        <span className="truncate">{item.course_title}</span>
-                        <span className="text-[hsl(var(--primary))] font-semibold whitespace-nowrap">{item.total_clicks} cliques</span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              <div className="rounded-[12px] border border-[hsl(var(--border))] p-4">
-                <p className="text-sm font-semibold">Top termos pesquisados</p>
-                <div className="mt-3 space-y-2">
-                  {marketingStats.interest.top_search_terms.length === 0 ? (
-                    <p className="text-sm text-[hsl(var(--muted-foreground))]">Sem dados</p>
-                  ) : (
-                    marketingStats.interest.top_search_terms.map((item) => (
-                      <div key={item.term} className="flex items-center justify-between gap-3 text-sm">
-                        <span className="truncate">{item.term}</span>
-                        <span className="text-[hsl(var(--primary))] font-semibold whitespace-nowrap">{item.total}</span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="grid lg:grid-cols-3 gap-6">
-              <div className="rounded-[12px] border border-[hsl(var(--border))] p-4">
-                <p className="text-sm font-semibold">Funil de intencao</p>
-                <div className="mt-3 space-y-2 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span>Sessoes com busca</span>
-                    <span className="font-semibold">{marketingStats.interest.totals.search_sessions}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Busca para clique</span>
-                    <span className="font-semibold">{marketingStats.interest.totals.search_to_click_rate}%</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Sem resultado</span>
-                    <span className="font-semibold">{marketingStats.interest.totals.search_no_result_rate}%</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Buscas por sessao</span>
-                    <span className="font-semibold">{marketingStats.interest.totals.avg_searches_per_search_session}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-[12px] border border-[hsl(var(--border))] p-4">
-                <p className="text-sm font-semibold">Top origens</p>
-                <div className="mt-3 space-y-2">
-                  {marketingStats.interest.top_referrers.length === 0 ? (
-                    <p className="text-sm text-[hsl(var(--muted-foreground))]">Sem dados</p>
-                  ) : (
-                    marketingStats.interest.top_referrers.map((item) => (
-                      <div key={item.referrer} className="flex items-center justify-between text-sm">
-                        <span className="truncate">{item.referrer}</span>
-                        <span className="text-[hsl(var(--primary))] font-semibold">{item.total}</span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              <div className="rounded-[12px] border border-[hsl(var(--border))] p-4">
-                <p className="text-sm font-semibold">Top paginas</p>
-                <div className="mt-3 space-y-2">
-                  {marketingStats.topPages.length === 0 ? (
-                    <p className="text-sm text-[hsl(var(--muted-foreground))]">Sem dados</p>
-                  ) : (
-                    marketingStats.topPages.map((item) => (
-                      <div key={item.path} className="flex items-center justify-between text-sm">
-                        <span className="truncate max-w-[180px]">{item.path}</span>
-                        <span className="text-[hsl(var(--primary))] font-semibold">{item.total}</span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <p className="text-xs text-[hsl(var(--muted-foreground))]">
-              Periodo analisado: ultimos {marketingStats.interest.period_days} dias.
-            </p>
-          </div>
-        )}
-      </div>
-      <div className="card mb-8">
-        <h2 className="text-xl font-semibold mb-4">Resumo rapido de trafego (30 dias)</h2>
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="rounded-[12px] border border-[hsl(var(--border))] p-4">
-            <p className="text-sm text-[hsl(var(--muted-foreground))]">Pageviews</p>
-            <p className="text-3xl font-semibold mt-2">{marketingStats.pageviews}</p>
-          </div>
-          <div className="rounded-[12px] border border-[hsl(var(--border))] p-4">
-            <p className="text-sm text-[hsl(var(--muted-foreground))]">Sessoes</p>
-            <p className="text-3xl font-semibold mt-2">{marketingStats.sessions}</p>
-          </div>
         </div>
       </div>
 

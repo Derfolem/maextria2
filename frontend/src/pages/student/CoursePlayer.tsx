@@ -9,7 +9,6 @@ import { normalizeCourse } from '../../lib/normalizeCourse';
 import DOMPurify from 'dompurify';
 import StarRating from '../../components/StarRating';
 import LessonRatingModal from '../../components/LessonRatingModal';
-import { trackVideoStart, trackLessonComplete } from '../../lib/analytics';
 
 const YOUTUBE_REGEX = /(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{6,})/;
 const VIMEO_REGEX = /vimeo\.com\/(?:video\/)?(\d+)/;
@@ -420,7 +419,6 @@ export default function CoursePlayer() {
         ];
       });
       toast.success('Aula avaliada e concluída!');
-      trackLessonComplete(String(course?.id), String(lessonId), progressPercentage);
 
       // Verificar se o módulo ficou completo para desbloquear o próximo
       const completedModule = course?.modules?.find((m) =>
@@ -914,7 +912,7 @@ export default function CoursePlayer() {
                       ) : (
                         <button
                           type="button"
-                          onClick={() => { setActiveVideoLessonId(selectedLesson.id); trackVideoStart(String(selectedLesson.id), selectedLesson.title || ''); }}
+                          onClick={() => { setActiveVideoLessonId(selectedLesson.id); }}
                           className="group relative w-full h-full"
                           aria-label={`Reproduzir ${selectedLesson.title}`}
                         >

@@ -23,8 +23,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { normalizeCourse } from '../lib/normalizeCourse';
 import { SEO } from '../components/SEO';
 import StarRating from '../components/StarRating';
-import { trackSearch } from '../lib/analytics';
-import { trackMarketingEvent } from '../lib/marketing';
 import { stripHtml } from '../lib/text';
 
 type SortOption = 'popular' | 'recent' | 'az' | 'za';
@@ -185,10 +183,6 @@ export default function Courses() {
   };
 
   const handleIniciarTrilha = async (trilhaId: string) => {
-    void trackMarketingEvent('trilha_start_click', {
-      metadata: { trilhaId },
-    });
-
     if (!isAuthenticated) {
       navigate(`/login?redirect=/courses?filter=trilhas&trilha=${trilhaId}`);
       return;
@@ -203,12 +197,6 @@ export default function Courses() {
       if (error) throw error;
 
       toast.success(`Matriculado em ${data.cursos_matriculados} curso(s)!`);
-      void trackMarketingEvent('trilha_start_success', {
-        metadata: {
-          trilhaId,
-          cursosMatriculados: data?.cursos_matriculados ?? 0,
-        },
-      });
       navigate('/student/dashboard');
     } catch (error: any) {
       console.error('Erro ao matricular na trilha:', error);
@@ -354,18 +342,6 @@ export default function Courses() {
       const key = `${query.toLowerCase()}|${filteredCourses.length}`;
       if (lastSearchEventRef.current === key) return;
       lastSearchEventRef.current = key;
-      trackSearch(query, filteredCourses.length);
-      void trackMarketingEvent('course_search', {
-        searchTerm: query,
-        resultCount: filteredCourses.length,
-        metadata: {
-          selectedCategory: selectedCategory || null,
-          selectedLevel: selectedLevel || null,
-          durationRange: durationRange || null,
-          sortBy,
-          showTrilhas,
-        },
-      });
     }, 600);
 
     return () => {
@@ -373,16 +349,8 @@ export default function Courses() {
     };
   }, [search, filteredCourses.length, selectedCategory, selectedLevel, durationRange, sortBy, showTrilhas]);
 
-  const handleCourseClick = (course: Course, source: string, position: number) => {
-    void trackMarketingEvent('course_click', {
-      courseId: String(course.id),
-      courseTitle: course.title,
-      metadata: {
-        source,
-        position,
-        category: course.category || null,
-      },
-    });
+  const handleCourseClick = (_course: Course, _source: string, _position: number) => {
+    // tracking removido
   };
 
   const clearFilters = () => {
@@ -664,22 +632,7 @@ export default function Courses() {
                     </div>
                     <button
                       className="btn-primary rounded-xl px-6 w-full sm:w-auto whitespace-nowrap"
-                      onClick={() => {
-                        const query = search.trim();
-                        if (query.length < 2) return;
-                        void trackMarketingEvent('course_search', {
-                          searchTerm: query,
-                          resultCount: filteredCourses.length,
-                          metadata: {
-                            source: 'search_button',
-                            selectedCategory: selectedCategory || null,
-                            selectedLevel: selectedLevel || null,
-                            durationRange: durationRange || null,
-                            sortBy,
-                            showTrilhas,
-                          },
-                        });
-                      }}
+                      onClick={() => {}}
                     >
                       Buscar
                     </button>
