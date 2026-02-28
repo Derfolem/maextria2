@@ -32,10 +32,14 @@ export default function ShareModal({ course, onClose }: ShareModalProps) {
   const [description, setDescription] = useState(defaultDescription);
   const [copied, setCopied] = useState<string | null>(null);
 
-  const fullText = `${description}\n\n${courseUrl}`;
+  // Texto para clipboard (Instagram/TikTok): usa URL limpa do curso
+  const clipboardText = `${description}\n\n${courseUrl}`;
+  // Texto para redes que geram preview (WhatsApp, Telegram): usa shareUrl para OG correto
+  const previewText = `${description}\n\n${shareUrl}`;
+
   const encodedShareUrl = encodeURIComponent(shareUrl);
   const encodedText = encodeURIComponent(description);
-  const encodedFull = encodeURIComponent(fullText);
+  const encodedPreviewFull = encodeURIComponent(previewText);
   const encodedTitle = encodeURIComponent(course.title);
   const encodedImage = encodeURIComponent(course.thumbnail || `${SITE_URL}/maextria-logo.png`);
 
@@ -63,7 +67,7 @@ export default function ShareModal({ course, onClose }: ShareModalProps) {
   };
 
   const handleInstagram = async () => {
-    await copyToClipboard(fullText, 'instagram');
+    await copyToClipboard(clipboardText, 'instagram');
     const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
     if (isMobile) {
       // Tenta abrir o app. O texto já foi copiado, então será colável no post.
@@ -78,7 +82,7 @@ export default function ShareModal({ course, onClose }: ShareModalProps) {
   };
 
   const handleTikTok = async () => {
-    await copyToClipboard(fullText, 'tiktok');
+    await copyToClipboard(clipboardText, 'tiktok');
     const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
     if (isMobile) {
       window.location.href = 'snssdk1233://';
@@ -104,7 +108,7 @@ export default function ShareModal({ course, onClose }: ShareModalProps) {
       icon: <FaWhatsapp size={26} />,
       color: '#25D366',
       lightBg: '#25D36615',
-      action: () => openShareWindow(`https://wa.me/?text=${encodedFull}`),
+      action: () => openShareWindow(`https://wa.me/?text=${encodedPreviewFull}`),
       tooltip: 'Compartilhar no WhatsApp',
     },
     {
@@ -141,7 +145,7 @@ export default function ShareModal({ course, onClose }: ShareModalProps) {
       icon: <FaPinterest size={26} />,
       color: '#E60023',
       lightBg: '#E6002315',
-      action: () => openShareWindow(`https://pinterest.com/pin/create/button/?url=${encodedShareUrl}&description=${encodedFull}&media=${encodedImage}`),
+      action: () => openShareWindow(`https://pinterest.com/pin/create/button/?url=${encodedShareUrl}&description=${encodedPreviewFull}&media=${encodedImage}`),
       tooltip: 'Compartilhar no Pinterest',
     },
     {
@@ -264,7 +268,7 @@ export default function ShareModal({ course, onClose }: ShareModalProps) {
               {description.length} caracteres
             </p>
             <button
-              onClick={() => copyToClipboard(fullText, 'all')}
+              onClick={() => copyToClipboard(clipboardText, 'all')}
               className="flex items-center gap-1.5 text-xs text-[hsl(var(--primary))] hover:underline font-medium"
             >
               {copied === 'all' ? <FaCheck size={10} className="text-green-500" /> : <FaCopy size={10} />}
