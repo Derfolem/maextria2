@@ -244,10 +244,13 @@ export default function AdminDashboard() {
       const since = new Date();
       since.setDate(since.getDate() - 30);
 
+      const { data: authData } = await supabase.auth.getUser();
+      const currentAdminId = authData.user?.id ?? null;
+
       const [{ data: pageviews }, { data: interestData, error: interestError }] = await Promise.all([
         supabase
           .from('marketing_pageviews')
-          .select('path, session_id')
+          .select('path, session_id, user_id')
           .gte('created_at', since.toISOString()),
         supabase.rpc('admin_interest_metrics', { p_days: 30 }),
       ]);
@@ -256,9 +259,10 @@ export default function AdminDashboard() {
         throw interestError;
       }
 
-      const total = pageviews?.length || 0;
-      const sessionCount = new Set((pageviews || []).map((row: any) => row.session_id)).size;
-      const counts = (pageviews || []).reduce((acc: Record<string, number>, row: any) => {
+      const filteredPageviews = (pageviews || []).filter((row: any) => row.user_id !== currentAdminId);
+      const total = filteredPageviews.length;
+      const sessionCount = new Set(filteredPageviews.map((row: any) => row.session_id)).size;
+      const counts = filteredPageviews.reduce((acc: Record<string, number>, row: any) => {
         acc[row.path] = (acc[row.path] || 0) + 1;
         return acc;
       }, {});
