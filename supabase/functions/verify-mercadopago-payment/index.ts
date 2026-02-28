@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { sendTelegram } from "../_shared/telegram.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -195,6 +196,31 @@ serve(async (req) => {
           p_referral_id: transacao.referral_id ?? null,
         });
       }
+    }
+
+    // Notificação Telegram — nova compra via MercadoPago/PIX
+    try {
+      const { data: curso } = await supabaseAdmin
+        .from("cursos")
+        .select("titulo")
+        .eq("id", cursoId)
+        .maybeSingle();
+      const valorFormatado = preco
+        ? `R$ ${Number(preco).toFixed(2).replace(".", ",")}`
+        : "";
+      const agora = new Date().toLocaleString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+      });
+      await sendTelegram(
+        `💰 <b>Nova compra de certificado!</b>\n\n` +
+          `✉️ ${user.email}\n` +
+          `📚 ${curso?.titulo ?? cursoId}\n` +
+          `${valorFormatado ? `💵 ${valorFormatado}\n` : ""}` +
+          `🔑 ${metodoPagamento === "pix" ? "PIX" : "MercadoPago"}\n` +
+          `📅 ${agora}`
+      );
+    } catch {
+      // Falha silenciosa
     }
 
     return new Response(JSON.stringify({ success: true, preco }), {
