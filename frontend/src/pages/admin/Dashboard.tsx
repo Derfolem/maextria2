@@ -350,6 +350,21 @@ export default function AdminDashboard() {
     return relativeFormatter.format(-diffSeconds, 'second');
   };
 
+  const toPageLabel = (path: string) => {
+    if (!path) return '/';
+    try {
+      return decodeURIComponent(path);
+    } catch {
+      return path;
+    }
+  };
+
+  const toPageHref = (path: string) => {
+    if (!path) return '/';
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    return path.startsWith('/') ? path : `/${path}`;
+  };
+
   const handleBroadcastChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = event.target;
     setBroadcastForm((prev) => ({ ...prev, [name]: value }));
@@ -653,7 +668,15 @@ export default function AdminDashboard() {
                   ) : (
                     marketingStats.topPages.map((item) => (
                       <div key={item.path} className="flex items-center justify-between text-sm">
-                        <span className="truncate max-w-[180px]">{item.path}</span>
+                        <a
+                          href={toPageHref(item.path)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="truncate max-w-[180px] text-[hsl(var(--primary))] hover:underline"
+                          title={toPageLabel(item.path)}
+                        >
+                          {toPageLabel(item.path)}
+                        </a>
                         <span className="text-[hsl(var(--primary))] font-semibold">{item.total}</span>
                       </div>
                     ))
