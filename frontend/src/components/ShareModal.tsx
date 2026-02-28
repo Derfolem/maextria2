@@ -227,7 +227,7 @@ export default function ShareModal({ course, onClose }: ShareModalProps) {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-white dark:bg-[hsl(var(--card))] rounded-2xl shadow-2xl w-full max-w-lg max-h-[92vh] flex flex-col">
+      <div className="bg-[hsl(var(--card))] rounded-2xl shadow-2xl w-full max-w-lg max-h-[92vh] flex flex-col">
         {/* Cabeçalho */}
         <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-[hsl(var(--border))] shrink-0">
           <div className="flex items-center gap-3">
@@ -282,7 +282,7 @@ export default function ShareModal({ course, onClose }: ShareModalProps) {
                 </p>
                 <div className="rounded-xl overflow-hidden border border-[hsl(var(--border))] shadow-sm">
                   {course.thumbnail ? (
-                    <div className="relative aspect-video bg-gray-100">
+                    <div className="relative aspect-video bg-[hsl(var(--muted))]">
                       <img
                         src={course.thumbnail}
                         alt={course.title}
@@ -311,7 +311,7 @@ export default function ShareModal({ course, onClose }: ShareModalProps) {
                       </span>
                     </div>
                   )}
-                  <div className="p-3 bg-white dark:bg-[hsl(var(--card))]">
+                  <div className="p-3 bg-[hsl(var(--card))]">
                     <p className="text-[10px] text-[hsl(var(--muted-foreground))] mb-0.5 uppercase tracking-wider">
                       www.maextria.com.br
                     </p>
