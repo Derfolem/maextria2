@@ -74,6 +74,7 @@ const EMPTY_INTEREST_METRICS: InterestMetrics = {
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats>({});
+  const [onlineCount, setOnlineCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [revenueData, setRevenueData] = useState<Array<{ month: string; revenue: number }>>([]);
   const [userDistribution, setUserDistribution] = useState<Array<{ name: string; value: number }>>([]);
@@ -105,6 +106,9 @@ export default function AdminDashboard() {
     loadNotifications();
     loadMessaging();
     loadMarketingStats();
+    loadOnlineCount();
+    const onlineInterval = setInterval(loadOnlineCount, 30_000);
+    return () => clearInterval(onlineInterval);
   }, []);
 
   useEffect(() => {
@@ -219,6 +223,19 @@ export default function AdminDashboard() {
     }
 
     setLoadingNotifications(false);
+  };
+
+  const loadOnlineCount = async () => {
+    try {
+      const since = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      const { count } = await supabase
+        .from('user_presence')
+        .select('user_id', { count: 'exact', head: true })
+        .gte('last_seen', since);
+      setOnlineCount(count ?? 0);
+    } catch {
+      // silencioso
+    }
   };
 
   const loadMarketingStats = async () => {
@@ -445,12 +462,13 @@ export default function AdminDashboard() {
         <ThemeToggle />
       </div>
 
-      <div className="grid md:grid-cols-4 gap-6 mb-12">
+      <div className="grid md:grid-cols-5 gap-6 mb-12">
         {[
           { label: 'Total de usuarios', value: stats.total_users || 0, icon: <FaUsers /> },
           { label: 'Total de cursos', value: stats.total_courses || 0, icon: <FaBook /> },
           { label: 'Receita total', value: `R$ ${(stats.total_revenue || 0).toFixed(2)}`, icon: <FaDollarSign /> },
           { label: 'Matriculas', value: stats.total_enrollments || 0, icon: <FaChartLine /> },
+          { label: 'Online agora', value: onlineCount, icon: <span className="relative flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" /><span className="relative inline-flex rounded-full h-3 w-3 bg-green-500" /></span> },
         ].map((item) => (
           <div key={item.label} className="card">
             <div className="flex items-center justify-between">

@@ -302,6 +302,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     trackPageView();
   }, [location.pathname, location.search, pageViewKey]);
 
+  useEffect(() => {
+    if (!user?.id || !user?.role) return;
+    const updatePresence = () => {
+      void supabase.from('user_presence').upsert(
+        { user_id: user.id, last_seen: new Date().toISOString(), role: user.role },
+        { onConflict: 'user_id' }
+      );
+    };
+    updatePresence();
+    const interval = setInterval(updatePresence, 90_000);
+    return () => clearInterval(interval);
+  }, [user?.id, user?.role]);
+
   const loadNotificationBadge = async (userId: string, role: 'student' | 'teacher' | 'admin') => {
     try {
       const recipientRoles = role === 'teacher' ? ['teacher', 'all'] : ['student', 'all'];
