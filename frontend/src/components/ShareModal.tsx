@@ -23,13 +23,17 @@ interface ShareModalProps {
 const SITE_URL = 'https://www.maextria.com.br';
 
 export default function ShareModal({ course, onClose }: ShareModalProps) {
+  // URL real do curso (para o usuário colar no Instagram/TikTok)
   const courseUrl = `${SITE_URL}/courses/${course.id}`;
+  // URL de compartilhamento com OG tags dinâmicos (para preview correto nas redes)
+  const shareUrl = `${SITE_URL}/api/course/${course.id}`;
+
   const defaultDescription = `🎓 Confira o curso "${course.title}" na MAEXTRIA!\n\nAprenda com qualidade e obtenha seu certificado reconhecido. Acesse agora:`;
   const [description, setDescription] = useState(defaultDescription);
   const [copied, setCopied] = useState<string | null>(null);
 
   const fullText = `${description}\n\n${courseUrl}`;
-  const encodedUrl = encodeURIComponent(courseUrl);
+  const encodedShareUrl = encodeURIComponent(shareUrl);
   const encodedText = encodeURIComponent(description);
   const encodedFull = encodeURIComponent(fullText);
   const encodedTitle = encodeURIComponent(course.title);
@@ -87,6 +91,12 @@ export default function ShareModal({ course, onClose }: ShareModalProps) {
     }
   };
 
+  const handleFacebook = async () => {
+    // Facebook não suporta texto pré-preenchido — copia para colar no post
+    await copyToClipboard(description, 'facebook');
+    openShareWindow(`https://www.facebook.com/sharer/sharer.php?u=${encodedShareUrl}`);
+  };
+
   const socialNetworks = [
     {
       key: 'whatsapp',
@@ -103,7 +113,7 @@ export default function ShareModal({ course, onClose }: ShareModalProps) {
       icon: <FaTelegram size={26} />,
       color: '#26A5E4',
       lightBg: '#26A5E415',
-      action: () => openShareWindow(`https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`),
+      action: () => openShareWindow(`https://t.me/share/url?url=${encodedShareUrl}&text=${encodedText}`),
       tooltip: 'Compartilhar no Telegram',
     },
     {
@@ -112,8 +122,9 @@ export default function ShareModal({ course, onClose }: ShareModalProps) {
       icon: <FaFacebook size={26} />,
       color: '#1877F2',
       lightBg: '#1877F215',
-      action: () => openShareWindow(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`),
-      tooltip: 'Compartilhar no Facebook',
+      action: handleFacebook,
+      tooltip: 'Copiar texto e abrir Facebook',
+      isCopy: true,
     },
     {
       key: 'linkedin',
@@ -121,7 +132,7 @@ export default function ShareModal({ course, onClose }: ShareModalProps) {
       icon: <FaLinkedin size={26} />,
       color: '#0077B5',
       lightBg: '#0077B515',
-      action: () => openShareWindow(`https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}&title=${encodedTitle}&summary=${encodedText}`),
+      action: () => openShareWindow(`https://www.linkedin.com/sharing/share-offsite/?url=${encodedShareUrl}&title=${encodedTitle}&summary=${encodedText}`),
       tooltip: 'Compartilhar no LinkedIn',
     },
     {
@@ -130,7 +141,7 @@ export default function ShareModal({ course, onClose }: ShareModalProps) {
       icon: <FaPinterest size={26} />,
       color: '#E60023',
       lightBg: '#E6002315',
-      action: () => openShareWindow(`https://pinterest.com/pin/create/button/?url=${encodedUrl}&description=${encodedFull}&media=${encodedImage}`),
+      action: () => openShareWindow(`https://pinterest.com/pin/create/button/?url=${encodedShareUrl}&description=${encodedFull}&media=${encodedImage}`),
       tooltip: 'Compartilhar no Pinterest',
     },
     {
@@ -290,11 +301,15 @@ export default function ShareModal({ course, onClose }: ShareModalProps) {
             ))}
           </div>
 
-          {/* Aviso Instagram / TikTok */}
-          <div className="mt-4 p-3 bg-[hsl(var(--muted))] rounded-lg border border-[hsl(var(--border))]">
+          {/* Avisos de uso */}
+          <div className="mt-4 p-3 bg-[hsl(var(--muted))] rounded-lg border border-[hsl(var(--border))] space-y-2">
             <p className="text-xs text-[hsl(var(--muted-foreground))] leading-relaxed">
               <strong className="text-[hsl(var(--foreground))]">Instagram e TikTok:</strong>{' '}
-              O texto e link são copiados automaticamente para sua área de transferência ao clicar. No celular, o app será aberto. No computador, cole na descrição ao criar o post.
+              Texto e link copiados automaticamente. No celular o app abre direto; no computador cole na descrição do post.
+            </p>
+            <p className="text-xs text-[hsl(var(--muted-foreground))] leading-relaxed">
+              <strong className="text-[hsl(var(--foreground))]">Facebook:</strong>{' '}
+              O texto é copiado automaticamente. Cole no campo da publicação após o Facebook abrir.
             </p>
           </div>
 
