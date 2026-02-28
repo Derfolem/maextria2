@@ -23,23 +23,18 @@ interface ShareModalProps {
 const SITE_URL = 'https://www.maextria.com.br';
 
 export default function ShareModal({ course, onClose }: ShareModalProps) {
-  // URL real do curso (para o usuário colar no Instagram/TikTok)
   const courseUrl = `${SITE_URL}/courses/${course.id}`;
-  // URL de compartilhamento com OG tags dinâmicos (para preview correto nas redes)
-  const shareUrl = `${SITE_URL}/api/course/${course.id}`;
 
   const defaultDescription = `🎓 Confira o curso "${course.title}" na MAEXTRIA!\n\nAprenda com qualidade e obtenha seu certificado reconhecido. Acesse agora:`;
   const [description, setDescription] = useState(defaultDescription);
   const [copied, setCopied] = useState<string | null>(null);
 
-  // Texto para clipboard (Instagram/TikTok): usa URL limpa do curso
-  const clipboardText = `${description}\n\n${courseUrl}`;
-  // Texto para redes que geram preview (WhatsApp, Telegram): usa shareUrl para OG correto
-  const previewText = `${description}\n\n${shareUrl}`;
+  const fullText = `${description}\n\n${courseUrl}`;
+  const clipboardText = fullText;
 
-  const encodedShareUrl = encodeURIComponent(shareUrl);
+  const encodedUrl = encodeURIComponent(courseUrl);
   const encodedText = encodeURIComponent(description);
-  const encodedPreviewFull = encodeURIComponent(previewText);
+  const encodedFull = encodeURIComponent(fullText);
   const encodedTitle = encodeURIComponent(course.title);
   const encodedImage = encodeURIComponent(course.thumbnail || `${SITE_URL}/maextria-logo.png`);
 
@@ -98,7 +93,7 @@ export default function ShareModal({ course, onClose }: ShareModalProps) {
   const handleFacebook = async () => {
     // Facebook não suporta texto pré-preenchido — copia para colar no post
     await copyToClipboard(description, 'facebook');
-    openShareWindow(`https://www.facebook.com/sharer/sharer.php?u=${encodedShareUrl}`);
+    openShareWindow(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`);
   };
 
   const socialNetworks = [
@@ -108,7 +103,7 @@ export default function ShareModal({ course, onClose }: ShareModalProps) {
       icon: <FaWhatsapp size={26} />,
       color: '#25D366',
       lightBg: '#25D36615',
-      action: () => openShareWindow(`https://wa.me/?text=${encodedPreviewFull}`),
+      action: () => openShareWindow(`https://wa.me/?text=${encodedFull}`),
       tooltip: 'Compartilhar no WhatsApp',
     },
     {
@@ -117,7 +112,7 @@ export default function ShareModal({ course, onClose }: ShareModalProps) {
       icon: <FaTelegram size={26} />,
       color: '#26A5E4',
       lightBg: '#26A5E415',
-      action: () => openShareWindow(`https://t.me/share/url?url=${encodedShareUrl}&text=${encodedText}`),
+      action: () => openShareWindow(`https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`),
       tooltip: 'Compartilhar no Telegram',
     },
     {
@@ -136,7 +131,7 @@ export default function ShareModal({ course, onClose }: ShareModalProps) {
       icon: <FaLinkedin size={26} />,
       color: '#0077B5',
       lightBg: '#0077B515',
-      action: () => openShareWindow(`https://www.linkedin.com/sharing/share-offsite/?url=${encodedShareUrl}&title=${encodedTitle}&summary=${encodedText}`),
+      action: () => openShareWindow(`https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}&title=${encodedTitle}&summary=${encodedText}`),
       tooltip: 'Compartilhar no LinkedIn',
     },
     {
@@ -145,7 +140,7 @@ export default function ShareModal({ course, onClose }: ShareModalProps) {
       icon: <FaPinterest size={26} />,
       color: '#E60023',
       lightBg: '#E6002315',
-      action: () => openShareWindow(`https://pinterest.com/pin/create/button/?url=${encodedShareUrl}&description=${encodedPreviewFull}&media=${encodedImage}`),
+      action: () => openShareWindow(`https://pinterest.com/pin/create/button/?url=${encodedUrl}&description=${encodedFull}&media=${encodedImage}`),
       tooltip: 'Compartilhar no Pinterest',
     },
     {
