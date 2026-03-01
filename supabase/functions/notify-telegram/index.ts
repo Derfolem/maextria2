@@ -28,6 +28,18 @@ serve(async (req) => {
         `✉️ ${body.email ?? 'sem email'}\n` +
         `📅 ${agora}`
       );
+    } else if (body.type === 'new_purchase') {
+      const valor = body.valor
+        ? `💵 R$ ${Number(body.valor).toFixed(2).replace('.', ',')}\n`
+        : '';
+      await sendTelegram(
+        `💰 <b>Nova compra de certificado!</b>\n\n` +
+        `✉️ ${body.email ?? 'sem email'}\n` +
+        `📚 ${body.curso ?? 'Curso'}\n` +
+        `${valor}` +
+        `🔑 ${body.metodo ?? 'Pagamento'}\n` +
+        `📅 ${agora}`
+      );
     }
 
     return new Response('OK', { status: 200 });
