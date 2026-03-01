@@ -1,13 +1,6 @@
 -- ============================================================
 -- Notificação Telegram para novos cadastros
--- ============================================================
--- ANTES DE APLICAR esta migration, execute no SQL Editor do Supabase:
---
---   ALTER DATABASE postgres SET app.supabase_url = 'https://SEU_PROJETO.supabase.co';
---   ALTER DATABASE postgres SET app.notify_secret = 'SEU_NOTIFY_WEBHOOK_SECRET';
---   SELECT pg_reload_conf();
---
--- Os valores ficam guardados no banco e o trigger os lê automaticamente.
+-- URL e secret ficam hardcoded na função (Supabase não permite ALTER DATABASE).
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION public.notify_telegram_on_signup()
@@ -16,22 +9,10 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
 AS $$
-DECLARE
-  v_url    text;
-  v_secret text;
 BEGIN
-  -- Lê a URL do projeto e o secret configurados no banco
-  BEGIN
-    v_url    := current_setting('app.supabase_url') || '/functions/v1/notify-telegram';
-    v_secret := current_setting('app.notify_secret');
-  EXCEPTION WHEN OTHERS THEN
-    -- Não configurado ainda — segue sem notificar
-    RETURN NEW;
-  END;
-
   -- Chama a edge function via pg_net (assíncrono, não bloqueia o auth)
   PERFORM net.http_post(
-    url     := v_url,
+    url     := 'https://zcrwmdctwjqrvzbvfpuj.supabase.co/functions/v1/notify-telegram',
     body    := jsonb_build_object(
                  'type',       'new_user',
                  'id',         NEW.id::text,
@@ -40,7 +21,7 @@ BEGIN
                )::text,
     headers := jsonb_build_object(
                  'Content-Type',    'application/json',
-                 'x-notify-secret', v_secret
+                 'x-notify-secret', 'maex_notify_2026_xK9p'
                )
   );
 
