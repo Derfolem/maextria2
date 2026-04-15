@@ -49,9 +49,9 @@ Abra: **http://localhost:5173**
 
 ## 🔐 Login de Teste
 
-- **Admin:** admin@maextria.com / senha123
-- **Professor:** prof.maria@maextria.com / senha123
-- **Aluno:** aluno1@example.com / senha123
+- **Credenciais demo:** consulte `backend/src/database/seed.ts`
+- Use somente contas locais fictícias
+- Evite registrar senhas em texto claro
 
 ---
 

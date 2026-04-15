@@ -16,52 +16,52 @@ async function seed() {
   const student1Id = uuidv4();
   const student2Id = uuidv4();
 
-  const hashedPassword = await hashPassword('senha123');
+  const hashedPassword = await hashPassword('DemoPass!234');
 
   const users = [
     {
       id: adminId,
-      email: 'admin@maextria.com',
+      email: 'admin.demo@maextria.local',
       password: hashedPassword,
-      name: 'Administrador MAEXTRIA',
+      name: 'Admin Demo',
       role: 'admin',
-      cpf: '24860890205',
+      cpf: '11111111111',
       email_verified: 1
     },
     {
       id: teacher1Id,
-      email: 'prof.maria@maextria.com',
+      email: 'teacher.demo1@maextria.local',
       password: hashedPassword,
-      name: 'Professora Maria Silva',
+      name: 'Teacher Demo One',
       role: 'teacher',
-      cpf: '37203855317',
+      cpf: '22222222222',
       email_verified: 1
     },
     {
       id: teacher2Id,
-      email: 'prof.joao@maextria.com',
+      email: 'teacher.demo2@maextria.local',
       password: hashedPassword,
-      name: 'Professor João Santos',
+      name: 'Teacher Demo Two',
       role: 'teacher',
-      cpf: '69777727437',
+      cpf: '33333333333',
       email_verified: 1
     },
     {
       id: student1Id,
-      email: 'aluno1@example.com',
+      email: 'student.demo1@example.local',
       password: hashedPassword,
-      name: 'Ana Oliveira',
+      name: 'Student Demo One',
       role: 'student',
-      cpf: '80165640383',
+      cpf: '44444444444',
       email_verified: 1
     },
     {
       id: student2Id,
-      email: 'aluno2@example.com',
+      email: 'student.demo2@example.local',
       password: hashedPassword,
-      name: 'Carlos Mendes',
+      name: 'Student Demo Two',
       role: 'student',
-      cpf: '99687615915',
+      cpf: '55555555555',
       email_verified: 1
     }
   ];
@@ -394,9 +394,9 @@ async function seed() {
 ║  • 3 enrollments                                      ║
 ║                                                       ║
 ║  Test credentials:                                    ║
-║  Admin:    admin@maextria.com / senha123              ║
-║  Teacher:  prof.maria@maextria.com / senha123         ║
-║  Student:  aluno1@example.com / senha123              ║
+║  Admin:    admin.demo@maextria.local / DemoPass!234   ║
+║  Teacher:  teacher.demo1@maextria.local / DemoPass!234║
+║  Student:  student.demo1@example.local / DemoPass!234 ║
 ║                                                       ║
 ╚═══════════════════════════════════════════════════════╝
   `);

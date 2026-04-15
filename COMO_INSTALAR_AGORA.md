@@ -86,9 +86,9 @@ Abra seu navegador em:
 
 ### 5. Fazer Login:
 
-- **Admin**: admin@maextria.com / senha123
-- **Professor**: prof.maria@maextria.com / senha123
-- **Aluno**: aluno1@example.com / senha123
+- **Credenciais demo**: consulte `backend/src/database/seed.ts`
+- As contas locais devem ser fictícias
+- Não mantenha senhas em texto claro na documentação
 
 ---
 

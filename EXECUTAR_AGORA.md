@@ -67,9 +67,9 @@ Deve aparecer:
 
 ### CONTAS DE TESTE:
 
-- **Admin**: admin@maextria.com / senha123
-- **Professor**: prof.maria@maextria.com / senha123
-- **Aluno**: aluno1@example.com / senha123
+- **Credenciais demo**: veja `backend/src/database/seed.ts`
+- Use apenas contas seedadas locais com dados fictícios
+- Não publique credenciais reais em documentação
 
 ---
 
@@ -113,4 +113,3 @@ A plataforma terá:
 - ✅ Dados completos para testar todas as funcionalidades
 
 **Explore e divirta-se! 🚀**
-

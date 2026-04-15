@@ -110,7 +110,7 @@ Você precisa estar logado como admin. Opções:
 ```bash
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@maextria.com","password":"sua-senha"}'
+  -d '{"email":"admin.demo@maextria.local","password":"sua-senha"}'
 ```
 
 Copie o token do retorno.

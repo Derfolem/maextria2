@@ -36,3 +36,5 @@ nohup.out
 backend/nohup.out
 frontend/nohup.out
 configure-stripe-live.sh
+supabase/.temp/
+.project-notes/

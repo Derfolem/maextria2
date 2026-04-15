@@ -198,9 +198,9 @@ npm run dev
 http://localhost:5173
 
 ### 4. Login
-- Admin: admin@maextria.com / senha123
-- Professor: prof.maria@maextria.com / senha123
-- Aluno: aluno1@example.com / senha123
+- Credenciais de demonstração devem ser consultadas em `backend/src/database/seed.ts`
+- Use apenas contas locais fictícias
+- Não versionar credenciais em documentação
 
 ---
 

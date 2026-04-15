@@ -28,17 +28,17 @@ Acesse: `http://localhost:5173`
 Use estes usuários para testar (se criados no backend):
 
 ### Admin
-- Email: `admin@maextria.com`
+- Email: `admin.demo@maextria.local`
 - Senha: `admin123`
 - Acesso: Dashboard administrativo completo
 
 ### Professor
-- Email: `professor@maextria.com`
+- Email: `teacher.demo@maextria.local`
 - Senha: `prof123`
 - Acesso: Criar e gerenciar cursos
 
 ### Aluno
-- Email: `aluno@maextria.com`
+- Email: `student.demo@example.local`
 - Senha: `aluno123`
 - Acesso: Matricular-se e assistir cursos
 

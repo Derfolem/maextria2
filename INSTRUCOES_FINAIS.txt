@@ -60,18 +60,15 @@ Estrutura:
 ═══════════════════════════════════════════════════════════════════
 
 ADMINISTRADOR:
-  Email: admin@maextria.com
-  Senha: senha123
+  Credenciais demo: consulte backend/src/database/seed.ts
   Acesso: Dashboard admin, gestão total
 
 PROFESSOR:
-  Email: prof.maria@maextria.com
-  Senha: senha123
+  Credenciais demo: consulte backend/src/database/seed.ts
   Acesso: Criar cursos, ver dashboard de receitas
 
 ALUNO:
-  Email: aluno1@example.com
-  Senha: senha123
+  Credenciais demo: consulte backend/src/database/seed.ts
   Acesso: Matricular em cursos, assistir aulas
 
 ═══════════════════════════════════════════════════════════════════

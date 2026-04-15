@@ -87,11 +87,8 @@ Acesse: **http://localhost:5173**
 
 ## 👤 Contas de Teste
 
-| Tipo | Email | Senha |
-|------|-------|-------|
-| **Admin** | admin@maextria.com | senha123 |
-| **Professor** | prof.maria@maextria.com | senha123 |
-| **Aluno** | aluno1@example.com | senha123 |
+As contas de demonstração são geradas pelo seed local com dados fictícios.
+Consulte [backend/src/database/seed.ts](/home/fredomi/maextria/backend/src/database/seed.ts) para os identificadores atuais antes de testar localmente.
 
 ---
 
